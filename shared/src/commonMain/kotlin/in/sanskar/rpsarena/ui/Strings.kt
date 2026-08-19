@@ -4,6 +4,7 @@ import `in`.sanskar.rpsarena.model.Difficulty
 import `in`.sanskar.rpsarena.model.LocalTurnPhase
 import `in`.sanskar.rpsarena.model.MatchMode
 import `in`.sanskar.rpsarena.model.RoundOutcome
+import `in`.sanskar.rpsarena.model.TrendResult
 
 /**
  * English UI catalog. Keeping product copy outside composables makes later localization possible
@@ -135,6 +136,15 @@ object Strings {
         rounds: Int,
         historyEntries: Int,
     ): String = "Format v$version · Active: $activeProfile · Profiles: $profileCount · Rounds: $rounds · History: $historyEntries"
+
+    fun trendResultLabel(result: TrendResult): String = when (result) {
+        TrendResult.WIN -> "Win"
+        TrendResult.LOSS -> "Loss"
+        TrendResult.DRAW -> "Draw"
+    }
+
+    fun recentResultAccessibility(index: Int, result: TrendResult): String =
+        "Recent result $index: ${trendResultLabel(result)}"
 
     fun localTurnMessage(phase: LocalTurnPhase): String = when (phase) {
         LocalTurnPhase.PLAYER_ONE_CHOOSE -> "Player 1: choose secretly"
