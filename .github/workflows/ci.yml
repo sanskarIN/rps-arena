@@ -18,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Repository formatting
+        run: python3 scripts/check_format.py
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -31,6 +33,8 @@ jobs:
           gradle-version: "9.5.1"
       - name: Shared tests
         run: gradle :shared:allTests --stacktrace
+      - name: Android lint
+        run: gradle :androidApp:lintDebug --stacktrace
       - name: Android debug build
         run: gradle :androidApp:assembleDebug --stacktrace
       - name: Desktop classes
