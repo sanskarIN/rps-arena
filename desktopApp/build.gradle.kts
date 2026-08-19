@@ -21,7 +21,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "RPS Arena"
-            packageVersion = "1.1.0"
+            packageVersion = "2.5.8"
             description = "Offline-first Rock Paper Scissors arena"
             vendor = "Sanskar"
         }
