@@ -299,6 +299,9 @@ private fun HistoryScreen(state: ArenaState) {
             Text(Strings.history, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
             TextButton(onClick = state::clearHistory, enabled = state.history.isNotEmpty()) { Text(Strings.clear) }
         }
+        if (state.canUndoHistoryClear) {
+            TextButton(onClick = state::undoHistoryClear) { Text(Strings.undoHistoryClear) }
+        }
         Spacer(Modifier.height(8.dp))
         if (state.history.isEmpty()) {
             Text(Strings.noHistory)
@@ -354,10 +357,6 @@ private fun AchievementsScreen(state: ArenaState) {
 @Composable
 private fun SettingsScreen(state: ArenaState) {
     val settings = state.settings
-    var backupText by remember { mutableStateOf("") }
-    var dataMessage by remember { mutableStateOf<String?>(null) }
-    var confirmReset by remember { mutableStateOf(false) }
-
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -380,65 +379,7 @@ private fun SettingsScreen(state: ArenaState) {
             Text(Strings.accessibilitySummary, style = MaterialTheme.typography.bodySmall)
         }
 
-        SettingsCard(Strings.privacyLocalData) {
-            Text(Strings.privacySummary)
-            OutlinedButton(
-                onClick = {
-                    backupText = state.exportBackup()
-                    dataMessage = Strings.backupGenerated
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(Strings.generateBackup) }
-            OutlinedTextField(
-                value = backupText,
-                onValueChange = { backupText = it },
-                label = { Text(Strings.backupField) },
-                supportingText = { Text(Strings.backupHelp) },
-                minLines = 4,
-                maxLines = 8,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Button(
-                onClick = {
-                    dataMessage = if (state.importBackup(backupText)) Strings.backupImported else Strings.backupRejected
-                },
-                enabled = backupText.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(Strings.importBackup) }
-            OutlinedButton(
-                onClick = {
-                    state.clearHistory()
-                    dataMessage = Strings.historyCleared
-                },
-                enabled = state.history.isNotEmpty(),
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(Strings.clearRecentHistory) }
-
-            if (!confirmReset) {
-                OutlinedButton(
-                    onClick = { confirmReset = true },
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(Strings.resetAllData) }
-            } else {
-                Text(Strings.resetConfirmation)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = {
-                            state.resetAllData()
-                            backupText = ""
-                            dataMessage = Strings.resetComplete
-                            confirmReset = false
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) { Text(Strings.confirmReset) }
-                    OutlinedButton(
-                        onClick = { confirmReset = false },
-                        modifier = Modifier.weight(1f),
-                    ) { Text(Strings.cancel) }
-                }
-            }
-            dataMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-        }
+        LocalDataSettings(state)
 
         SettingsCard(Strings.updatesProject) {
             Text(Strings.updatesSummary)
