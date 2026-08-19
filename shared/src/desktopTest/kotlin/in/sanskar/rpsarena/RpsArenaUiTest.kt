@@ -42,6 +42,26 @@ class RpsArenaUiTest {
     }
 
     @Test
+    fun HindiSettingLocalizesGameplayAndAchievements() = runComposeUiTest {
+        val repository = memoryRepository()
+
+        setContent { RpsArenaApp(repository) }
+
+        onNodeWithText("Enter the Arena").performClick()
+        onNodeWithText("Settings").performClick()
+        onNodeWithText("Hindi").performClick()
+        onNodeWithText("← वापस").performClick()
+        onNodeWithText("खेलें").performClick()
+        onNodeWithText("पत्थर").assertExists()
+        onNodeWithText("कागज़").assertExists()
+        onNodeWithText("कैंची").assertExists()
+        onNodeWithText("← वापस").performClick()
+        onNodeWithText("उपलब्धियाँ").performClick()
+        onNodeWithText("पहली जीत").assertExists()
+        onNodeWithText("अपना पहला राउंड जीतें").assertExists()
+    }
+
+    @Test
     fun settingsExposeBackupAndConfirmedResetControls() = runComposeUiTest {
         val repository = memoryRepository()
 
