@@ -22,7 +22,8 @@ Coverage includes:
 - recent win/loss/draw trend aggregation;
 - CPU and local-two-player timeout scoring;
 - backup restore refreshing in-memory state;
-- private-room code validation, two-participant limits, sender validation, and event exchange.
+- English/Hindi gesture, difficulty, match-mode, version metadata, and achievement-copy catalogs;
+- private-room code validation, two-participant limits, sender validation, positive-round validation, lifecycle-event authority, event exchange, and idempotent close behavior.
 
 ## Compose desktop UI smoke tests
 
@@ -31,6 +32,8 @@ The `desktopTest` source set uses Compose Multiplatform's UI test runtime. The c
 - onboarding reaches the home screen and primary Play journey;
 - Rock/Paper/Scissors controls are rendered on the primary gameplay screen;
 - Settings can switch core navigation copy from English to Hindi;
+- Hindi gameplay renders localized Rock/Paper/Scissors labels;
+- Hindi achievements render localized title and description copy;
 - backup/import controls are exposed;
 - local-data reset requires explicit confirmation.
 
@@ -85,10 +88,12 @@ Before release, verify:
 6. timers restart per turn and score the correct timeout winner;
 7. recent trend numbers match recent history;
 8. player name and language persist across restart;
-9. backup export can restore settings, stats, and history after a reset;
-10. malformed backup text is rejected without overwriting valid local data;
-11. reduced-motion mode removes result transition animation;
-12. keyboard and TalkBack/accessible navigation checks from `docs/accessibility.md` pass.
+9. English/Hindi changes update gameplay choices, round results, history rendering, settings feedback, and achievements without changing stored game rules;
+10. match-mode and timer chips wrap instead of clipping on a narrow phone-width viewport;
+11. backup export can restore settings, stats, and history after a reset;
+12. malformed backup text is rejected without overwriting valid local data;
+13. reduced-motion mode removes result transition animation;
+14. keyboard and TalkBack/accessible navigation checks from `docs/accessibility.md` pass.
 
 ## CI gate
 
