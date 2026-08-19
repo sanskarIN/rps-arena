@@ -6,7 +6,7 @@ All notable changes to RPS Arena are documented here.
 
 No unreleased user-visible changes are currently queued.
 
-## [1.1.0] - 2026-08-19
+## [2.5.8] - 2026-08-19
 
 ### Added
 - Configurable round timers with 5, 10, 20, 30, and 60 second options plus an Off setting.
@@ -50,9 +50,9 @@ No unreleased user-visible changes are currently queued.
 - Settings persistence now uses `settings_v2` and migrates compatible `settings_v1` data automatically.
 - Match configuration now loads from validated local persistence instead of reverting to default gameplay controls on every app/state restart.
 - `RPS_ARENA_BACKUP|1` remains intentionally unchanged and does not include `match_config_v1`; importing v1 therefore preserves the receiving device's local match setup.
-- Android package version is now `1.1.0` (`versionCode = 2`).
-- Desktop package version is now `1.1.0`.
-- Version validation now checks Android, desktop, shared metadata, and that About renders the shared version constant instead of depending on English UI text.
+- Android package version is now `2.5.8` (`versionCode = 20508`).
+- Desktop package version is now `2.5.8`.
+- Version validation now checks Android, desktop, shared metadata, About rendering, and the deterministic Android semantic `versionCode` mapping (`major * 10000 + minor * 100 + patch`).
 - The root `ROADMAP.md` is now the canonical roadmap source.
 - History and local profile input are length-bounded and sanitized before persistence.
 - Contribution, support, privacy, security, setup, testing, validation, CI/CD, Android-platform, storage/backup, and README documentation now match the stronger source/privacy/security gates.
