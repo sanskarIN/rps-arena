@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Kotlin/Java
+*.class
+*.log
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Android
+local.properties
+captures/
+*.jks
+*.keystore
+
+# Desktop packaging
+*.dmg
+*.msi
+*.deb
+*.rpm
+
+# Rust
+rust-engine/target/
+Cargo.lock
