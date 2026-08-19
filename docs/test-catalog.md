@@ -66,7 +66,7 @@ Assertions:
 - Tournament target = 5;
 - Endless/Streak target = null.
 
-Why it matters: UI and state depend on these model-level constraints rather than revalidating arbitrary timer/match values.
+Why it matters: UI, persistence, and state depend on these model-level constraints rather than accepting arbitrary timer/match values.
 
 ## `ArenaRepositoryCodecTest.kt`
 
@@ -81,9 +81,10 @@ Protects basic persistence codec round trips.
 Assertions:
 
 - representative `ArenaSettings` survives encode -> decode;
+- a non-default `MatchConfig` containing Lizard–Spock, local two-player, Expert, Tournament, negative deterministic seed, and a 20-second timer survives encode -> decode exactly;
 - representative valid `ArenaStats` survives encode -> decode.
 
-Why it matters: persistence changes must not alter valid values during serialization.
+Why it matters: persistence changes must not alter valid values during serialization, including the user's last selected gameplay setup.
 
 ## `ArenaRepositoryBackupTest.kt`
 
@@ -108,6 +109,8 @@ Exports/imports settings containing:
 - win/draw history.
 
 Then asserts settings, stats, and history are identical after import.
+
+The established `RPS_ARENA_BACKUP|1` test scope intentionally does not include `match_config_v1`; that local convenience record requires a future backup schema version if portability is added.
 
 ### Malformed import is non-destructive
 
@@ -150,6 +153,17 @@ Tests records violating:
 - best streak <= wins;
 - current streak <= best streak;
 - non-negative values.
+
+### Invalid match configuration falls back to defaults
+
+Tests persisted match records containing:
+
+- unknown variant enum;
+- non-integer seed;
+- unsupported 15-second timer;
+- wrong field count.
+
+Each must decode to a complete default `MatchConfig` rather than a partially corrupt runtime setup.
 
 ### Player-name sanitation
 
@@ -208,11 +222,25 @@ With 5-second timer, calling `expireCurrentTurn()` produces Player 1 timeout, Pl
 
 Two independent states with seed `424242` play the same five moves and must produce identical CPU gestures and outcomes.
 
+### Match configuration survives state/app reconstruction
+
+- a shared in-memory repository represents durable platform storage;
+- first state stores a non-default variant/opponent/difficulty/mode/seed/timer;
+- a new `ArenaState` constructed over the same repository restores the exact config;
+- the new `MatchSnapshot` starts with the restored config.
+
+### Local-data reset resets persisted match configuration
+
+- stores a non-default config;
+- invokes `clearUserData()`;
+- verifies the live state returns to default `MatchConfig`;
+- creates another state over the same repository and verifies defaults remain persisted.
+
 ### Backup restore refreshes live state
 
 Creates a timeout round, exports backup, clears data, imports backup, then verifies in-memory stats return to one round and feedback is present.
 
-Why it matters: it verifies orchestration across model/CPU/repository rather than isolated helpers.
+Why it matters: it verifies orchestration across model/CPU/repository, including restart/reset persistence behavior, rather than isolated helpers.
 
 ## `PrivateRoomTest.kt`
 
@@ -389,21 +417,21 @@ This avoids:
 - filesystem cleanup;
 - mocking framework dependency.
 
-It also makes destructive/non-destructive import assertions easy to inspect.
+It also makes destructive/non-destructive import assertions easy to inspect and lets state tests simulate restart persistence over one shared storage map.
 
 ## Test gaps that remain intentional/known
 
 The current Kotlin/Compose suite does not yet provide hosted Android emulator instrumentation for:
 
 - real Activity lifecycle;
-- Android SharedPreferences persistence across process restart;
+- Android SharedPreferences persistence across an actual process restart;
 - TalkBack;
 - Android system text scaling;
 - adaptive icon/system bars;
 - actual OS backup transport execution;
 - future network permissions.
 
-The source-level Android privacy checker nevertheless verifies that the manifest disables automatic backup, the backup-policy XML excludes SharedPreferences, and the primary manifest has no internet permission. Manual/device testing still covers runtime platform behavior that a static parser cannot prove.
+The state-level in-memory test verifies match-config reconstruction semantics without claiming to be an Android process-lifecycle test. The source-level Android privacy checker verifies that the manifest disables automatic backup, the backup-policy XML excludes SharedPreferences, and the primary manifest has no internet permission. Manual/device testing still covers runtime platform behavior that static/common tests cannot prove.
 
 The optional Rust tests also cover only representative rule pairs, while Kotlin remains the primary broader application rule suite.
 
@@ -419,14 +447,16 @@ Review:
 - Rust tests if parity intended;
 - UI test if visible controls change.
 
-### Match mode/timer
+### Match mode/timer/config persistence
 
 Review:
 
 - `MatchConfigTest`;
+- `ArenaRepositoryCodecTest`;
+- `ArenaRepositoryValidationTest`;
 - `ArenaStateTest`;
-- UI tests;
-- persistence tests if config becomes persisted.
+- UI tests when controls change;
+- `docs/storage-and-backup.md` when the persisted record changes.
 
 ### Persistence/backup
 
@@ -463,6 +493,7 @@ Test names should describe behavior/outcome, for example:
 ```text
 malformedBackupDoesNotOverwriteExistingData
 localSecondPlayerTimeoutAwardsRoundToPlayerOne
+matchConfigurationPersistsAcrossStateInstances
 sessionRejectsInvalidRoundAndLifecycleEvents
 ```
 
