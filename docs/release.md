@@ -22,13 +22,15 @@ A release candidate is eligible only when:
 
 ## Version locations
 
-For v1.1.0 the public version is declared in:
+For v2.5.8 the public version is declared in:
 
-- `androidApp/build.gradle.kts` (`versionCode = 2`, `versionName = "1.1.0"`);
-- `desktopApp/build.gradle.kts` (`packageVersion = "1.1.0"`);
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/AppMetadata.kt` (`APP_VERSION = "1.1.0"`);
+- `androidApp/build.gradle.kts` (`versionCode = 20508`, `versionName = "2.5.8"`);
+- `desktopApp/build.gradle.kts` (`packageVersion = "2.5.8"`);
+- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/AppMetadata.kt` (`APP_VERSION = "2.5.8"`);
 - About UI, which renders the shared version constant;
 - `CHANGELOG.md`.
+
+Android `versionCode` follows `major * 10000 + minor * 100 + patch`; `scripts/check_version.py` validates this mapping in addition to synchronizing the public semantic version across platforms.
 
 Keep these values synchronized when preparing later versions.
 
@@ -63,7 +65,7 @@ The tag workflow is designed to build reproducible unsigned/public artifacts wit
 Recommended release tag format:
 
 ```text
-v1.1.0
+v2.5.8
 ```
 
 Tag only the audited `main` commit. The tag workflow is an additional release gate and does not replace green pull-request CI, Security checks, and CodeQL evidence on that exact source.
