@@ -45,6 +45,7 @@ All notable changes to RPS Arena are documented here.
 - History entries are bounded and sanitized before persistence.
 - Player-one history rows include an explicit `Player 1 (...)` role prefix so profile names such as `CPU` or `Player 2` cannot be confused with opponent outcomes.
 - Backup decoding is size-bounded, rejects malformed/duplicate key rows, and stages settings, stats, match configuration, profiles, and history validation before mutation.
+- Local profile persistence now removes obsolete profile-name keys when profiles are deleted, full local data is reset, or backup import replaces the profile set.
 - Repository persistence accepts injected in-memory storage for common regression and UI tests.
 - User-facing achievement and local-turn text moved out of domain/state models into the UI copy catalog.
 - Recent trend status values are non-interactive semantic surfaces rather than fake clickable controls.
@@ -64,6 +65,7 @@ All notable changes to RPS Arena are documented here.
 - Duplicate backup keys can no longer silently overwrite an earlier key during parsing.
 - Malformed backup key/value rows can no longer be silently ignored.
 - Backup history validation now completes before any imported state is written.
+- Deleted or discarded local profiles no longer leave their display-name keys behind in production platform preference stores.
 - History clear can be recovered once instead of being immediately irreversible.
 - Recent trend parsing no longer risks misclassifying player-one wins when a local profile display name resembles an opponent label.
 - Trend status tokens no longer present non-actions as clickable controls to keyboard or assistive-technology users.
@@ -73,7 +75,7 @@ All notable changes to RPS Arena are documented here.
 
 - Core gameplay requires no account, cloud service, analytics SDK, advertising SDK, or Android internet permission.
 - Android manifest backup participation is disabled, with explicit legacy and Android 12+ extraction rules excluding shared-preference data from configured backup and device-transfer paths.
-- Local profile display names are device-local, included only in user-generated backups, and intentionally excluded from structured logs.
+- Local profile display names are device-local, included only in user-generated backups, intentionally excluded from structured logs, and actively removed from platform preference stores when their profile IDs are discarded.
 - The copy-result action writes only the user-selected round summary to the platform clipboard after an explicit user action.
 - Backup preview and import use the same defensive decoder; malformed, duplicate-keyed, oversized, or internally inconsistent data is rejected before mutation.
 - CI scans committed source for high-confidence credential patterns, validates the Android privacy contract, and reviews dependency changes on pull requests.
