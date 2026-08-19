@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">RPS Arena logo</title>
+  <desc id="desc">Purple rounded square with a white arena disc and three gesture bars.</desc>
+  <rect width="1024" height="1024" rx="220" fill="#6750A4"/>
+  <circle cx="512" cy="512" r="300" fill="#FFFFFF"/>
+  <rect x="330" y="390" width="364" height="70" rx="35" fill="#6750A4"/>
+  <rect x="330" y="490" width="270" height="70" rx="35" fill="#6750A4"/>
+  <rect x="330" y="590" width="180" height="70" rx="35" fill="#6750A4"/>
+</svg>
