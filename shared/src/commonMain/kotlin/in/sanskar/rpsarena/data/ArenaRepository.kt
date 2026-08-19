@@ -22,12 +22,7 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
     fun saveConfig(value: MatchConfig) = store.putString(KEY_CONFIG, encodeConfig(value))
 
     fun loadProfilesState(): LocalProfilesState {
-        val ids = store.getString(KEY_PROFILE_IDS)
-            .split('|')
-            .map { it.trim() }
-            .filter { it.matches(PROFILE_ID_PATTERN) }
-            .distinct()
-            .take(MAX_PROFILES)
+        val ids = storedProfileIds()
 
         val profiles = ids.mapNotNull { id ->
             normalizeProfileName(store.getString(profileNameKey(id)))?.let { name ->
@@ -295,6 +290,7 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
     }
 
     private fun saveProfilesState(value: LocalProfilesState) {
+        val previousIds = storedProfileIds()
         val validProfiles = value.profiles
             .filter { it.id.matches(PROFILE_ID_PATTERN) }
             .mapNotNull { profile ->
@@ -305,10 +301,22 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
             .ifEmpty { listOf(LocalProfilesState.DEFAULT_LOCAL_PROFILE) }
         val activeId = value.activeProfileId.takeIf { id -> validProfiles.any { it.id == id } }
             ?: validProfiles.first().id
+        val validIds = validProfiles.map { it.id }.toSet()
+
+        previousIds.filterNot { it in validIds }.forEach { removedId ->
+            store.remove(profileNameKey(removedId))
+        }
         store.putString(KEY_PROFILE_IDS, validProfiles.joinToString("|") { it.id })
         validProfiles.forEach { profile -> store.putString(profileNameKey(profile.id), profile.displayName) }
         store.putString(KEY_ACTIVE_PROFILE, activeId)
     }
+
+    private fun storedProfileIds(): List<String> = store.getString(KEY_PROFILE_IDS)
+        .split('|')
+        .map { it.trim() }
+        .filter { it.matches(PROFILE_ID_PATTERN) }
+        .distinct()
+        .take(MAX_PROFILES)
 
     private fun decodeBackupProfiles(values: Map<String, String>): LocalProfilesState? {
         val ids = values["profileIds"]
