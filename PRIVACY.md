@@ -15,6 +15,8 @@ The app stores only local gameplay preferences and progress needed for its featu
 
 Local profiles are device-local identities, not online accounts. RPS Arena does not create authentication identifiers, upload profile names, or require a remote profile service.
 
+When a local profile is discarded, repository persistence removes that profile's display-name key from the production platform preference store. The same cleanup runs when a full local-data reset discards extra profiles or when backup import replaces a larger local profile set with a smaller one.
+
 ## Platform backup behavior
 
 Android application backup is intentionally disabled at the manifest level, and the project also supplies explicit backup/data-extraction rules that exclude application shared preferences from legacy backup, cloud backup, and device-transfer rule sets. This keeps RPS Arena's application-managed local profile/settings/stat/history store out of normal Android backup participation as far as the platform's documented app controls allow.
@@ -27,7 +29,7 @@ The app can generate a versioned, human-readable backup containing the local set
 
 Treat exported backup text according to your own privacy needs because it may contain local profile display names and recent game summaries. The backup format is not encryption and must not be used for passwords, API keys, payment information, or other secrets.
 
-A backup is fully validated before import. The preview operation is non-mutating and lets the user inspect a summary before replacing local data.
+A backup is fully validated before import. The preview operation is non-mutating and lets the user inspect a summary before replacing local data. Import also cleans obsolete persisted profile-name keys when the imported profile set replaces local profiles.
 
 ## Clipboard
 
@@ -49,7 +51,7 @@ About-screen links open only after a user selects them and are then handled by t
 
 ## Deleting data
 
-The in-app Settings screen can clear recent history, undo the most recent history clear until new history is written, or reset all RPS Arena local data after confirmation.
+The in-app Settings screen can clear recent history, undo the most recent history clear until new history is written, or reset all RPS Arena local data after confirmation. Full reset restores the default profile and removes persisted display-name keys for discarded extra profiles.
 
 Uninstalling the app removes application-local data according to platform behavior. Desktop users can also clear the `in/sanskar/rpsarena` preferences node through their operating system's Java preferences storage.
 
