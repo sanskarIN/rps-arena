@@ -11,21 +11,47 @@ Coverage includes:
 - every classic rule direction and draw behavior;
 - extended Lizard–Spock rules;
 - seeded CPU determinism and allowed-gesture constraints;
+- replayable seeded CPU behavior through `ArenaState`;
+- match timer and win-target invariants;
 - settings/stat codec round trips;
 - legacy settings migration;
-- versioned backup export/import and malformed-backup rejection;
+- invalid-statistics rejection;
+- local player-name sanitization and bounds;
+- recent-history bounds and newline sanitization;
+- versioned backup export/import, unknown-record rejection, and non-destructive malformed-import behavior;
 - recent win/loss/draw trend aggregation;
 - CPU and local-two-player timeout scoring;
 - backup restore refreshing in-memory state;
 - private-room code validation, two-participant limits, sender validation, and event exchange.
 
-## Android build verification
+## Compose desktop UI smoke tests
+
+The `desktopTest` source set uses Compose Multiplatform's UI test runtime. The current smoke suite verifies:
+
+- onboarding reaches the home screen and primary Play journey;
+- Rock/Paper/Scissors controls are rendered on the primary gameplay screen;
+- Settings can switch core navigation copy from English to Hindi;
+- backup/import controls are exposed;
+- local-data reset requires explicit confirmation.
+
+Run them directly with:
 
 ```bash
+gradle :shared:desktopTest --stacktrace
+```
+
+They are also included in the shared test gate for the supported desktop target.
+
+## Android quality/build verification
+
+```bash
+gradle :androidApp:lintDebug --stacktrace
 gradle :androidApp:assembleDebug --stacktrace
 ```
 
-This verifies Android packaging, shared Android compilation, resources, launcher assets, and the primary entry point.
+This verifies Android lint, packaging, shared Android compilation, resources, launcher assets, and the primary entry point.
+
+Android device/emulator instrumentation remains a platform-dependent follow-up; the repository does not pretend that a desktop UI runner is equivalent to TalkBack or device behavior.
 
 ## Desktop build verification
 
@@ -66,6 +92,6 @@ Before release, verify:
 
 ## CI gate
 
-`.github/workflows/ci.yml` runs shared tests, Android debug assembly, desktop classes, and Rust tests. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
+`.github/workflows/ci.yml` runs formatting/version checks, shared tests (including desktop UI smoke tests), Android lint/debug assembly, desktop classes, and Rust tests. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
 
 A release candidate should not be merged while any required check is failing or still pending.
