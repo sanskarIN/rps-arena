@@ -1,9 +1,9 @@
-package in.sanskar.rpsarena
+package `in`.sanskar.rpsarena
 
-import in.sanskar.rpsarena.engine.CpuStrategy
-import in.sanskar.rpsarena.model.Difficulty
-import in.sanskar.rpsarena.model.GameVariant
-import in.sanskar.rpsarena.model.Gesture
+import `in`.sanskar.rpsarena.engine.CpuStrategy
+import `in`.sanskar.rpsarena.model.Difficulty
+import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.Gesture
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
