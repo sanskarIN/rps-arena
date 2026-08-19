@@ -36,13 +36,13 @@ Keep high-level; link deep material under `docs/` rather than duplicating every 
 
 ### `CHANGELOG.md`
 
-Version-oriented notable changes. Current v1.1.0 section records timers, seed controls, profile/trends, backup, localization/responsiveness, private-room architecture/security hardening, tests, CI/release/docs.
+Version-oriented notable changes. Current v2.5.8 section records timers, seed controls, persisted match setup, profile/trends, backup, localization/responsiveness, private-room architecture/security hardening, tests, CI/release/docs, and synchronized release metadata.
 
 Update for release-visible behavior/security/compatibility changes.
 
 ### `ROADMAP.md`
 
-Canonical project roadmap/checklist for v1.0/v1.1 and future optional/platform-dependent work. This is the source of truth; `docs/ROADMAP.md` only points here.
+Canonical project roadmap/checklist for the v1.0 baseline, v2.5.8 completion milestone, and future optional/platform-dependent work. This is the source of truth; `docs/ROADMAP.md` only points here.
 
 ### `CONTRIBUTING.md`
 
@@ -70,7 +70,7 @@ MIT license text for the project. Legal license file; do not modify casually as 
 
 ### `what_changed.md`
 
-Detailed project handoff log requested for this repository workflow. Records implementation, migrations, validation status, limitations, key files, representative commits, and release-notes draft.
+Detailed project handoff log requested for this repository workflow. Records implementation, migrations, validation status, limitations, key files, representative commits, v2.5.8 release metadata, and release-notes draft.
 
 ### `build.gradle.kts`
 
@@ -120,7 +120,7 @@ Disables blank issues and redirects sensitive security reporting to `SECURITY.md
 
 ### `.github/workflows/ci.yml`
 
-Primary CI: repository formatting, relative documentation links, exhaustive file-reference coverage, high-confidence committed-secret patterns, Android privacy contract, version consistency, JDK/Android/Gradle setup, shared tests, Android lint/debug APK, desktop classes, and independent Rust tests. Pull requests/pushes to `main`; obsolete runs cancelled via concurrency.
+Primary CI: repository formatting, relative documentation links, exhaustive file-reference coverage, high-confidence committed-secret patterns, Android privacy contract, semantic/version-code consistency, JDK/Android/Gradle setup, shared tests, Android lint/debug APK, desktop classes, and independent Rust tests. Pull requests/pushes to `main`; obsolete runs cancelled via concurrency.
 
 ### `.github/workflows/codeql.yml`
 
@@ -132,13 +132,13 @@ Focused security workflow for pushes/PRs to `main`. Rechecks committed-secret an
 
 ### `.github/workflows/release.yml`
 
-Manual/tag release validation and packaging. Repeats formatting, docs-link, exhaustive documentation, secret-pattern, Android privacy, and version source gates before Android release tests/build; also builds Linux DEB and Rust crate artifacts. Tag runs merge artifacts, create SHA-256 sums, and publish GitHub Release.
+Manual/tag release validation and packaging. Repeats formatting, docs-link, exhaustive documentation, secret-pattern, Android privacy, and semantic/version-code source gates before Android release tests/build; also builds Linux DEB and Rust crate artifacts. Tag runs merge artifacts, create SHA-256 sums, and publish GitHub Release.
 
 ## Android application module
 
 ### `androidApp/build.gradle.kts`
 
-Android app plugin/configuration: namespace/application ID, SDK levels, Android version code/name, Compose/BuildConfig, packaging exclusion, dependencies on shared UI/logic and Activity Compose.
+Android app plugin/configuration: namespace/application ID, SDK levels, Android version code/name, Compose/BuildConfig, packaging exclusion, dependencies on shared UI/logic and Activity Compose. Version 2.5.8 uses Android `versionCode = 20508`.
 
 ### `androidApp/src/main/AndroidManifest.xml`
 
@@ -190,7 +190,7 @@ Editable 1600x900 branding artwork with gestures, title, and credit. Documentati
 
 ### `desktopApp/build.gradle.kts`
 
-Desktop Kotlin JVM/Compose build: Java 17 toolchain, dependency on `:shared` and current-OS Compose runtime, main class, DMG/MSI/DEB native distribution metadata/version/vendor.
+Desktop Kotlin JVM/Compose build: Java 17 toolchain, dependency on `:shared` and current-OS Compose runtime, main class, DMG/MSI/DEB native distribution metadata/version/vendor. Current package version is 2.5.8.
 
 ### `desktopApp/src/main/kotlin/in/sanskar/rpsarena/desktop/Main.kt`
 
@@ -236,11 +236,11 @@ Read-only high-confidence committed-secret scanner for private-key blocks and re
 
 ### `scripts/check_android_privacy.py`
 
-Parses the Android manifest and both backup-policy XML files. Fails if automatic backup becomes enabled, backup/data-transfer rule references or SharedPreferences exclusions disappear, XML is invalid, or `android.permission.INTERNET` is introduced into the offline-first v1 manifest.
+Parses the Android manifest and both backup-policy XML files. Fails if automatic backup becomes enabled, backup/data-transfer rule references or SharedPreferences exclusions disappear, XML is invalid, or `android.permission.INTERNET` is introduced into the primary offline-first Android manifest.
 
 ### `scripts/check_version.py`
 
-Checks Android `versionName`, desktop `packageVersion`, shared `APP_VERSION`, and verifies About renders shared version constant. Keeps localization from breaking version detection.
+Checks Android `versionName`, desktop `packageVersion`, shared `APP_VERSION`, verifies About renders the shared version constant, and requires Android `versionCode` to match `major * 10000 + minor * 100 + patch`. Keeps localization and numeric release ordering from drifting away from the semantic app version.
 
 ### `scripts/verify.sh`
 
@@ -330,7 +330,7 @@ English/Hindi achievement title/description mapping by stable achievement ID wit
 
 ### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/AppMetadata.kt`
 
-Language-independent shared constants `APP_VERSION` and `APP_LICENSE` used by About/version validation.
+Language-independent shared constants `APP_VERSION` and `APP_LICENSE` used by About/version validation. Current application version is 2.5.8.
 
 ### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/ArenaDesign.kt`
 
