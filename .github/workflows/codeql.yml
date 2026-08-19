@@ -2,7 +2,7 @@ name: CodeQL
 
 on:
   push:
-    branches: [main]
+    branches: [main, "chatgpt/**"]
   pull_request:
     branches: [main]
   schedule:
@@ -13,27 +13,26 @@ permissions:
   packages: read
   contents: read
 
-env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=false
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
     name: Analyze Kotlin/Java
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: android-actions/setup-android@v3
-      - name: Install Android SDK 37
-        run: sdkmanager "platforms;android-37" "build-tools;36.0.0"
-      - uses: github/codeql-action/init@v3
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
         with:
           languages: java-kotlin
-      - uses: gradle/actions/setup-gradle@v4
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
         with:
-          gradle-version: "9.5.1"
-      - run: gradle :androidApp:assembleDebug :desktopApp:classes
-      - uses: github/codeql-action/analyze@v3
+          category: /language:java-kotlin
