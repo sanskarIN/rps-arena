@@ -12,7 +12,7 @@
   <a href="https://buymeacoffee.com/sanskarIN"><img alt="Buy Me a Coffee" src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-sanskarIN-FFDD00?logo=buy-me-a-coffee&logoColor=000000"></a>
 </p>
 
-RPS Arena turns the classic game into a complete offline-first portfolio application: one canonical rules engine, transparent CPU strategies, same-device private play, persisted match setup, seeded challenges, statistics, achievements, accessibility preferences, local backup/restore, and professional release automation.
+RPS Arena turns the classic game into a complete offline-first portfolio application: one canonical rules engine, transparent CPU strategies, same-device private play, local profiles, persisted match setup, seeded challenges, timers, history, statistics, recent trends, achievements, accessibility preferences, validated local backup/restore, and professional release/security automation.
 
 ## Screenshots
 
@@ -27,16 +27,22 @@ Real Android and desktop screenshots will be added only from a verified release-
 - Deterministic seeded CPU matches for reproducible challenges and debugging.
 - Optional 5/10/15/30/60-second turn timers with deterministic timeout moves.
 - Persisted match configuration across launches.
+- Up to six local-only player profiles with validated display names and active-profile selection.
 - Local lifetime wins, losses, draws, streaks, win rate, and achievements.
 - Up to 30 recent round summaries stored locally.
-- Versioned plain-text backup/restore for settings, stats, match setup, and history.
-- Clear-history and full local-data reset controls.
+- Recent W/L/D trend with non-color-only labels and decisive win rate.
+- Versioned plain-text V2 backup/restore for settings, profiles, stats, match setup, and history.
+- Backward-compatible V1 backup migration plus a non-mutating preview before import.
+- Clear-history with one-step undo and confirmed full local-data reset controls.
 - Polished onboarding with no forced sign-in.
-- Light, dark, and system themes plus reduced-motion preference.
-- Semantic gesture labels, large touch targets, keyboard-compatible Compose controls, and non-color-only results.
+- Light, dark, and system themes plus reduced-motion result behavior.
+- Semantic gesture/trend labels, large touch targets, keyboard-compatible Compose controls, and non-color-only results.
 - Clickable repository, funding, business, and support links in About.
 - Android and desktop from a Kotlin/Compose Multiplatform codebase.
 - Optional standalone Rust rules mirror with formatting, lint, test, and benchmark support.
+- Tested private-room/LAN protocol boundary for future opt-in transport work, with no production network dependency in v1.
+- Structured redacting local logging.
+- CI, CodeQL, dependency review, committed-secret scanning, Dependabot, docs validation, and release artifact automation.
 - No account, analytics SDK, ads SDK, cloud dependency, or Android internet permission.
 
 ## Supported platforms
@@ -72,7 +78,8 @@ shared/       Shared engine, models, state, persistence, UI, tests
 rust-engine/  Optional standalone Rust rules mirror and benchmarks
 assets/       Editable logo and splash artwork
 docs/         Architecture, setup, testing, accessibility, release, ADRs
-.github/      CI, CodeQL, release automation, Dependabot, templates, funding
+scripts/      Documentation, security, and local verification helpers
+.github/      CI, CodeQL, security/release automation, Dependabot, templates, funding
 ```
 
 ## Quick start
@@ -82,15 +89,15 @@ Requirements: Git, JDK 17+, Gradle 9.5.0, plus Android SDK 36 for Android builds
 ```bash
 git clone https://github.com/sanskarIN/rps-arena.git
 cd rps-arena
-gradle :shared:desktopTest
+gradle --no-daemon :shared:allTests
 gradle :desktopApp:run
 ```
 
 Android verification:
 
 ```bash
-gradle :androidApp:assembleDebug
-gradle :androidApp:lintDebug
+gradle --no-daemon :androidApp:assembleDebug
+gradle --no-daemon :androidApp:lintDebug
 ```
 
 See [Setup](docs/setup.md) and [Development](docs/development.md) for the full environment guide.
@@ -102,23 +109,28 @@ Shared automated coverage includes:
 - classic and Lizard–Spock rule relationships;
 - deterministic CPU behavior;
 - persistence codecs and legacy-settings migration;
+- local profile validation and lifecycle;
 - match-config persistence;
-- backup/restore validation and malformed-backup rejection;
+- V2 backup/restore, V1 migration, preview, size bounds, and atomic malformed-backup rejection;
 - timed auto-moves and local two-player timer handoff;
-- data reset behavior;
+- history clear/undo and data reset behavior;
+- recent-history W/L/D trend derivation;
+- private-room protocol validation;
 - Rust/Kotlin rule-contract checks.
 
 Primary CI commands:
 
 ```bash
 gradle --no-daemon :shared:compileKotlinDesktop
-gradle --no-daemon :shared:desktopTest
+gradle --no-daemon :shared:allTests
 gradle --no-daemon :androidApp:assembleDebug
 gradle --no-daemon :androidApp:lintDebug
 gradle --no-daemon :desktopApp:classes
+python scripts/check_docs_links.py
+python scripts/check_for_secrets.py
 ```
 
-The Rust job runs `cargo fmt --check`, Clippy with warnings denied, and the full Rust test suite. CodeQL analyzes Java/Kotlin source independently from Android SDK installation.
+The Rust job runs `cargo fmt --check`, Clippy with warnings denied, and the full Rust test suite. CodeQL analyzes Java/Kotlin source independently from Android SDK installation. Pull requests also run dependency review.
 
 See [Testing](docs/testing.md).
 
@@ -146,24 +158,25 @@ Rules + CPU      ArenaRepository
    SharedPreferences      Java Preferences
 ```
 
-Game rules remain independent from UI and platform APIs. Persistence is injected through a small store interface so common tests can use deterministic in-memory storage.
+Game rules remain independent from UI and platform APIs. Persistence is injected through a small store interface so common tests can use deterministic in-memory storage. Recent trends are derived from persisted history instead of being stored twice. The private-room protocol is a separate opt-in boundary and is not a dependency of v1 gameplay.
 
 See [Architecture](docs/architecture.md) and the records in [docs/adr/](docs/adr/).
 
 ## Privacy and security
 
-RPS Arena stores only local game configuration, settings, aggregate statistics, and recent history. Android requests no internet permission. Backup text is intentionally readable and is not secret storage.
+RPS Arena stores local profile display names, game configuration, settings, aggregate statistics, and recent history on the device. Android requests no internet permission. Backup text is intentionally readable, includes the local data the user chooses to export, and is not secret storage.
 
 - [Privacy](PRIVACY.md)
 - [Security and responsible disclosure](SECURITY.md)
 - [Accessibility](docs/accessibility.md)
 - [Performance](docs/performance.md)
+- [Repository settings](docs/repository-settings.md)
 
-Never commit API keys, signing material, passwords, tokens, personal user data, or private production endpoints. RPS Arena v1 requires no runtime secrets.
+Never commit API keys, signing material, passwords, tokens, personal user data, or private production endpoints. RPS Arena v1 requires no runtime secrets. Repository CI includes a high-confidence committed-secret scan, CodeQL, and pull-request dependency review; Dependabot covers Gradle, Cargo, and GitHub Actions updates.
 
 ## Build and release
 
-Desktop packaging is configured for MSI, DMG, and DEB on the corresponding operating systems. Android CI verifies a debug APK; distribution signing credentials remain outside Git.
+Desktop packaging is configured for MSI, DMG, and DEB on the corresponding operating systems. Android CI verifies a debug APK; release automation builds an unsigned Android release artifact. Distribution signing credentials remain outside Git.
 
 See [Release](docs/release.md) and `.github/workflows/release.yml`.
 
@@ -177,6 +190,7 @@ See [Release](docs/release.md) and `.github/workflows/release.yml`.
 - [Performance](docs/performance.md)
 - [Release](docs/release.md)
 - [Troubleshooting](docs/troubleshooting.md)
+- [Repository settings](docs/repository-settings.md)
 - [Roadmap](ROADMAP.md)
 - [Changelog](CHANGELOG.md)
 - [Work handoff](what_changed.md)
