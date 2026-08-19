@@ -1,6 +1,6 @@
 # Storage, Migration, History, and Backup Format
 
-RPS Arena stores only small local strings through a multiplatform storage boundary. This guide documents the exact storage keys, platform implementations, codecs, migration path, validation rules, history grammar, backup schema, escaping, limits, reset behavior, and compatibility rules.
+RPS Arena stores only small local strings through a multiplatform storage boundary. This guide documents the exact storage keys, platform implementations, codecs, migration path, match-configuration persistence, validation rules, history grammar, explicit backup schema, escaping, limits, reset behavior, Android automatic-backup boundary, and compatibility rules.
 
 ## Storage architecture
 
@@ -68,9 +68,11 @@ Writes use:
 preferences.edit().putString(key, value).apply()
 ```
 
-`apply()` updates the in-memory preference immediately and schedules disk persistence asynchronously. The repository is designed for tiny settings/stat/history strings, not large files or databases.
+`apply()` updates the in-memory preference immediately and schedules disk persistence asynchronously. The repository is designed for tiny settings/match-config/stat/history strings, not large files or databases.
 
 If `getString()` is called before initialization, the adapter returns the supplied default. `putString()` before initialization has no effect. The Android launcher therefore intentionally initializes storage first.
+
+Android automatic backup is separately disabled and the complete SharedPreferences domain is excluded from cloud/device-transfer rules. See the Android automatic-backup section below and `docs/android-platform.md`.
 
 ## Desktop storage
 
@@ -106,8 +108,8 @@ Defaults call `PlatformStore`, but tests supply a mutable map.
 Benefits:
 
 - codecs/migrations can be tested without Android/Desktop;
-- malformed-import tests can verify no writes occur;
-- state tests can use deterministic isolated storage;
+- malformed-import tests can verify no destructive writes occur;
+- state tests can simulate an app restart by constructing a new `ArenaState` over the same map;
 - repository code does not depend on a mocking framework.
 
 ## Current storage keys
@@ -115,7 +117,8 @@ Benefits:
 | Key | Meaning | Current format |
 |---|---|---|
 | `settings_v1` | legacy settings | 7 booleans separated by `|` |
-| `settings_v2` | current settings | 7 booleans + escaped name + language |
+| `settings_v2` | current settings/profile | 7 booleans + escaped name + language |
+| `match_config_v1` | last local match setup | variant/opponent/difficulty/mode/seed/timer |
 | `stats_v1` | aggregate statistics | 6 integers separated by `|` |
 | `history_v1` | recent canonical round summaries | newline-separated strings |
 
@@ -223,6 +226,51 @@ This is a forward migration; it does not delete `settings_v1`.
 The repository favors safe defaults over partially interpreting corrupt settings.
 
 Future schema changes should add a new key/version or an explicitly compatible decoder rather than changing field meaning in place.
+
+## Match configuration v1
+
+`match_config_v1` preserves the most recent local gameplay setup so reopening the app does not unexpectedly restore the default rules/mode/timer.
+
+Field order:
+
+```text
+variant|opponentMode|difficulty|matchMode|seed|roundTimerSeconds
+```
+
+Example:
+
+```text
+LIZARD_SPOCK|LOCAL_TWO_PLAYER|EXPERT|TOURNAMENT|-424242|20
+```
+
+### What it preserves
+
+- `GameVariant`: Classic or Lizard–Spock;
+- `OpponentMode`: CPU or same-device local two-player;
+- `Difficulty`;
+- `MatchMode`;
+- deterministic integer challenge seed;
+- round timer seconds.
+
+`ArenaState` loads this record at construction. Every `updateConfig()` writes the new record before rebuilding the active match, so a later state/app instance starts with the same setup.
+
+### Match configuration validation
+
+The decoder requires exactly six fields.
+
+- enum values must match current enum names;
+- seed must parse as a Kotlin `Int`;
+- timer must be one of `0`, `5`, `10`, `20`, `30`, or `60`.
+
+Any malformed/unknown value returns a complete default `MatchConfig` instead of partially restoring corrupt state.
+
+The codec has direct round-trip tests, malformed-record tests, and state-level restart/reset tests.
+
+### Why this is a separate key
+
+Match setup is a local convenience preference, not lifetime statistics/history. Keeping it under `match_config_v1` avoids changing the established `settings_v2` compatibility contract merely to remember gameplay controls.
+
+It also allows reset to return gameplay setup to defaults independently of onboarding retention.
 
 ## Statistics format
 
@@ -384,6 +432,20 @@ history|Rock vs Scissors — Player 1 won
 
 The exact settings value itself contains `|`, so those separators are escaped again inside the backup record value.
 
+### Match configuration is intentionally not in backup v1
+
+`match_config_v1` is **not** exported or imported by `RPS_ARENA_BACKUP|1`.
+
+Reason: v1 already has a strict record grammar where unknown record types are rejected. Adding a `match_config` record under the same v1 header would make new exports fail on earlier v1 readers and would silently change the compatibility meaning of an existing schema.
+
+Therefore:
+
+- app restarts retain local match setup;
+- explicit v1 backup/restore moves settings, stats, and recent history only;
+- importing v1 leaves the current local match setup intact;
+- reset clears match setup to defaults;
+- a future portable match-config record belongs in a new explicitly versioned backup schema (for example a future v2), with compatibility tests.
+
 ## Backup escaping
 
 Backup value encoder applies:
@@ -451,6 +513,8 @@ Import follows this sequence:
 15. only after all validation succeeds, write settings/stats/history;
 16. return successful `BackupImportResult`.
 
+The algorithm intentionally does not write `match_config_v1`.
+
 ## Transaction-like validation property
 
 The repository does not provide an ACID database transaction, but it deliberately validates the entire backup's required structured data **before** writing validated settings/stats/history.
@@ -497,7 +561,7 @@ RPS Arena itself does not upload the backup.
 1. passes `backupText` to repository;
 2. exposes result message;
 3. when successful, reloads persisted settings/stats;
-4. resets current match so it cannot continue with state inconsistent with newly imported data.
+4. resets the current match while preserving the local `match_config_v1` selection because backup v1 does not own that record.
 
 History is retrieved from repository on demand, so no separate in-memory history reload field is required.
 
@@ -507,14 +571,15 @@ History is retrieved from repository on demand, so no separate in-memory history
 
 1. reads whether onboarding is complete;
 2. saves default `ArenaSettings`, optionally retaining onboarding complete;
-3. saves zeroed `ArenaStats`;
-4. clears history string.
+3. saves default `MatchConfig` to `match_config_v1`;
+4. saves zeroed `ArenaStats`;
+5. clears history string.
 
 `ArenaState.clearUserData()` additionally:
 
-- reloads settings/stats;
+- reloads settings/stats/match config;
 - clears backup text;
-- resets current match;
+- resets current match from the newly restored default config;
 - exposes a reset feedback message.
 
 ## What reset does not do
@@ -523,29 +588,48 @@ The current reset helper does not delete the physical SharedPreferences file/Jav
 
 It also does not clear unrelated data belonging to other applications.
 
-## Android `allowBackup`
+Onboarding completion can remain preserved by design even though other local preferences/match configuration return to defaults.
 
-The Android manifest currently sets:
+## Android automatic backup
+
+The Android manifest sets:
 
 ```xml
-android:allowBackup="true"
+android:allowBackup="false"
 ```
 
-This is an Android platform backup capability distinct from RPS Arena's explicit plain-text backup feature. Platform backup behavior depends on Android/device policy.
+It also references:
 
-When making privacy/release decisions, review both:
+```text
+@xml/backup_rules
+@xml/data_extraction_rules
+```
 
-- app-controlled text backup/import;
-- Android platform backup behavior.
+Those resources exclude the complete `sharedpref` domain from:
 
-Do not assume they are the same mechanism.
+- legacy Android full backup;
+- Android cloud backup;
+- device-to-device transfer.
+
+This means the `rps_arena` SharedPreferences store—including `settings_v2`, `match_config_v1`, `stats_v1`, and `history_v1`—is not intended to be transported by Android automatic backup mechanisms.
+
+The explicit `RPS_ARENA_BACKUP|1` text feature remains the user-controlled portability path for the data it documents.
+
+Run:
+
+```bash
+python3 scripts/check_android_privacy.py
+```
+
+The checker enforces the manifest/rule references, SharedPreferences exclusions, automatic-backup disablement, and no-Internet-permission primary-app boundary.
 
 ## Privacy classification
 
 Local storage can contain:
 
 - local display name;
-- interface/preferences;
+- interface/accessibility preferences;
+- last selected gameplay variant/opponent/difficulty/mode/seed/timer;
 - aggregate gameplay statistics;
 - recent round summaries;
 - onboarding flag.
@@ -562,10 +646,11 @@ When changing persistence:
 - never reuse a versioned key for incompatible semantics;
 - never change history grammar without preserving old parser behavior/migrating history;
 - never change backup v1 meaning incompatibly under the same header;
-- add tests for old -> new migration;
+- do not add match config to backup v1 merely because it now has a local persistence key;
+- add tests for old -> new migration or safe defaults;
 - validate before writing imported data;
-- keep input/history/name limits explicit;
-- document reset/uninstall behavior accurately.
+- keep input/history/name/timer limits explicit;
+- document reset/uninstall/platform-backup behavior accurately.
 
 ## Adding settings
 
@@ -583,6 +668,17 @@ Required work:
 - backup round-trip tests;
 - settings UI/localization;
 - privacy documentation if data meaning changes.
+
+## Changing match configuration
+
+When adding a new `MatchConfig` field:
+
+1. decide whether `match_config_v1` can decode both old/new field counts safely;
+2. otherwise introduce `match_config_v2` with an explicit migration/default path;
+3. validate enum/numeric/range constraints before constructing runtime config;
+4. update `ArenaState` persistence/reset behavior;
+5. add codec + corrupt-input + restart/reset regression tests;
+6. keep backup schema compatibility separate—do not silently extend `RPS_ARENA_BACKUP|1`.
 
 ## Changing stats
 
@@ -611,11 +707,13 @@ For incompatible changes:
 - `PlatformStore.kt`;
 - Android/Desktop PlatformStore actuals;
 - `ArenaState.kt`;
-- settings UI/localization;
+- settings/play UI/localization;
 - repository codec/backup/validation/state tests;
+- Android manifest/backup policy when platform storage semantics change;
 - `PRIVACY.md`;
 - `SECURITY.md`;
 - `docs/testing.md`;
+- `docs/android-platform.md`;
 - `docs/architecture.md`;
 - this guide;
-- `CHANGELOG.md` for release-visible changes.
+- `docs/repository-file-reference.md` when tracked paths change.
