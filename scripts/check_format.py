@@ -33,6 +33,15 @@ def candidate(path: Path) -> bool:
     return path.is_file() and (path.suffix.lower() in TEXT_SUFFIXES or path.name in TEXT_NAMES)
 
 
+def has_disallowed_trailing_whitespace(path: Path, line: str) -> bool:
+    stripped = line.rstrip(" \t")
+    if stripped == line:
+        return False
+    trailing = line[len(stripped):]
+    # Two spaces are standard Markdown hard-break syntax and are intentional.
+    return not (path.suffix.lower() == ".md" and trailing == "  ")
+
+
 def main() -> int:
     failures: list[str] = []
     checked = 0
@@ -57,7 +66,7 @@ def main() -> int:
             failures.append(f"{relative}: missing final newline")
 
         for number, line in enumerate(text.splitlines(), start=1):
-            if line.rstrip(" \t") != line:
+            if has_disallowed_trailing_whitespace(path, line):
                 failures.append(f"{relative}:{number}: trailing whitespace")
 
     if failures:
