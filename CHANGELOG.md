@@ -38,6 +38,7 @@ All notable changes to RPS Arena are documented here.
 
 - Production Android compile/target baseline moved from preview API 37 to stable API 36 for reproducible hosted CI.
 - Kotlin/AGP/Gradle compatibility aligned to Kotlin 2.4.10, AGP 9.1.0, and Gradle 9.5.0.
+- Android and desktop release versions now share `appVersion` from the version catalog; Android `versionCode` is centralized there as well.
 - Match setup now persists across application launches.
 - Recent history is reactive after play, clear, undo, import, and reset operations.
 - History entries are bounded and sanitized before persistence.
@@ -57,6 +58,7 @@ All notable changes to RPS Arena are documented here.
 - Kotlin packages using the `in` keyword are escaped correctly in source and tests.
 - CodeQL no longer depends on Android SDK package availability.
 - CI no longer attempts to install unavailable preview Android platform 37.
+- Public game-state calls now reject Lizard/Spock when the Classic ruleset is active instead of relying only on UI gesture filtering.
 - Malformed backup/stat data is rejected or safely defaulted instead of silently replacing valid state.
 - Backup history validation now completes before any imported state is written.
 - History clear can be recovered once instead of being immediately irreversible.
