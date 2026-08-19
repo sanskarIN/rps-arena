@@ -48,7 +48,7 @@ Stable/internal representation used regardless of UI language. Example: stored h
 Rust package/build/test tool used for `rust-engine/`.
 
 ### CI
-Continuous Integration. RPS Arena's `CI` GitHub Actions workflow runs formatting, version checks, tests, Android lint/build, desktop compilation, and Rust tests.
+Continuous Integration. RPS Arena's `CI` GitHub Actions workflow runs source/documentation/privacy/version checks, tests, Android lint/build, desktop compilation, and Rust tests.
 
 ### checksum
 Digest used to detect whether artifact bytes changed/corrupted. Release workflow creates SHA-256 checksums. A checksum is not equivalent to code signing.
@@ -113,7 +113,7 @@ Separate Android icon layers that allow launcher masking/parallax effects.
 Distributed version-control system used by the repository.
 
 ### GitHub Actions
-GitHub-hosted workflow automation system used for CI, CodeQL build support, and releases.
+GitHub-hosted workflow automation system used for CI, security checks, CodeQL build support, and releases.
 
 ### Gradle
 Build automation system for Kotlin/Android/Desktop modules. This repository currently relies on installed/setup Gradle rather than a tracked Gradle Wrapper.
@@ -185,7 +185,7 @@ Default/stable repository branch used as CI/release integration target.
 `AndroidManifest.xml`, Android application component/permission/metadata declaration.
 
 ### Material 3
-Google's current Material Design component system implemented via Compose Material 3 library used in shared UI.
+Google's Material Design component system implemented via Compose Material 3 library used in shared UI.
 
 ### migration
 Conversion/compatibility path from an older persisted representation to a newer one. RPS Arena migrates compatible `settings_v1` to `settings_v2`.
@@ -261,7 +261,7 @@ Software Development Kit. Android compile/target/min SDK values have distinct ro
 Integer used to initialize deterministic pseudo-random CPU strategy. Same seed plus same strategy inputs/call order reproduces sequence.
 
 ### semantic version / SemVer
-Common `major.minor.patch` version shape such as `1.1.0`. RPS Arena checks three numeric components for shared app version.
+Common `major.minor.patch` version shape such as `2.5.8`. RPS Arena checks three numeric components for shared app version and maps them deterministically into Android `versionCode`.
 
 ### SHA-256
 Cryptographic hash function used by release workflow for artifact checksums.
@@ -318,15 +318,15 @@ Can mean Android build variant (`debug`, `release`) or product `GameVariant` (`C
 `gradle/libs.versions.toml` central names/versions for Gradle plugins/libraries/SDK values.
 
 ### versionCode
-Android integer release ordering value. Current value is 2.
+Android integer release ordering value. Current value is `20508`, derived from version 2.5.8 as `major * 10000 + minor * 100 + patch`.
 
 ### versionName
-Android user-visible semantic version string. Current candidate is `1.1.0`.
+Android user-visible semantic version string. Current candidate is `2.5.8`.
 
 ## W
 
 ### workflow
-GitHub Actions YAML automation. Current workflows: CI, CodeQL, Release.
+GitHub Actions YAML automation. Current workflows: CI, Security checks, CodeQL, Release.
 
 ### workflow concurrency
 GitHub Actions grouping policy that cancels obsolete runs for the same ref/workflow when newer commits arrive.
