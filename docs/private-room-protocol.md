@@ -617,4 +617,4 @@ Before release:
 
 ## Current release statement
 
-As of the v1.1.0 candidate documented here, private-room support means **testable transport-neutral architecture and an in-memory two-player reference adapter**, not production LAN multiplayer. Primary gameplay remains fully offline and no Android internet permission has been introduced.
+As of the v2.5.8 candidate documented here, private-room support means **testable transport-neutral architecture and an in-memory two-player reference adapter**, not production LAN multiplayer. Primary gameplay remains fully offline and no Android internet permission has been introduced.
