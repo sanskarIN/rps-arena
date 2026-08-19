@@ -200,6 +200,10 @@ class ArenaState(
     }
 
     fun play(gesture: Gesture) {
+        if (gesture !in Gesture.availableFor(config.variant)) {
+            logger.warn("invalid_gesture_rejected", mapOf("gesture" to gesture.name, "variant" to config.variant.name))
+            return
+        }
         if (match.finished && config.matchMode !in setOf(MatchMode.ENDLESS, MatchMode.STREAK)) return
         when (config.opponentMode) {
             OpponentMode.CPU -> playAgainstCpu(gesture)
