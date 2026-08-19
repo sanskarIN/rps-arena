@@ -10,7 +10,7 @@ This file is the authoritative implementation handoff for the current RPS Arena 
 - Pull request: `#10` — `fix: complete final quality and compatibility audit`
 - Pull-request base: `main`
 - PR state at this checkpoint: open, draft, mergeable
-- Feature/documentation head immediately before this ledger refresh: `9f2f68e8a408036c912d6c37f38d045bbf8624cb`
+- Feature/documentation head immediately before this ledger refresh: `93b279fb81a87062695fc66a1cd331dc92af87ce`
 - Release status: release-candidate implementation complete enough for final automated/manual gates; do not tag `v1.0.0` until the exact latest commit passes required workflows and the manual product/accessibility checklist.
 
 ## Source prompt scope preserved
@@ -119,7 +119,10 @@ Implemented:
 - trend parser supports legacy `Player 1 won`, current profile-name wins, CPU losses, player-2 losses, and draws;
 - recent decisive win rate;
 - non-color-only W/L/D legend;
-- semantic trend descriptions such as `Recent result 1: Win`.
+- semantic trend descriptions such as `Recent result 1: Win`;
+- new Player-1 win history uses an explicit `Player 1 (<profile>) won` role prefix so profile names such as `CPU` or `Player 2` cannot be mistaken for an opponent result;
+- regression coverage for reserved-looking local profile names;
+- trend status tokens are non-interactive semantic surfaces instead of fake clickable controls.
 
 ## Phase 5 — Data safety, backup, restore, and undo
 
@@ -193,6 +196,8 @@ Implemented/retained:
 - profile-management Settings card;
 - validated backup preview/import controls;
 - history clear/undo controls;
+- local completed-round `Copy result` action;
+- explicit copied-for-sharing state after the clipboard write;
 - responsive primary content bounded to 960 dp on large windows;
 - horizontally scrollable dense chip groups on narrow layouts;
 - Material controls for keyboard/touch semantics;
@@ -204,7 +209,8 @@ Implemented/retained:
 - persisted reduced-motion preference;
 - animated round-result transition only when reduced motion is disabled;
 - direct static result rendering when reduced motion is enabled;
-- destructive reset confirmation.
+- destructive reset confirmation;
+- stable semantic UI test tags for onboarding, Home Play, gesture controls, and the rendered round result.
 
 ## Phase 7 — Localization-ready boundary
 
@@ -219,6 +225,7 @@ Implemented a central `ui/Strings.kt` catalog for the current English product co
 - achievement title/description;
 - local two-player turn text;
 - backup/restore/undo/reset text;
+- Copy result/copy-success text;
 - About/support/funding text.
 
 Known localization debt:
@@ -239,7 +246,9 @@ Intentional rules:
 - do not log tokens/credentials/secrets;
 - log bounded technical metadata such as profile/history counts, modes, difficulty, timer seconds, and outcomes.
 
-Privacy documentation now covers local profiles, backups, logging, history undo, and the non-production network boundary.
+Privacy documentation now covers local profiles, backups, logging, history undo, the clipboard boundary, and the non-production network boundary.
+
+The completed-round Copy result action writes only the displayed result summary to the operating-system clipboard after an explicit user action. RPS Arena does not read clipboard contents and does not upload copied result text.
 
 ## Phase 9 — Optional private-room/LAN architecture
 
@@ -287,7 +296,7 @@ Rust remains optional. Kotlin is authoritative for the application until a futur
 `.github/workflows/ci.yml` validates:
 
 - shared desktop compilation;
-- all shared tests;
+- all shared tests, including the shared Compose primary-journey test through the desktop test runtime;
 - Android debug assembly;
 - Android lint;
 - desktop application compilation;
@@ -352,6 +361,35 @@ Current documentation set includes or updates:
 
 README, privacy, testing, architecture, accessibility, development, release, roadmap, and changelog have been aligned with the actual implemented behavior in this audit.
 
+## Phase 13 — Compose primary-journey regression coverage
+
+Implemented a real shared Compose UI regression path rather than leaving UI testing as documentation-only future work.
+
+Changes:
+
+- added `org.jetbrains.compose.ui:ui-test` at the same Compose version through the version catalog;
+- configured `commonTest` with the Compose UI test artifact;
+- configured `desktopTest` with `compose.desktop.currentOs` so the shared UI test has a desktop runtime;
+- added `UiTags.kt` with stable semantic test tags instead of relying on visible English copy;
+- tagged the onboarding entry action, Home Play action, gesture buttons, and rendered round-result card;
+- added `RpsArenaUiTest.kt` using an isolated in-memory repository;
+- the automated primary journey covers first render → onboarding completion → Home → Play → Rock → rendered first-round result.
+
+The chosen `runComposeUiTest` v2 API/import was independently checked against JetBrains Compose Multiplatform source before freezing this change. Hosted CI remains the clean execution authority for the project itself.
+
+## Phase 14 — Local completed-round Copy result
+
+Implemented the prompt's share/copy-result direction without adding a network SDK, account requirement, or Android internet permission.
+
+Behavior:
+
+- every rendered completed-round card exposes `Copy result`;
+- the copied text contains the RPS Arena name, the two gesture labels, and the displayed result;
+- copy happens only after explicit user activation;
+- the UI shows `Result copied for sharing.` afterward;
+- the current implementation uses the common Compose clipboard manager for Android/desktop compatibility;
+- privacy/accessibility/testing documentation explicitly records the clipboard boundary and manual verification expectation.
+
 ## Automated regression coverage added/expanded
 
 Common Kotlin tests now cover, among other existing areas:
@@ -381,7 +419,9 @@ Common Kotlin tests now cover, among other existing areas:
 - undo invalidation after new history;
 - reset to safe defaults;
 - recent W/L/D parser behavior and rate calculation;
-- private-room protocol validation/contract behavior.
+- reserved-looking local profile names in recent trend history;
+- private-room protocol validation/contract behavior;
+- primary shared Compose UI navigation/gameplay journey from onboarding to first result.
 
 ## Validation commands used by source-controlled workflows
 
@@ -412,18 +452,31 @@ python scripts/check_for_secrets.py
 
 The current execution environment cannot rely on an external networked local clone, so hosted GitHub Actions is the authoritative clean-run evidence for the final release gate.
 
-## Workflow status at the feature/document freeze checkpoint
+## Workflow status at the final pre-ledger feature/document freeze checkpoint
 
-For commit `9f2f68e8a408036c912d6c37f38d045bbf8624cb`, GitHub had created the newest runs and they were queued at the time this ledger refresh began:
+For commit `93b279fb81a87062695fc66a1cd331dc92af87ce`, GitHub had created the exact-head workflow set and all four runs were still queued when this ledger update was prepared:
 
-- CI — run `32215510749`
-- CodeQL — run `32215510747`
-- Documentation — run `32215510762`
-- Security checks — run `32215510707`
+- Security checks — run `32216366105` — queued
+- CodeQL — run `32216366142` — queued
+- CI — run `32216366111` — queued
+- Documentation — run `32216366119` — queued
+
+The CI run contains separate Kotlin and Rust jobs; the Security run contains dependency-review and committed-secret-scan jobs. They were queued, not failed, and therefore had no actionable failure logs at that checkpoint.
 
 Older runs commonly show `cancelled` because branch workflow concurrency intentionally cancels superseded commits. A cancelled older run is not treated as evidence for or against the newest head.
 
-This ledger commit itself creates a newer head and therefore a newer workflow set. The exact newest workflow results must be checked after this commit settles.
+This `what_changed.md` commit creates a newer exact branch head and therefore a newer workflow set. The workflow results attached to this ledger commit—not the `93b279...` runs above—become authoritative for the next validation decision.
+
+## Final static audit after feature freeze
+
+Completed before this ledger update:
+
+- searched repository source for `TODO`, `FIXME`, `XXX`, placeholder/not-implemented markers; no actionable matches were found;
+- searched for stale preview toolchain claims such as Android API 37 / AGP 9.3.0 / Gradle 9.5.1; no current implementation claim requiring correction was found;
+- verified the PR remained mergeable and draft;
+- confirmed repeated exact-head workflow reads showed queued state rather than a reported failure;
+- attempted an independent clean network clone in the execution container, but the container could not resolve GitHub externally; this was an environment limitation, not a repository pass/fail signal;
+- no release-ready claim was made without hosted workflow execution evidence.
 
 ## Known limitations intentionally retained
 
@@ -431,9 +484,10 @@ This ledger commit itself creates a newer head and therefore a newer workflow se
 - No production LAN/private-room transport in v1; only a tested protocol/transport boundary.
 - Aggregate statistics are device-wide, not per-profile.
 - Gesture labels are still English domain-model values; full resource-backed localization is not implemented yet.
-- Compose UI/instrumentation test coverage is not yet as deep as common deterministic logic/state tests.
+- Compose UI coverage now protects the primary onboarding-to-first-result journey, but profile/settings/backup/reduced-motion/accessibility interaction coverage is not yet as deep as common deterministic logic/state tests.
 - Real Android/desktop screenshots are not committed until they can be captured from an actually verified release-candidate build.
 - Android release workflow produces an unsigned artifact; Play Store signing is deliberately out-of-repository.
+- The clipboard implementation uses the common Compose clipboard manager for broad target compatibility; it is intentionally isolated to an explicit Copy result action and can be migrated to newer platform clipboard APIs later without changing game state.
 
 These are documented roadmap items or release constraints, not hidden unfinished behavior.
 
@@ -442,13 +496,13 @@ These are documented roadmap items or release constraints, not hidden unfinished
 Before `v1.0.0`:
 
 1. Confirm the exact latest PR head is mergeable and based on current `main`.
-2. Require successful latest CI Kotlin job.
+2. Require successful latest CI Kotlin job, including the shared Compose primary-journey test.
 3. Require successful latest CI Rust job.
 4. Require successful latest CodeQL run.
 5. Require successful latest Documentation run.
 6. Require successful latest committed-secret scan.
 7. Require successful dependency review when GitHub supports it for the PR.
-8. Run/verify the manual product checklist in `docs/testing.md` on Android and desktop.
+8. Run/verify the manual product checklist in `docs/testing.md` on Android and desktop, including Copy result clipboard content.
 9. Run/verify the accessibility checklist in `docs/accessibility.md`.
 10. Verify V2 backup preview/restore and V1 migration in an actual application build.
 11. Capture real screenshots from verified Android/desktop builds.
@@ -506,6 +560,28 @@ The following continuation commits were intentionally kept focused rather than s
 - `a3166fb903f4429c007ce486264b9750a6d6c737` — `docs: strengthen release gates for security and backup migration`
 - `7eec5de5f0cbd8b44019ae41ce5ce002a2fd4198` — `docs: align accessibility guide with trends profiles and reduced motion`
 - `9f2f68e8a408036c912d6c37f38d045bbf8624cb` — `docs: document current development quality boundaries`
+
+Additional post-ledger atomic commit messages now represented in this file include:
+
+- `fix: make profiled player one history outcomes unambiguous`
+- `test: cover reserved-looking local profile trend names`
+- `refactor: centralize trend accessibility labels`
+- `fix: make recent trend status tokens non-interactive`
+- `test: add Compose UI test dependency alias`
+- `test: configure shared Compose UI testing runtime`
+- `test: add stable primary journey UI tags`
+- `test: tag stable primary UI journey controls`
+- `test: cover onboarding to first round primary UI journey`
+- `feat: add local copy result UI copy`
+- `feat: add local copy result action`
+- `docs: record primary Compose UI regression coverage`
+- `docs: document copy result and primary UI test`
+- `docs: record UI regression and copy result completion`
+- `docs: document explicit clipboard result behavior`
+- `docs: include copy result and UI test accessibility coverage`
+- `docs: record final UI test and copy result audit`
+
+Their exact SHAs remain available in PR #10 history; this handoff records the exact messages even where the connector session did not retain every intermediate SHA in compact context.
 
 ## Next action for a continuation session
 
