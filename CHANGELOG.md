@@ -13,37 +13,57 @@ All notable changes to RPS Arena are documented here.
 - Best-of-3, Best-of-5, Endless, Streak, and Tournament match configurations.
 - Persisted replayable CPU seed and configurable turn timers.
 - Deterministic timeout moves for CPU and same-device two-player turns.
-- Local stats, recent history, achievements, settings, and first-run onboarding.
-- Versioned `RPS_ARENA_BACKUP_V1` export/import for settings, stats, match setup, and history.
+- Local lifetime stats, recent history, achievements, settings, and first-run onboarding.
+- Up to six local-only player profiles with bounded names, active-profile selection, persistence, reset behavior, and backup support.
+- Recent W/L/D trend derivation from stored history with a text legend, semantic result labels, and decisive win rate.
+- Versioned `RPS_ARENA_BACKUP_V2` export/import for settings, profiles, stats, match setup, and history.
+- Non-mutating validated backup preview before import.
+- Backward-compatible migration of `RPS_ARENA_BACKUP_V1` backups to a default local profile.
+- One-step undo for an accidental recent-history clear until new history is written.
 - Clear-history and confirmed full local-data reset actions.
+- Reduced-motion-aware round-result rendering.
+- Central English UI copy catalog for localization-ready application/settings/achievement/turn/profile/data/trend text.
+- Structured local logging with sensitive-key redaction and no intentional profile-name/backup/history logging.
+- Pure private-room protocol/transport boundary with validation tests and no production network dependency.
 - Android adaptive icon assets and project logo/splash artwork.
 - Optional standalone Rust rules engine with formatting, Clippy, tests, and benchmark support.
-- CI, CodeQL, Dependabot, documentation-link validation, and tagged/manual release artifact workflows.
-- Canonical setup, development, architecture, testing, release, troubleshooting, accessibility, performance, roadmap, and ADR documentation.
+- CI, CodeQL, Dependabot, documentation-link validation, security checks, and tagged/manual release artifact workflows.
+- High-confidence committed-secret scanner and pull-request dependency review workflow.
+- Canonical setup, development, architecture, testing, release, troubleshooting, accessibility, performance, roadmap, repository-settings, and ADR documentation.
 
 ### Changed
 
 - Production Android compile/target baseline moved from preview API 37 to stable API 36 for reproducible hosted CI.
 - Kotlin/AGP/Gradle compatibility aligned to Kotlin 2.4.10, AGP 9.1.0, and Gradle 9.5.0.
 - Match setup now persists across application launches.
-- Recent history is reactive after play, clear, import, and reset operations.
+- Recent history is reactive after play, clear, undo, import, and reset operations.
+- History entries are bounded and sanitized before persistence.
+- Backup decoding is size-bounded and stages settings, stats, match configuration, profiles, and history validation before mutation.
 - Repository persistence accepts injected in-memory storage for common regression tests.
+- User-facing achievement and local-turn text moved out of domain/state models into the UI copy catalog.
+- Main shared content is bounded and centered on wider desktop windows while remaining adaptive on narrow layouts.
 - Unused sound, haptics, and duplicate extended-variant preference flags were removed from the active model.
 - The settings codec retains compatibility with the previous seven-field local representation.
-- README and release documentation now describe only features/toolchain versions that exist in the audited branch.
+- README and release documentation describe only features/toolchain versions that exist in the audited branch.
 
 ### Fixed
 
 - Rust formatting failure detected by CI.
+- Kotlin packages using the `in` keyword are escaped correctly in source and tests.
 - CodeQL no longer depends on Android SDK package availability.
 - CI no longer attempts to install unavailable preview Android platform 37.
 - Malformed backup/stat data is rejected or safely defaulted instead of silently replacing valid state.
+- Backup history validation now completes before any imported state is written.
+- History clear can be recovered once instead of being immediately irreversible.
 - Duplicate uppercase documentation guides were removed after canonical lowercase replacements were added.
 
 ### Security and privacy
 
 - Core gameplay requires no account, cloud service, analytics SDK, advertising SDK, or Android internet permission.
-- Backup import validates all required sections before mutating local data.
+- Local profile display names are device-local, included only in user-generated backups, and intentionally excluded from structured logs.
+- Backup preview and import use the same defensive decoder; malformed, oversized, or internally inconsistent data is rejected.
+- CI scans committed source for high-confidence credential patterns and reviews dependency changes on pull requests.
+- Dependabot tracks Gradle, Cargo, and GitHub Actions dependencies.
 - Distribution signing material remains outside the public repository.
 
 ## [1.0.0] - 2026-08-19
