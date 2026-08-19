@@ -1,5 +1,17 @@
 # Testing Guide
 
+## Repository text/documentation gates
+
+Before compilation, the primary CI job verifies repository source/documentation integrity:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_version.py
+```
+
+These respectively verify text formatting, every tracked file's presence in the exhaustive file reference, and synchronized application version metadata.
+
 ## Required shared suite
 
 ```bash
@@ -24,6 +36,8 @@ Coverage includes:
 - backup restore refreshing in-memory state;
 - English/Hindi gesture, difficulty, match-mode, version metadata, and achievement-copy catalogs;
 - private-room code validation, two-participant limits, sender validation, positive-round validation, lifecycle-event authority, event exchange, and idempotent close behavior.
+
+See `docs/test-catalog.md` for a file-by-file description of every automated test.
 
 ## Compose desktop UI smoke tests
 
@@ -97,6 +111,6 @@ Before release, verify:
 
 ## CI gate
 
-`.github/workflows/ci.yml` runs formatting/version checks, shared tests (including desktop UI smoke tests), Android lint/debug assembly, desktop classes, and Rust tests. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
+`.github/workflows/ci.yml` runs formatting, tracked-file documentation coverage, version consistency, shared tests (including desktop UI smoke tests), Android lint/debug assembly, desktop classes, and Rust tests. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
 
 A release candidate should not be merged while any required check is failing or still pending.
