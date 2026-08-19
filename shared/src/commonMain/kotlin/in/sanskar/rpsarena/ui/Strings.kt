@@ -1,6 +1,7 @@
 package `in`.sanskar.rpsarena.ui
 
 import `in`.sanskar.rpsarena.model.Difficulty
+import `in`.sanskar.rpsarena.model.LocalTurnPhase
 import `in`.sanskar.rpsarena.model.MatchMode
 import `in`.sanskar.rpsarena.model.RoundOutcome
 
@@ -121,6 +122,29 @@ object Strings {
     fun timerSeconds(seconds: Int): String = "${seconds}s"
     fun turnTimer(seconds: Int): String =
         "Turn timer: ${seconds}s. At zero, a deterministic valid gesture is selected from the active seed."
+
+    fun localTurnMessage(phase: LocalTurnPhase): String = when (phase) {
+        LocalTurnPhase.PLAYER_ONE_CHOOSE -> "Player 1: choose secretly"
+        LocalTurnPhase.PLAYER_TWO_CHOOSE -> "Player 2: choose now — Player 1 move is hidden"
+    }
+
+    fun achievementTitle(id: String): String = when (id) {
+        "first_win" -> "First Victory"
+        "ten_rounds" -> "Arena Regular"
+        "streak_3" -> "On Fire"
+        "streak_7" -> "Unstoppable"
+        "century" -> "Century"
+        else -> "Achievement"
+    }
+
+    fun achievementDescription(id: String): String = when (id) {
+        "first_win" -> "Win your first round"
+        "ten_rounds" -> "Play 10 rounds"
+        "streak_3" -> "Reach a 3-round win streak"
+        "streak_7" -> "Reach a 7-round win streak"
+        "century" -> "Play 100 rounds"
+        else -> "Complete an arena challenge"
+    }
 
     fun difficultyLabel(value: Difficulty): String = when (value) {
         Difficulty.EASY -> "Easy"
