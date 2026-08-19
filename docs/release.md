@@ -18,10 +18,12 @@ From a clean checkout:
 
 ```bash
 gradle --no-daemon :shared:compileKotlinDesktop
-gradle --no-daemon :shared:desktopTest
+gradle --no-daemon :shared:allTests
 gradle --no-daemon :androidApp:assembleDebug
 gradle --no-daemon :androidApp:lintDebug
 gradle --no-daemon :desktopApp:classes
+python scripts/check_docs_links.py
+python scripts/check_for_secrets.py
 ```
 
 Then run the optional Rust checks:
@@ -35,12 +37,30 @@ cargo test --all-targets --all-features
 
 Also require:
 
-- successful CodeQL analysis when repository security scanning is available;
-- dependency-update/security review;
+- successful latest CI workflow for Kotlin/Android/Desktop and Rust;
+- successful latest CodeQL analysis;
+- successful latest Documentation workflow;
+- successful committed-secret scan;
+- successful dependency review for the release pull request when GitHub dependency review is available;
+- Dependabot/security-alert review;
 - manual primary-journey checklist from `docs/testing.md`;
 - accessibility checklist from `docs/accessibility.md`;
-- documentation-link verification;
-- review for secrets/private data/generated signing files.
+- review for secrets/private data/generated signing files;
+- confirmation that repository rules/protection use exact observed check names, if enabled.
+
+Do not treat cancelled superseded workflow runs as failures; evaluate the workflows attached to the exact release-candidate commit.
+
+## Backup compatibility gate
+
+For v1.0, manually verify both supported backup paths:
+
+1. Generate a V2 backup containing at least two profiles, non-default match setup, statistics, and history.
+2. Confirm the preview summary appears without changing current data.
+3. Import the V2 backup and verify all persisted sections are restored.
+4. Import a valid V1 backup and verify it migrates to the default local profile.
+5. Confirm malformed and oversized backups are rejected without partial mutation.
+
+The current export format is `RPS_ARENA_BACKUP_V2`. V1 is import-only compatibility.
 
 ## Automated artifacts
 
@@ -75,18 +95,28 @@ The desktop module configures DMG, MSI, and DEB targets. Native packaging is OS-
 
 Only capture and publish screenshots from a verified build. Do not substitute design mockups while labeling them as application screenshots.
 
+Capture at minimum:
+
+- Android home/play screen;
+- Android settings with local profiles/data controls;
+- desktop play screen;
+- desktop statistics/recent-trend screen;
+- one light-theme and one dark-theme view if both are release-verified.
+
 ## Release notes
 
 Include:
 
 - version and exact tag;
+- exact release commit SHA;
 - supported platforms;
 - user-visible changes;
 - fixed defects;
 - privacy/security/accessibility changes;
-- storage or backup migration notes;
-- known limitations;
-- exact artifacts that were actually produced.
+- V1-to-V2 backup migration note;
+- known limitations, including device-wide aggregate stats and no production private-room transport;
+- exact artifacts that were actually produced;
+- workflow results used as release evidence.
 
 ## Rollback
 
