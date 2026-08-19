@@ -14,6 +14,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ArenaRepositoryCodecTest {
@@ -101,6 +102,38 @@ class ArenaRepositoryCodecTest {
     }
 
     @Test
+    fun historyReplacementRejectsInvalidEntriesWithoutMutation() {
+        val source = ArenaRepository(MemoryStore())
+        source.addHistory("Rock vs Scissors — Player 1 won")
+        val original = source.loadHistory()
+
+        assertFalse(source.replaceHistory(listOf("valid", "")))
+        assertEquals(original, source.loadHistory())
+        assertFalse(source.replaceHistory(listOf("bad\nline")))
+        assertEquals(original, source.loadHistory())
+    }
+
+    @Test
+    fun backupPreviewDoesNotMutateTarget() {
+        val source = ArenaRepository(MemoryStore())
+        source.saveStats(ArenaStats(3, 2, 1, 0, 2, 0))
+        source.renameProfile(source.loadProfilesState().activeProfileId, "Preview Player")
+        source.addHistory("Rock vs Scissors — Preview Player won")
+
+        val target = ArenaRepository(MemoryStore())
+        val original = ArenaStats(1, 0, 0, 1, 0, 0)
+        target.saveStats(original)
+        val preview = assertNotNull(target.previewBackup(source.exportBackup()))
+
+        assertEquals(2, preview.formatVersion)
+        assertEquals("Preview Player", preview.activeProfileName)
+        assertEquals(listOf("Preview Player"), preview.profileNames)
+        assertEquals(3, preview.stats.roundsPlayed)
+        assertEquals(1, preview.historyEntries)
+        assertEquals(original, target.loadStats())
+    }
+
+    @Test
     fun backupRestoresAllPersistedDataIncludingProfiles() {
         val source = ArenaRepository(MemoryStore())
         val settings = ArenaSettings(
@@ -145,8 +178,50 @@ class ArenaRepositoryCodecTest {
             history=
         """.trimIndent()
 
+        val preview = assertNotNull(target.previewBackup(legacy))
+        assertEquals(1, preview.formatVersion)
         assertTrue(target.importBackup(legacy))
         assertEquals(LocalProfilesState.default(), target.loadProfilesState())
+    }
+
+    @Test
+    fun invalidBackupHistoryIsRejectedBeforeAnyMutation() {
+        val target = ArenaRepository(MemoryStore())
+        val originalStats = ArenaStats(1, 1, 0, 0, 1, 1)
+        target.saveStats(originalStats)
+        target.renameProfile(target.loadProfilesState().activeProfileId, "Keep Me")
+        target.addHistory("Rock vs Scissors — Keep Me won")
+        val originalHistory = target.loadHistory()
+        val originalProfiles = target.loadProfilesState()
+
+        val invalid = """
+            RPS_ARENA_BACKUP_V2
+            settings=true|false|true|true
+            stats=2|2|0|0|2|2
+            config=CLASSIC|CPU|NORMAL|BEST_OF_3|99|0
+            activeProfile=profile-1
+            profileIds=profile-1
+            profile.profile-1=Replacement
+            history=good\t
+        """.trimIndent()
+
+        assertNull(target.previewBackup(invalid))
+        assertFalse(target.importBackup(invalid))
+        assertEquals(originalStats, target.loadStats())
+        assertEquals(originalProfiles, target.loadProfilesState())
+        assertEquals(originalHistory, target.loadHistory())
+    }
+
+    @Test
+    fun oversizedBackupIsRejectedWithoutMutation() {
+        val target = ArenaRepository(MemoryStore())
+        val original = ArenaStats(1, 1, 0, 0, 1, 1)
+        target.saveStats(original)
+        val oversized = "RPS_ARENA_BACKUP_V2\n" + "x".repeat(40_000)
+
+        assertNull(target.previewBackup(oversized))
+        assertFalse(target.importBackup(oversized))
+        assertEquals(original, target.loadStats())
     }
 
     @Test
