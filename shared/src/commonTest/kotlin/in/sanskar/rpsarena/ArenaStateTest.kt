@@ -5,6 +5,7 @@ import `in`.sanskar.rpsarena.data.KeyValueStore
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
 import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.Gesture
 import `in`.sanskar.rpsarena.model.LocalTurnPhase
 import `in`.sanskar.rpsarena.model.MatchConfig
 import `in`.sanskar.rpsarena.model.MatchMode
@@ -52,6 +53,19 @@ class ArenaStateTest {
         assertEquals("Challenger", state.activeProfile.displayName)
         assertEquals(1, state.profilesState.profiles.size)
         assertFalse(state.deleteProfile(state.activeProfile.id))
+    }
+
+    @Test
+    fun classicRulesRejectExtendedGestureAtStateBoundary() {
+        val state = ArenaState(ArenaRepository(StateMemoryStore()))
+        assertEquals(GameVariant.CLASSIC, state.config.variant)
+
+        state.play(Gesture.LIZARD)
+
+        assertTrue(state.match.rounds.isEmpty())
+        assertEquals(0, state.stats.roundsPlayed)
+        assertTrue(state.history.isEmpty())
+        assertEquals(null, state.pendingPlayerOne)
     }
 
     @Test
