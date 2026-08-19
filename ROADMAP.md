@@ -10,7 +10,7 @@
 - [x] Optional Rust rules mirror.
 - [x] CI, CodeQL, repository governance, privacy, security, and release documentation.
 
-## v1.1.0 — Product completion and release hardening
+## v2.5.8 — Product completion and release hardening
 
 - [x] Configurable 5/10/20/30/60-second round timers with an Off option.
 - [x] Explicit timeout outcomes that update score, statistics, trends, and history consistently.
@@ -28,7 +28,7 @@
 - [x] Shared business/persistence/localization/protocol regression coverage.
 - [x] Compose desktop UI smoke tests for onboarding, primary play navigation, Hindi gameplay/achievements, backup controls, and destructive reset confirmation.
 - [x] Repository formatting and Android lint CI gates.
-- [x] Localization-safe version consistency verification across Android, desktop, shared metadata, and About UI.
+- [x] Localization-safe version consistency verification across Android, desktop, shared metadata, About UI, and Android semantic `versionCode`.
 - [x] Reproducible tag workflow for unsigned Android/Linux/Rust release artifacts and checksums.
 - [x] Complete setup, development, testing, accessibility, performance, troubleshooting, architecture, ADR, and release guides.
 
