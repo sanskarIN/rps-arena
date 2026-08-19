@@ -3,14 +3,7 @@ package `in`.sanskar.rpsarena.data
 interface KeyValueStore {
     fun getString(key: String, defaultValue: String = ""): String
     fun putString(key: String, value: String)
-
-    /**
-     * Remove a persisted key. The default keeps lightweight test/custom stores source-compatible;
-     * production platform stores override this with their native deletion primitive.
-     */
-    fun remove(key: String) {
-        putString(key, "")
-    }
+    fun remove(key: String)
 }
 
 expect object PlatformStore {
