@@ -20,6 +20,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Repository formatting
         run: python3 scripts/check_format.py
+      - name: Documentation file coverage
+        run: python3 scripts/check_docs_coverage.py
       - name: Version consistency
         run: python3 scripts/check_version.py
       - uses: actions/setup-java@v5
