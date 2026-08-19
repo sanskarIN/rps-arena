@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">RPS Arena logo</title>
+  <desc id="desc">A rounded arena frame surrounding three gesture bars.</desc>
+  <rect width="512" height="512" rx="112" fill="#111827"/>
+  <path d="M88 152V88h64M360 88h64v64M88 360v64h64M424 360v64h-64" fill="none" stroke="#22C55E" stroke-width="28" stroke-linecap="round"/>
+  <rect x="126" y="164" width="260" height="44" rx="22" fill="#F9FAFB"/>
+  <rect x="126" y="234" width="260" height="44" rx="22" fill="#F9FAFB"/>
+  <rect x="126" y="304" width="260" height="44" rx="22" fill="#F9FAFB"/>
+  <circle cx="160" cy="186" r="12" fill="#22C55E"/>
+  <circle cx="256" cy="256" r="12" fill="#22C55E"/>
+  <circle cx="352" cy="326" r="12" fill="#22C55E"/>
+</svg>
