@@ -1,14 +1,14 @@
-package in.sanskar.rpsarena.data
+package `in`.sanskar.rpsarena.data
 
-import in.sanskar.rpsarena.model.ArenaSettings
-import in.sanskar.rpsarena.model.ArenaStats
-import in.sanskar.rpsarena.model.Difficulty
-import in.sanskar.rpsarena.model.GameVariant
-import in.sanskar.rpsarena.model.MatchConfig
-import in.sanskar.rpsarena.model.MatchMode
-import in.sanskar.rpsarena.model.OpponentMode
+import `in`.sanskar.rpsarena.model.ArenaSettings
+import `in`.sanskar.rpsarena.model.ArenaStats
+import `in`.sanskar.rpsarena.model.Difficulty
+import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.MatchConfig
+import `in`.sanskar.rpsarena.model.MatchMode
+import `in`.sanskar.rpsarena.model.OpponentMode
 
-class ArenaRepository(private val store: KeyValueStore = PlatformStore) {
+class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
     fun loadSettings(): ArenaSettings = decodeSettings(store.getString(KEY_SETTINGS))
     fun saveSettings(value: ArenaSettings) = store.putString(KEY_SETTINGS, encodeSettings(value))
 
