@@ -11,8 +11,8 @@ This file is the authoritative implementation and validation handoff for the cur
 - Pull-request base: `main`
 - Main/base SHA at the latest explicit branch check: `6b07e6d2c85b4d7867154509138a6b8e734ac2ad`
 - PR state immediately before this ledger refresh: open, draft, mergeable
-- Pre-ledger implementation/documentation head: `60413be055ce5af56737f46f1dc839b32d962e59`
-- PR commit count at that pre-ledger checkpoint: 180
+- Pre-ledger implementation/documentation head: `82f90e7577a4d5ee5f700c013c715e214fde9742`
+- PR commit count at that pre-ledger checkpoint: 184
 - Release status: release-candidate implementation is substantially complete, but this branch is **not** yet a verified `v1.0.0` release. Do not tag, publish, or move the PR out of draft solely because GitHub reports it as mergeable. The exact latest commit must pass hosted CI, CodeQL, Documentation, and Security checks, and the manual Android/desktop/accessibility release gates must be completed from real builds.
 
 ## Project contract preserved
@@ -129,14 +129,7 @@ Relevant commits:
 
 ## Phase 3 — Match configuration and release-version authority
 
-Persisted match configuration includes:
-
-- game variant;
-- opponent mode;
-- difficulty;
-- match mode;
-- deterministic seed;
-- timer seconds.
+Persisted match configuration includes game variant, opponent mode, difficulty, match mode, deterministic seed, and timer seconds.
 
 `ArenaState.updateConfig` normalizes the timer to `0..60`, persists the new configuration, logs only technical metadata, and resets the active match so configuration and match state cannot drift.
 
@@ -149,14 +142,7 @@ Android and desktop previously hard-coded `1.0.0` independently. This was replac
 - `appVersion = "1.0.0"`;
 - `appVersionCode = "1"`.
 
-Android consumes:
-
-- `versionName` from `appVersion`;
-- `versionCode` from `appVersionCode`.
-
-Desktop consumes:
-
-- `packageVersion` from `appVersion`.
+Android consumes `versionName` from `appVersion` and `versionCode` from `appVersionCode`. Desktop consumes `packageVersion` from `appVersion`.
 
 `docs/release.md` documents the catalog as authoritative and explicitly says not to reintroduce independent hard-coded Android/Desktop versions.
 
@@ -188,7 +174,7 @@ Android storage uses the private `SharedPreferences` file `rps_arena`.
 
 No account service, database server, cloud sync, or backend is required for v1 gameplay/progress.
 
-## Phase 5 — Local player profiles
+## Phase 5 — Local player profiles and physical storage cleanup
 
 Implemented:
 
@@ -212,41 +198,61 @@ Profiles are local labels only. They are not accounts, authentication identities
 
 Aggregate v1 stats remain device-wide by design. A future per-profile-stat model must use an explicit migration instead of silently changing the current data contract.
 
-### Physical profile-name key cleanup
+### Orphaned profile-name key bug
 
-A later persistence/privacy audit found that `saveProfilesState` rewrote the active ID list but did not remove the preference key containing a profile name whose ID had been discarded. The old alias could therefore remain physically present even though normal decoding no longer returned it.
+A persistence/privacy audit found that rewriting the active profile ID list did not physically remove the preference entry containing a discarded profile's display name. Normal decoding no longer showed that profile, but the old alias could remain stored.
 
 This is fixed.
 
-Persistence now has a removal primitive:
+The storage contract now includes true key removal:
 
-- `KeyValueStore.remove(key)`;
-- Android `PlatformStore.remove` uses `SharedPreferences.Editor.remove`;
-- Desktop `PlatformStore.remove` uses `Preferences.remove`;
-- `DefaultKeyValueStore` delegates removal to the platform store.
+```kotlin
+interface KeyValueStore {
+    fun getString(key: String, defaultValue: String = ""): String
+    fun putString(key: String, value: String)
+    fun remove(key: String)
+}
+```
 
-Before writing a new profile set, `ArenaRepository.saveProfilesState` captures the previously persisted valid profile IDs. It then removes `profile_name_v1:<id>` for IDs that are not present in the new set before writing current names/active ID.
+Important final refinement: `remove` is a **required contract method**. An earlier intermediate version supplied a default implementation that wrote an empty string. That fallback was removed because a method named `remove` must not silently degrade into “store an empty value.” Every implementation/test double now provides real key deletion semantics.
 
-This cleanup therefore applies to:
+Production implementations:
+
+- Android uses `SharedPreferences.Editor.remove(key).apply()`.
+- Desktop uses `Preferences.remove(key)`.
+- `DefaultKeyValueStore` delegates to the platform implementation.
+
+Repository cleanup behavior:
+
+1. Read previously persisted valid profile IDs.
+2. Normalize/validate the replacement profile set.
+3. Compute IDs no longer present.
+4. Remove each discarded `profile_name_v1:<id>` key.
+5. Write current profile IDs/names and active profile.
+
+This cleanup applies to:
 
 - explicit profile deletion;
-- full local-data reset that returns to the default profile;
-- backup import that replaces a larger local profile set with a smaller imported set.
+- full local-data reset;
+- backup import replacing a larger local profile set with a smaller one.
 
-Regression tests inspect the underlying test store, not only decoded profile state, to prove discarded keys are actually removed.
+Regression coverage inspects the underlying memory-store key map, not only decoded profile state, and verifies physical key removal for all three paths.
 
 Relevant commits:
 
-- `f07a14e1eb849f80079aa5659e3a073a4103aabd` — removable storage contract
+- `f07a14e1eb849f80079aa5659e3a073a4103aabd` — add removable storage contract
 - `25629c99db627265712f3434c883cfa679c2515a` — Android key removal
 - `514605b8fc322f8c9a901c27325db79ea08228ad` — desktop key removal
 - `0e9d6396c71a88e7ea5cb3b493852195e4152ee8` — repository orphan-profile cleanup
-- `e06e8a35a407b38347e9a07cbecfa5688a366220` — profile-delete key-removal regression
-- `fac04d9a99a70706590a9e6ff8ede8d422920beb` — full-reset cleanup regression
-- `250522e5a25ce8393064e5ae40d1dd527c048859` — backup-import cleanup regression
+- `e06e8a35a407b38347e9a07cbecfa5688a366220` — delete cleanup regression
+- `fac04d9a99a70706590a9e6ff8ede8d422920beb` — reset cleanup regression
+- `250522e5a25ce8393064e5ae40d1dd527c048859` — import cleanup regression
 - `63b05d8a5891dbb32db767d2716ab7564f74465f` — changelog alignment
-- `57e30b1310b00dea3b060a2d91d9792188588789` — privacy documentation
-- `60413be055ce5af56737f46f1dc839b32d962e59` — testing documentation
+- `57e30b1310b00dea3b060a2d91d9792188588789` — privacy alignment
+- `60413be055ce5af56737f46f1dc839b32d962e59` — testing alignment
+- `97064f8045e0baaa0c7cb920299db7e2f16bf7a5` — require true removal contract
+- `0852cd9a56dae7f83ef2dca51d20ea37f3653728` — state test-store true deletion
+- `82f90e7577a4d5ee5f700c013c715e214fde9742` — UI test-store true deletion
 
 ## Phase 6 — History, statistics, trends, and achievements
 
@@ -270,30 +276,13 @@ Implemented:
 - semantic full-result descriptions;
 - non-interactive trend status surfaces.
 
-### Profile-name trend ambiguity fix
-
-New player-one win history uses:
-
-`Player 1 (<profile name>) won`
-
-This prevents names such as `CPU` or `Player 2` from being mistaken for opponent outcomes by the trend parser. Regression tests cover reserved-looking names.
+New player-one win history uses `Player 1 (<profile name>) won`, preventing names such as `CPU` or `Player 2` from being mistaken for opponent outcomes by the trend parser. Regression tests cover reserved-looking names.
 
 ## Phase 7 — Backup/restore/migration/preview/atomicity
 
 ### Export format
 
-Current exports use:
-
-`RPS_ARENA_BACKUP_V2`
-
-V2 contains:
-
-- settings;
-- aggregate stats;
-- match configuration;
-- local profile IDs/names;
-- active profile;
-- recent history.
+Current exports use `RPS_ARENA_BACKUP_V2` and include settings, aggregate stats, match configuration, local profile IDs/names, active profile, and recent history.
 
 ### Compatibility
 
@@ -325,21 +314,13 @@ Implemented:
 
 ### Atomic history validation
 
-History decoding/validation now happens before imported values are written. Invalid history cannot fail after other imported state has already been applied.
+History decoding/validation occurs before imported values are written. Invalid history cannot fail after other imported state has already been applied.
 
 ### Strict backup key parser
 
 The old parser used `mapNotNull(...).toMap()`, allowing malformed rows to be ignored and duplicate keys to overwrite earlier values.
 
-This is closed.
-
-`parseBackupValues` now:
-
-- requires a valid non-empty key before `=` on every post-header line;
-- validates bounded key syntax;
-- rejects duplicate keys;
-- fails before required-section decode on malformed envelopes;
-- is used by both preview and import through the shared decoder.
+This is fixed. `parseBackupValues` requires valid bounded keys, requires `=`, rejects duplicates, and fails the shared preview/import decoder before state mutation.
 
 Regression tests verify duplicate-key and no-separator rows are rejected without target mutation.
 
@@ -351,58 +332,28 @@ Relevant commits:
 - `3ba9cfd3e02e189dbbc1816a87b77bb995f4f740`
 - `cf40c9d6ae690b6b648012df9a0f5c25b63e2444`
 
-The earlier handoff limitation describing malformed/duplicate backup rows as future work is superseded and removed from the active limitation list.
+The earlier limitation describing malformed/duplicate backup rows as future work is closed.
 
 ### Backup preview
 
-`previewBackup` uses the same decoder as import and is non-mutating. It exposes only a safe summary:
-
-- format version;
-- profile names;
-- active profile;
-- stats/config summary;
-- history entry count.
-
-Settings keeps import disabled until the pasted backup validates.
+`previewBackup` uses the same decoder as import and is non-mutating. It exposes only a safe summary: format version, profile names, active profile, stats/config summary, and history-entry count. Settings keeps import disabled until the pasted backup validates.
 
 ### History-clear undo
 
-Recent-history clear retains one in-memory restoration snapshot:
-
-- clear;
-- undo once;
-- new round invalidates snapshot;
-- successful import invalidates snapshot;
-- full reset invalidates snapshot.
-
-Full reset remains confirmation-gated because it intentionally removes multiple categories of local data.
+Recent-history clear retains one in-memory restoration snapshot. Clear can be undone once; a new round, successful import, or full reset invalidates the snapshot. Full reset remains confirmation-gated.
 
 ## Phase 8 — Android OS backup/privacy boundary
 
-The original manifest used `android:allowBackup="true"`. That conflicted with the intended explicit local-data portability model.
+The original manifest used `android:allowBackup="true"`, conflicting with the intended explicit local-data portability model.
 
 The Android backup boundary is now source-controlled:
-
-### Manifest
 
 - `android:allowBackup="false"`;
 - `android:fullBackupContent="@xml/backup_rules"`;
 - `android:dataExtractionRules="@xml/data_extraction_rules"`;
 - no `android.permission.INTERNET` in v1.
 
-### Legacy backup rules
-
-`androidApp/src/main/res/xml/backup_rules.xml` excludes:
-
-- domain `sharedpref`;
-- path `.`.
-
-### Android 12+ extraction rules
-
-`androidApp/src/main/res/xml/data_extraction_rules.xml` excludes shared preferences from:
-
-- cloud backup;
-- device transfer.
+Legacy `backup_rules.xml` excludes the entire `sharedpref` domain. Android 12+ `data_extraction_rules.xml` excludes shared preferences from both cloud backup and device transfer.
 
 The explicit RPS Arena text export/import remains the user-controlled application portability path.
 
@@ -418,24 +369,18 @@ Relevant commits:
 
 ## Phase 9 — Android privacy regression validator
 
-`scripts/check_android_privacy.py` enforces these repository invariants:
+`scripts/check_android_privacy.py` enforces:
 
 - application element exists;
 - `allowBackup=false`;
-- manifest references required backup/extraction rules;
-- INTERNET permission is absent;
-- legacy backup XML is valid and excludes shared preferences;
-- current extraction XML is valid;
-- cloud backup excludes shared preferences;
-- device transfer excludes shared preferences.
+- required manifest backup/extraction references;
+- no INTERNET permission;
+- valid legacy/current backup XML;
+- shared-preference exclusion from legacy backup;
+- shared-preference exclusion from cloud backup;
+- shared-preference exclusion from device transfer.
 
-It is wired into:
-
-- hosted Security checks;
-- Unix local verifier;
-- PowerShell local verifier.
-
-Documentation includes the validator in security/testing/validation/release guidance.
+It runs in hosted Security checks and both local verifier scripts.
 
 Relevant commits:
 
@@ -461,138 +406,68 @@ Shared Compose screens:
 - Settings;
 - About.
 
-Current behavior includes:
+Current behavior includes active profile display, profile management, match configuration, seed/timer controls, local two-player handoff, gesture controls, result rendering, match restart, history/undo, stats/trends, achievements, theme/reduced-motion settings, backup preview/import, confirmed full reset, project/update explanation, About links, funding/support/business contacts, and `Made by the Sanskar` branding.
 
-- active local profile on Home/scoreboard;
-- profile-management Settings UI;
-- opponent/rules/difficulty/mode/timer controls;
-- seed editing/apply state;
-- deterministic timeout countdown;
-- local two-player handoff messaging;
-- gesture controls;
-- result card;
-- restart/new match;
-- reactive history;
-- history clear/undo;
-- stats/trends;
-- achievements;
-- system/light/dark theme settings;
-- reduced motion;
-- backup generation/preview/import;
-- confirmed full reset;
-- project/update explanation;
-- repository/profile/BMC/business/support links;
-- `Made by the Sanskar` branding.
-
-Responsive work includes centered/bounded wide desktop content and scrollable dense control rows on narrow layouts.
+Responsive work includes bounded wide-desktop content and horizontally scrollable dense controls on narrow layouts.
 
 ## Phase 11 — Local Copy result
 
-Completed rounds expose `Copy result`.
+Completed-round cards expose `Copy result`.
 
-- copied text includes app name, both gestures, and displayed outcome;
-- copy occurs only after explicit user action;
-- success status is shown;
-- app does not read previous clipboard contents;
-- app does not upload copied result text;
-- no network SDK/permission was added for this feature.
+- copied text includes app name, gestures, and displayed outcome;
+- write occurs only after explicit user action;
+- success state is shown;
+- app does not read existing clipboard data;
+- copied text is not uploaded;
+- no network SDK/permission was introduced.
 
 ## Phase 12 — Accessibility and reduced motion
 
-Implemented:
-
-- Material focus/touch semantics;
-- large gesture targets;
-- gesture content descriptions;
-- textual outcomes/timers/turn state;
-- non-color-only trend meanings;
-- active-profile text;
-- text-labeled copy action;
-- copy-success status;
-- persisted reduced motion;
-- animation bypass when reduced motion enabled;
-- destructive reset confirmation;
-- history clear undo.
+Implemented Material focus/touch semantics, large gesture targets, explicit gesture descriptions, textual outcomes/timers/turn state, non-color-only trends, active-profile text, text-labeled copy action, copy-success status, persisted reduced motion, static result behavior under reduced motion, destructive reset confirmation, and history undo.
 
 `docs/accessibility.md` contains manual keyboard/screen-reader/scaling/status/motion checks.
 
 ## Phase 13 — Localization-ready copy boundary
 
-`ui/Strings.kt` owns current English application copy for navigation, onboarding, profiles, match setup, turns, timers, seed, history, stats, trends, achievements, backup, undo/reset, Copy result, About, support, and funding.
+`ui/Strings.kt` owns current English UI copy across navigation, onboarding, profiles, match setup, turns, timers, seed, history, stats/trends, achievements, backup/undo/reset, Copy result, About, support, and funding.
 
-Known localization debt:
-
-- `Gesture.label` remains English domain data.
-
-The project therefore says localization-ready, not multilingual.
+Known localization debt: `Gesture.label` remains English domain data. The project therefore says localization-ready, not multilingual.
 
 ## Phase 14 — Structured local logging
 
-`SafeLogger` includes:
+`SafeLogger` provides structured log levels/events, event-name validation, no-op default sink, sensitive-key redaction, bounded metadata, and tests.
 
-- structured level/event model;
-- event-name validation;
-- no-op default sink;
-- sensitive-key redaction;
-- metadata truncation;
-- regression tests.
-
-No intentional logging of:
-
-- backup contents;
-- local profile names;
-- history text;
-- credentials/tokens/secrets.
+No intentional logging of backup contents, local profile names, history text, credentials, tokens, or secrets.
 
 ## Phase 15 — Optional private-room/LAN architecture
 
-Implemented as an architecture/testing boundary only:
+Implemented as architecture/testing boundary only:
 
-- `PrivateRoomTransport` suspend interface;
-- Hello/Ready/Move/Leave protocol commands;
-- version validation;
-- room-code validation;
-- sender/message/round bounds;
+- `PrivateRoomTransport`;
+- Hello/Ready/Move/Leave commands;
+- version/room/sender/message/round validation;
 - variant-compatible moves;
 - in-memory contract support/tests;
 - ADR threat model.
 
-v1 intentionally has no production network transport, automatic discovery, backend dependency, or Android Internet permission.
+v1 has no production transport, automatic discovery, backend dependency, or Android Internet permission.
 
 ## Phase 16 — Optional Rust engine
 
-Retained a standalone Rust 2024 rules mirror with:
-
-- deterministic rules;
-- unit tests;
-- formatting gate;
-- Clippy warnings denied;
-- full test gate;
-- benchmark support;
-- Kotlin/Rust rule-contract fixtures.
-
-Kotlin remains application runtime authority.
+Standalone Rust 2024 rules mirror retained with deterministic rules, unit tests, formatting gate, Clippy warnings denied, full test gate, benchmark support, and Kotlin/Rust contract fixtures. Kotlin remains application runtime authority.
 
 ## Phase 17 — Compose UI regression coverage
 
-Implemented:
-
-- Compose UI test dependency in the version catalog;
-- common test UI dependency;
-- desktop UI-test runtime;
-- stable semantic UI tags;
-- primary `RpsArenaUiTest` journey using an isolated in-memory repository.
-
-Automated journey:
+Implemented Compose UI test dependency/runtime, stable semantic tags, isolated in-memory repository, and `RpsArenaUiTest` primary journey:
 
 1. first-run onboarding rendered;
 2. onboarding completed;
 3. Home reached;
 4. Play opened;
 5. Rock selected;
-6. completed round result rendered.
+6. completed-round result rendered.
 
-The `runComposeUiTest` v2 import/API was checked against JetBrains Compose Multiplatform source before freezing the test wiring.
+The `runComposeUiTest` v2 API/import was checked against JetBrains Compose Multiplatform source before freezing the test wiring.
 
 ## Phase 18 — CI/workflow architecture and de-duplication
 
@@ -604,24 +479,18 @@ Validation workflows:
 - Security checks;
 - Release.
 
-CI covers Kotlin/shared tests/Android assemble+lint/desktop compile/Rust format+Clippy+tests.
+CI covers shared compilation/tests, Android assemble/lint, desktop compile, and Rust format/Clippy/tests. CodeQL uses Java/Kotlin no-build analysis. Documentation checks local Markdown links. Security runs secret scanning, Android privacy validation, and PR dependency review.
 
-CodeQL uses Java/Kotlin no-build analysis.
+### Duplicate Actions fix
 
-Documentation runs local Markdown link validation.
-
-Security runs committed-secret scanning, Android privacy-contract validation, and PR dependency review.
-
-### Duplicate Actions run fix
-
-The PR branch was previously matched by both feature-branch `push` and `pull_request` triggers, creating duplicate executions with different concurrency refs.
+The PR branch was previously matched by both feature-branch `push` and `pull_request`, creating duplicate executions with different refs.
 
 Current policy:
 
 - `pull_request` targeting `main` for proposed changes;
 - `push` targeting `main` for post-merge validation;
 - scheduled CodeQL retained;
-- feature branches are not separately duplicated under `push`.
+- feature branches are not duplicated under `push`.
 
 Relevant commits:
 
@@ -634,73 +503,19 @@ Relevant commits:
 
 ## Phase 19 — Local verification scripts
 
-`scripts/verify.sh` and `scripts/verify.ps1` run local equivalents of:
+`scripts/verify.sh` and `scripts/verify.ps1` run local equivalents of shared compile/tests, Android debug assemble/lint, desktop classes, docs links, Android privacy contract, secret scan, and optional Rust format/Clippy/tests.
 
-- shared desktop compile;
-- all shared tests;
-- Android debug assemble;
-- Android lint;
-- desktop classes;
-- documentation-link validation;
-- Android privacy-contract validation;
-- secret scanning;
-- Rust format/Clippy/tests when Cargo exists.
-
-Relevant commits:
-
-- `5a95dad87d9933a31a1a0885db5d97ccbf30c90c`
-- `17eacfe0dd8d7187201120f2cea213b43f060ab6`
-- `69701b64f462aaf40b944a2392447b4615857ad2`
-- `a01e7c599a91e31b0241b97df2a216c87ff1324f`
-- `0dea92276caacd01795010ba85157ef0ca17c507`
+Relevant commits include `5a95dad87d9933a31a1a0885db5d97ccbf30c90c`, `17eacfe0dd8d7187201120f2cea213b43f060ab6`, `69701b64f462aaf40b944a2392447b4615857ad2`, `a01e7c599a91e31b0241b97df2a216c87ff1324f`, and `0dea92276caacd01795010ba85157ef0ca17c507`.
 
 ## Phase 20 — Security/community/governance
 
-Repository includes:
+Repository includes MIT License, contributing guide, code of conduct, security policy, support policy, privacy policy, CODEOWNERS, bug/feature issue forms, issue routing config, PR template, Dependabot, FUNDING config, repository-settings guide, and CI/CodeQL/docs/security/release workflows.
 
-- MIT License;
-- contributing guide;
-- code of conduct;
-- security policy;
-- support policy;
-- privacy policy;
-- CODEOWNERS;
-- bug issue form;
-- feature request form;
-- issue-template configuration;
-- PR template;
-- Dependabot;
-- funding config;
-- repository-settings hardening guide;
-- CI/CodeQL/docs/security/release workflows.
-
-Templates request useful platform/reproduction/testing context and ask contributors to consider privacy/security/accessibility/persistence/docs impact.
+Templates request useful platform/reproduction/testing details and prompt contributors to consider privacy/security/accessibility/persistence/docs impact.
 
 ## Phase 21 — Documentation audit
 
-Canonical docs include:
-
-- `README.md`;
-- `CHANGELOG.md`;
-- `ROADMAP.md`;
-- `PRIVACY.md`;
-- `SECURITY.md`;
-- `SUPPORT.md`;
-- `CONTRIBUTING.md`;
-- `CODE_OF_CONDUCT.md`;
-- `LICENSE`;
-- setup;
-- development;
-- testing;
-- architecture;
-- accessibility;
-- performance;
-- release;
-- troubleshooting;
-- repository settings;
-- validation;
-- ADRs;
-- this handoff.
+Canonical documentation includes README, changelog, roadmap, privacy/security/support/contributing/conduct/license files, setup/development/testing/architecture/accessibility/performance/release/troubleshooting/repository-settings/validation docs, ADRs, and this handoff.
 
 Documentation does not claim unsupported iOS, production LAN rooms, production Rust runtime integration, fabricated screenshots, signed Android store artifacts, enabled branch protection, or workflow success that has not occurred.
 
@@ -714,11 +529,11 @@ Current v1 privacy properties:
 - no ads SDK;
 - no production backend;
 - no Android Internet permission;
-- Android app backup disabled;
-- shared preferences excluded from configured Android backup/transfer rule paths;
-- profile aliases removed from production preference stores when profile IDs are discarded;
+- Android application backup disabled;
+- shared preferences excluded from configured Android backup/transfer paths;
+- profile aliases physically removed from production preference stores when their IDs are discarded;
 - user-controlled readable backup export;
-- backup preview/import share a strict decoder;
+- shared strict backup preview/import decoder;
 - sensitive/free-form user data excluded from structured logs;
 - clipboard write only after explicit user action;
 - no clipboard read;
@@ -726,7 +541,7 @@ Current v1 privacy properties:
 
 ## Automated regression coverage inventory
 
-Shared/common tests cover, among other areas:
+Shared/common tests cover:
 
 - Classic rules;
 - Lizard–Spock rules;
@@ -734,37 +549,34 @@ Shared/common tests cover, among other areas:
 - deterministic CPU behavior;
 - settings codec;
 - legacy settings migration;
-- stats codec and fallback;
-- match-config codec/persistence;
-- profile lifecycle;
-- profile validation/count limits;
-- profile persistence;
-- physical profile-name key removal on delete;
-- physical profile-name key removal on reset;
-- physical profile-name key removal on profile-set-replacing backup import;
+- stats codec/fallback;
+- match config codec/persistence;
+- profile lifecycle/validation/counts/persistence;
+- profile-name key removal on delete;
+- profile-name key removal on reset;
+- profile-name key removal on profile-replacing import;
 - V2 backup round-trip;
-- V1 backup migration;
+- V1 migration;
 - backup preview non-mutation;
 - oversized backup rejection;
 - invalid history rejection;
 - atomic invalid-history rejection;
 - duplicate backup-key rejection;
 - malformed backup-row rejection;
-- validated history replacement;
+- history replacement;
 - CPU timeout;
 - local two-player timeout handoff;
-- timer disabled behavior;
-- history clear/undo;
-- undo invalidation;
+- disabled timer;
+- history clear/undo/invalidation;
 - full reset;
 - trend parsing/rate calculation;
 - reserved-looking profile-name trend behavior;
 - private-room validation/transport contract;
-- SafeLogger redaction/truncation/event validation;
+- SafeLogger behavior;
 - Kotlin/Rust contract fixtures;
 - primary Compose UI onboarding-to-result journey.
 
-Repository validation additionally covers Android manifest/privacy invariants, docs links, secret patterns, Android build/lint, desktop compilation, CodeQL, dependency review, and Rust checks.
+Repository validation additionally covers Android privacy XML/manifest invariants, docs links, secret patterns, Android build/lint, desktop compilation, CodeQL, dependency review, and Rust checks.
 
 ## Source-controlled verification commands
 
@@ -795,59 +607,57 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets --all-features
 ```
 
-Aggregate local entry points:
-
-- `scripts/verify.sh`;
-- `scripts/verify.ps1`.
+Aggregate local entry points: `scripts/verify.sh` and `scripts/verify.ps1`.
 
 ## Hosted validation defect/fix history
 
 Observed failures/defects were not hidden:
 
-1. **Preview Android API 37 unavailable** — fixed by stable API 36.
-2. **Rust formatting failure** — source formatted; gate retained.
-3. **CodeQL coupled to Android build** — fixed with no-build analysis.
-4. **Kotlin `in` package keyword compile failures** — escaped package/import identifiers throughout source/tests.
-5. **Audit branch/main divergence** — reconciled by merge rather than overwrite.
-6. **Duplicate PR branch workflow executions** — feature-branch push triggers removed while PR/main validation retained.
-7. **State API accepted extended gesture in Classic mode** — state-boundary validation plus regression added.
-8. **Android OS backup privacy mismatch** — manifest/rules/validator added.
-9. **Backup duplicate/malformed key ambiguity** — strict parser plus regressions added.
-10. **Discarded profile aliases could remain as orphan preference keys** — production key-removal API, cleanup logic, and delete/reset/import regressions added.
+1. Preview Android API 37 unavailable — moved to stable API 36.
+2. Rust formatting failure — formatted source; gate retained.
+3. CodeQL coupled to Android build — switched to no-build analysis.
+4. Kotlin `in` package keyword compile failures — escaped identifiers throughout source/tests.
+5. Audit branch/main divergence — reconciled by merge.
+6. Duplicate PR branch workflow executions — feature-branch push triggers removed.
+7. State API accepted extended gesture in Classic mode — state guard plus regression.
+8. Android OS backup privacy mismatch — manifest/rules/validator.
+9. Backup duplicate/malformed key ambiguity — strict parser plus regressions.
+10. Discarded profile aliases could remain as orphan preference keys — native removal API, cleanup logic, and delete/reset/import regressions.
+11. Intermediate `KeyValueStore.remove` fallback could write an empty value instead of guaranteeing deletion — removed; true deletion is now mandatory for every store implementation.
 
-Superseded workflow runs can appear `cancelled` because concurrency cancels earlier commits. Older cancelled runs are not release evidence either way.
+Superseded workflow runs can appear cancelled because concurrency cancels earlier commits. Older cancelled runs are not release evidence either way.
 
 ## Exact automated status immediately before this ledger refresh
 
 Pre-ledger head:
 
-`60413be055ce5af56737f46f1dc839b32d962e59`
+`82f90e7577a4d5ee5f700c013c715e214fde9742`
 
 GitHub created these PR workflows for that exact head:
 
-- Security checks — run `32220678047` — queued
-- Documentation — run `32220678040` — pending
-- CodeQL — run `32220678056` — pending
-- CI — run `32220678055` — queued
+- Security checks — run `32220926398` — pending
+- CodeQL — run `32220926364` — pending
+- CI — run `32220926420` — queued
+- Documentation — run `32220926372` — queued
 
 No failure log existed for those exact-head runs at the checkpoint. Queued/pending is not success.
 
-This handoff update creates a newer head. The workflows attached to the new ledger commit become the authoritative automated validation set. Always fetch PR #10 and validate the exact latest SHA before release/merge decisions.
+This handoff commit creates a newer head. The workflows attached to that new exact SHA become the authoritative validation set. Always fetch PR #10 again before release/merge decisions.
 
 ## Gradle wrapper audit and integration limitation
 
-The repository currently requires installed Gradle 9.5.0 instead of committing a standard Gradle wrapper.
+The repository currently requires installed Gradle 9.5.0 instead of a committed standard Gradle wrapper.
 
 Audit work:
 
-- confirmed no partial wrapper exists in the repository tree;
-- verified the official Gradle 9.5.0 wrapper JAR from the upstream Gradle tagged repository;
-- attempted a safe connector-based binary transfer.
+- confirmed no partial wrapper exists;
+- verified the official Gradle 9.5.0 wrapper JAR from upstream tagged source;
+- attempted safe connector-based transfer.
 
 Limitation:
 
-- an upstream repository blob SHA cannot be directly referenced by another repository's Git tree operation;
-- GitHub rejected the foreign blob SHA for this target repository;
+- foreign repository Git blob SHAs cannot be directly referenced in the target repository tree;
+- GitHub rejected the upstream blob SHA for this repository;
 - the execution container cannot resolve GitHub externally to download/re-upload the binary;
 - committing wrapper scripts/properties without the matching official JAR would create a broken wrapper.
 
@@ -855,17 +665,15 @@ Therefore no fake/partial wrapper was committed. Installed Gradle 9.5.0 remains 
 
 ## Repository settings outside source-file control
 
-Latest branch inspection showed `main` is currently unprotected.
+Latest branch inspection showed `main` is currently unprotected. The connected GitHub action set does not expose branch-protection/ruleset mutation, so the project documents recommended rules in `docs/repository-settings.md` instead of pretending source files enabled them.
 
-The connected GitHub action set does not expose a branch-protection/ruleset write operation. The project therefore documents recommended rules in `docs/repository-settings.md` rather than pretending source files enabled them.
-
-Recommended account/repository settings include branch/ruleset protection, required exact checks after stable names are observed, GitHub-native secret scanning/push protection where available, dependency alerts, and private vulnerability reporting.
+Recommended settings include branch/ruleset protection, exact required checks after stable names are observed, GitHub-native secret scanning/push protection when available, dependency alerts, and private vulnerability reporting.
 
 ## Known limitations intentionally retained
 
 - No iOS target in v1.
 - No production LAN/private-room transport in v1.
-- Aggregate statistics remain device-wide rather than per profile.
+- Aggregate statistics are device-wide rather than per profile.
 - `Gesture.label` remains English domain data; full resource-backed localization is not complete.
 - Compose UI automated coverage covers the primary journey but not every Settings/profile/backup/accessibility interaction.
 - Real Android/desktop screenshots are intentionally absent until captured from verified builds.
@@ -875,8 +683,9 @@ Recommended account/repository settings include branch/ruleset protection, requi
 
 Closed limitations that must not be reintroduced as open items:
 
-- malformed/duplicate backup key rows are now rejected;
-- deleted/reset/import-discarded profile name keys are now physically removed from the normal production preference stores.
+- malformed/duplicate backup key rows are rejected;
+- discarded profile-name keys are physically removed by production stores;
+- `KeyValueStore.remove` no longer has an empty-string fallback.
 
 ## Manual release gates still required
 
@@ -891,7 +700,7 @@ Before `v1.0.0`:
 7. Require exact-head Documentation success.
 8. Require exact-head committed-secret scan success.
 9. Require exact-head Android privacy-contract validation success.
-10. Require dependency-review success when GitHub supplies it for the PR.
+10. Require dependency-review success when available for the PR.
 11. Review Dependabot/security alerts where repository settings expose them.
 12. Verify first-run Android onboarding.
 13. Verify Classic CPU at Easy/Normal/Expert.
@@ -910,11 +719,11 @@ Before `v1.0.0`:
 26. Verify profile create/rename/select/delete.
 27. Verify discarded profile aliases are absent after storage reload.
 28. Verify full reset removes extra profile aliases and returns defaults.
-29. Verify backup import replacing profiles leaves no discarded alias key.
+29. Verify profile-replacing backup import leaves no discarded alias key.
 30. Verify V2 backup preview.
 31. Verify V2 export/import with multiple profiles/stats/config/history.
 32. Verify valid V1 migration.
-33. Verify malformed history backup rejection without mutation.
+33. Verify malformed-history backup rejection without mutation.
 34. Verify duplicate-key backup rejection without mutation.
 35. Verify malformed-row backup rejection without mutation.
 36. Verify oversized backup rejection without mutation.
@@ -931,7 +740,7 @@ Before `v1.0.0`:
 47. Verify gesture semantics with accessibility tooling where available.
 48. Verify trend semantics do not depend on color.
 49. Verify About repository/funding/business/support links.
-50. Verify Android v1 manifest has no INTERNET permission.
+50. Verify Android v1 manifest has no Internet permission.
 51. Verify Android backup/privacy validator passes.
 52. Capture real Android release-candidate screenshots.
 53. Capture real desktop release-candidate screenshots.
@@ -952,7 +761,7 @@ Git commit metadata inspected during this audit for `df087d4a0fcf4833dcb2d7a7e0b
 
 ## Major granular commit checkpoints
 
-The branch intentionally contains many focused commits. Major continuation checkpoints include:
+The branch intentionally contains many focused commits. Significant continuation checkpoints include:
 
 ### Profiles/trends/data safety
 
@@ -1041,6 +850,9 @@ The branch intentionally contains many focused commits. Major continuation check
 - `63b05d8a5891dbb32db767d2716ab7564f74465f`
 - `57e30b1310b00dea3b060a2d91d9792188588789`
 - `60413be055ce5af56737f46f1dc839b32d962e59`
+- `97064f8045e0baaa0c7cb920299db7e2f16bf7a5`
+- `0852cd9a56dae7f83ef2dca51d20ea37f3653728`
+- `82f90e7577a4d5ee5f700c013c715e214fde9742`
 
 ## Continuation procedure
 
