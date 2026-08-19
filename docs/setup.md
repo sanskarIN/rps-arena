@@ -9,7 +9,7 @@ Validated project baseline:
 - JDK 17;
 - Gradle 9.5.1 locally or another version proven compatible with the project;
 - Android SDK 36 + Build Tools 36.0.0 for Android parity with CI;
-- Python 3 for repository validation scripts;
+- Python 3 for repository validation/security/privacy scripts;
 - Git;
 - Android Studio or IntelliJ IDEA for Kotlin/Compose development;
 - Rust stable only when working on the optional `rust-engine/`.
@@ -38,17 +38,25 @@ cd rps-arena
 
 `git clone` creates the local repository working copy; `cd` enters it.
 
-## Verify repository/documentation integrity
+## Verify repository source/documentation/privacy integrity
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 ```
 
 - format check validates UTF-8/newlines/whitespace policy;
+- documentation-link check validates repository-relative Markdown targets;
 - documentation coverage verifies every Git-tracked file is present in `docs/repository-file-reference.md`;
+- committed-secret check detects several high-confidence private-key/token formats without printing credential values;
+- Android privacy check enforces no Internet permission, disabled automatic backup, and SharedPreferences cloud/device-transfer exclusions;
 - version check verifies Android/Desktop/shared app version synchronization.
+
+These checks are read-only. A reported real secret must be rotated/revoked rather than merely hidden from a later commit.
 
 ## Verify application code
 
@@ -102,7 +110,7 @@ Command-line debug APK:
 gradle :androidApp:assembleDebug --stacktrace
 ```
 
-The manifest currently requests no network permission.
+The primary manifest currently requests no network permission, disables Android automatic backup, and references backup-policy XML that excludes SharedPreferences from cloud/device transfer.
 
 ## Optional Rust engine
 
@@ -137,7 +145,9 @@ Generated output such as `.gradle/`, module `build/`, and `rust-engine/target/` 
 
 RPS Arena is offline-first.
 
-Android uses private application `SharedPreferences`; desktop uses Java Preferences. Product-level formats and backup/migration behavior are documented in `docs/storage-and-backup.md`.
+Android uses private application `SharedPreferences`; desktop uses Java Preferences. Product-level formats and explicit backup/migration behavior are documented in `docs/storage-and-backup.md`.
+
+Android platform automatic backup is intentionally disabled. The versioned in-app text backup is the user-controlled portability mechanism.
 
 The primary app requires no cloud account or mandatory network connection.
 
@@ -158,6 +168,7 @@ git config user.name "Sanskar"
 - `docs/toolchain.md` — installation/upgrades;
 - `docs/command-reference.md` — command meanings;
 - `docs/build-system.md` — Gradle/KMP structure;
+- `docs/android-platform.md` — Android manifest/storage/backup/privacy details;
 - `docs/troubleshooting.md` — common failures;
 - `docs/repository-file-reference.md` — every tracked file.
 
