@@ -31,7 +31,7 @@ class ArenaState(
         private set
     var pendingPlayerOne by mutableStateOf<Gesture?>(null)
         private set
-    var localTurnMessage by mutableStateOf("Player 1: choose secretly")
+    var localTurnPhase by mutableStateOf(LocalTurnPhase.PLAYER_ONE_CHOOSE)
         private set
 
     private var cpu = CpuStrategy(config.seed)
@@ -39,11 +39,11 @@ class ArenaState(
     val activeProfile: LocalProfile get() = profilesState.activeProfile
 
     val achievements: List<Achievement> get() = listOf(
-        Achievement("first_win", "First Victory", "Win your first round", stats.wins >= 1),
-        Achievement("ten_rounds", "Arena Regular", "Play 10 rounds", stats.roundsPlayed >= 10),
-        Achievement("streak_3", "On Fire", "Reach a 3-round win streak", stats.bestStreak >= 3),
-        Achievement("streak_7", "Unstoppable", "Reach a 7-round win streak", stats.bestStreak >= 7),
-        Achievement("century", "Century", "Play 100 rounds", stats.roundsPlayed >= 100),
+        Achievement("first_win", stats.wins >= 1),
+        Achievement("ten_rounds", stats.roundsPlayed >= 10),
+        Achievement("streak_3", stats.bestStreak >= 3),
+        Achievement("streak_7", stats.bestStreak >= 7),
+        Achievement("century", stats.roundsPlayed >= 100),
     )
 
     fun navigate(to: ArenaScreen) {
@@ -120,7 +120,7 @@ class ArenaState(
         cpu = CpuStrategy(config.seed)
         match = MatchSnapshot(config)
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
+        localTurnPhase = LocalTurnPhase.PLAYER_ONE_CHOOSE
         logger.debug("match_reset")
     }
 
@@ -197,11 +197,11 @@ class ArenaState(
         val first = pendingPlayerOne
         if (first == null) {
             pendingPlayerOne = gesture
-            localTurnMessage = "Player 2: choose now — Player 1 move is hidden"
+            localTurnPhase = LocalTurnPhase.PLAYER_TWO_CHOOSE
             return
         }
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
+        localTurnPhase = LocalTurnPhase.PLAYER_ONE_CHOOSE
         recordRound(first, gesture)
     }
 
