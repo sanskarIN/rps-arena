@@ -276,7 +276,7 @@ class ArenaState(
 
     private fun historyLine(round: RoundRecord): String =
         "${round.playerOne.label} vs ${round.playerTwo.label} — ${when (round.outcome) {
-            RoundOutcome.PLAYER_ONE_WIN -> "${activeProfile.displayName} won"
+            RoundOutcome.PLAYER_ONE_WIN -> "Player 1 (${activeProfile.displayName}) won"
             RoundOutcome.PLAYER_TWO_WIN -> if (config.opponentMode == OpponentMode.CPU) "CPU won" else "Player 2 won"
             RoundOutcome.DRAW -> "Draw"
         }}"
