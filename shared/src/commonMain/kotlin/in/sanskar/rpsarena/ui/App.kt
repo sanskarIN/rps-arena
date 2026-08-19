@@ -48,15 +48,26 @@ private fun ArenaScaffold(state: ArenaState, strings: ArenaStrings) {
             )
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            when (state.screen) {
-                ArenaScreen.HOME -> HomeScreen(state, strings)
-                ArenaScreen.PLAY -> PlayScreen(state, strings)
-                ArenaScreen.HISTORY -> HistoryScreen(state, strings)
-                ArenaScreen.STATS -> StatsScreen(state, strings)
-                ArenaScreen.ACHIEVEMENTS -> AchievementsScreen(state, strings)
-                ArenaScreen.SETTINGS -> SettingsScreen(state, strings)
-                ArenaScreen.ABOUT -> AboutScreen(state, strings)
+        Box(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Box(
+                Modifier
+                    .widthIn(max = ArenaLayoutTokens.ContentMaxWidth)
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(ArenaLayoutTokens.ScreenPadding),
+            ) {
+                when (state.screen) {
+                    ArenaScreen.HOME -> HomeScreen(state, strings)
+                    ArenaScreen.PLAY -> PlayScreen(state, strings)
+                    ArenaScreen.HISTORY -> HistoryScreen(state, strings)
+                    ArenaScreen.STATS -> StatsScreen(state, strings)
+                    ArenaScreen.ACHIEVEMENTS -> AchievementsScreen(state, strings)
+                    ArenaScreen.SETTINGS -> SettingsScreen(state, strings)
+                    ArenaScreen.ABOUT -> AboutScreen(state, strings)
+                }
             }
         }
     }
@@ -64,18 +75,26 @@ private fun ArenaScaffold(state: ArenaState, strings: ArenaStrings) {
 
 @Composable
 private fun OnboardingScreen(strings: ArenaStrings, onDone: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(28.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        Text("🪨 📄 ✂️", style = MaterialTheme.typography.displayMedium)
-        Spacer(Modifier.height(20.dp))
-        Text(strings.welcomeTitle, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
-        Text(strings.welcomeBody)
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onDone) { Text(strings.enterArena) }
+        Column(
+            modifier = Modifier
+                .widthIn(max = ArenaLayoutTokens.ContentMaxWidth)
+                .fillMaxWidth()
+                .padding(28.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("🪨 📄 ✂️", style = MaterialTheme.typography.displayMedium)
+            Spacer(Modifier.height(20.dp))
+            Text(strings.welcomeTitle, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Text(strings.welcomeBody)
+            Spacer(Modifier.height(24.dp))
+            Button(onClick = onDone) { Text(strings.enterArena) }
+        }
     }
 }
 
@@ -83,7 +102,7 @@ private fun OnboardingScreen(strings: ArenaStrings, onDone: () -> Unit) {
 private fun HomeScreen(state: ArenaState, strings: ArenaStrings) {
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.SectionSpacing),
     ) {
         Text(strings.chooseArena, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text("${state.settings.playerName} · ${strings.offlineTagline}")
@@ -102,7 +121,7 @@ private fun HomeScreen(state: ArenaState, strings: ArenaStrings) {
         OutlinedButton(onClick = { state.navigate(ArenaScreen.ABOUT) }, modifier = Modifier.fillMaxWidth()) {
             Text(strings.about)
         }
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        HorizontalDivider(Modifier.padding(vertical = ArenaLayoutTokens.CompactSpacing))
         Text(strings.madeBy, style = MaterialTheme.typography.labelLarge)
     }
 }
@@ -115,7 +134,7 @@ private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
 
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.SectionSpacing),
     ) {
         BackButton(strings) { state.navigate(ArenaScreen.HOME) }
         Text(strings.play, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -204,13 +223,13 @@ private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
         }
 
         Text(strings.chooseGesture, style = MaterialTheme.typography.titleLarge)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
             gestures.take(3).forEach { gesture ->
                 GestureButton(gesture, strings, Modifier.weight(1f)) { state.play(gesture) }
             }
         }
         if (gestures.size > 3) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
                 gestures.drop(3).forEach { gesture ->
                     GestureButton(gesture, strings, Modifier.weight(1f)) { state.play(gesture) }
                 }
@@ -314,7 +333,10 @@ private fun GestureButton(
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
-    FilledTonalButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = ArenaLayoutTokens.GestureMinHeight),
+    ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(gesture.emoji, style = MaterialTheme.typography.headlineMedium)
             Text(strings.gestureLabel(gesture))
@@ -327,11 +349,11 @@ private fun HistoryScreen(state: ArenaState, strings: ArenaStrings) {
     Column(Modifier.fillMaxSize()) {
         BackButton(strings) { state.navigate(ArenaScreen.HOME) }
         Text(strings.history, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(ArenaLayoutTokens.CompactSpacing))
         if (state.history.isEmpty()) {
             Text(strings.noHistory)
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
                 items(state.history) { line ->
                     Card(Modifier.fillMaxWidth()) {
                         Text(localizeRoundAnnouncement(line, strings), Modifier.padding(14.dp))
@@ -366,16 +388,17 @@ private fun AchievementsScreen(state: ArenaState, strings: ArenaStrings) {
     Column(Modifier.fillMaxSize()) {
         BackButton(strings) { state.navigate(ArenaScreen.HOME) }
         Text(strings.achievements, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Spacer(Modifier.height(ArenaLayoutTokens.CompactSpacing))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
             items(state.achievements) { achievement ->
+                val copy = achievementCopy(achievement.id, state.settings.language)
                 Card(Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(if (achievement.unlocked) "🏆" else "🔒", style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(achievement.title, fontWeight = FontWeight.Bold)
-                            Text(achievement.description)
+                            Text(copy.title, fontWeight = FontWeight.Bold)
+                            Text(copy.description)
                         }
                     }
                 }
@@ -392,7 +415,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
 
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.SectionSpacing),
     ) {
         BackButton(strings) { state.navigate(ArenaScreen.HOME) }
         Text(strings.settings, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -434,7 +457,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
         }
 
         SectionTitle(strings.language)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
             ChoiceChip(strings.english, settings.language == AppLanguage.ENGLISH) {
                 state.updateSettings(settings.copy(language = AppLanguage.ENGLISH))
             }
@@ -453,7 +476,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
             maxLines = 10,
             modifier = Modifier.fillMaxWidth(),
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
             OutlinedButton(onClick = state::prepareBackup, modifier = Modifier.weight(1f)) {
                 Text(strings.exportBackup)
             }
@@ -473,7 +496,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
             }
         } else {
             Text(strings.resetWarning)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
                 OutlinedButton(onClick = { confirmReset = false }, modifier = Modifier.weight(1f)) {
                     Text(strings.cancel)
                 }
@@ -495,7 +518,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
 private fun AboutScreen(state: ArenaState, strings: ArenaStrings) {
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing),
     ) {
         BackButton(strings) { state.navigate(ArenaScreen.HOME) }
         Text("${strings.about} ${strings.appName}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
