@@ -20,13 +20,15 @@
 - [x] Versioned `RPS_ARENA_BACKUP|1` export/import with strict validation and bounded input.
 - [x] Safe settings migration from `settings_v1` to `settings_v2`.
 - [x] Local data reset with explicit confirmation.
-- [x] English and Hindi core UI catalogs.
+- [x] English and Hindi gameplay/settings/result/history/achievement UI catalogs and rendering.
+- [x] Responsive max-width content framing plus wrapping configuration chips for narrow screens.
 - [x] Reduced-motion result behavior and documented accessibility review procedure.
 - [x] Transport-neutral private-room multiplayer contracts with a deterministic two-player in-memory adapter.
-- [x] Shared business/persistence protocol regression coverage.
-- [x] Compose desktop UI smoke tests for onboarding, primary play navigation, language switching, backup controls, and destructive reset confirmation.
+- [x] Private-room lifecycle authority, sender identity, positive-round, room-code, participant-limit, and close-event validation.
+- [x] Shared business/persistence/localization/protocol regression coverage.
+- [x] Compose desktop UI smoke tests for onboarding, primary play navigation, Hindi gameplay/achievements, backup controls, and destructive reset confirmation.
 - [x] Repository formatting and Android lint CI gates.
-- [x] Version consistency verification across Android, desktop, and About UI.
+- [x] Localization-safe version consistency verification across Android, desktop, shared metadata, and About UI.
 - [x] Reproducible tag workflow for unsigned Android/Linux/Rust release artifacts and checksums.
 - [x] Complete setup, development, testing, accessibility, performance, troubleshooting, architecture, ADR, and release guides.
 
