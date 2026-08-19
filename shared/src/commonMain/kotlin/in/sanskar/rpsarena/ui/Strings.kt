@@ -24,6 +24,20 @@ object Strings {
     const val madeBy = "Made by the Sanskar"
     const val back = "← Back"
 
+    const val localProfiles = "Local profiles"
+    const val localProfilesSummary = "Profiles stay on this device. They are not accounts and are never uploaded by RPS Arena."
+    const val activeProfile = "Active player"
+    const val profileName = "Player name"
+    const val profileNameHelp = "1–24 characters; stored only on this device and included in backups."
+    const val createProfile = "Create profile"
+    const val renameProfile = "Rename active profile"
+    const val deleteProfile = "Delete active profile"
+    const val profileCreated = "Local profile created and selected."
+    const val profileRenamed = "Active profile renamed."
+    const val profileDeleted = "Active profile deleted."
+    const val profileRejected = "Use a valid player name and keep no more than 6 local profiles."
+    const val profileDeleteRejected = "At least one local profile must remain."
+
     const val opponent = "Opponent"
     const val cpu = "CPU"
     const val twoPlayer = "2 Player"
@@ -66,7 +80,7 @@ object Strings {
     const val reducedMotion = "Reduced motion"
     const val accessibilitySummary = "Core game actions use text labels, large touch targets, keyboard-compatible controls, and non-color-only results."
     const val privacyLocalData = "Privacy & local data"
-    const val privacySummary = "No account or cloud sync is required. Settings, statistics, and recent history remain local to this device."
+    const val privacySummary = "No account or cloud sync is required. Settings, local profiles, statistics, and recent history remain on this device."
     const val generateBackup = "Generate backup"
     const val backupGenerated = "Backup generated below."
     const val backupField = "RPS Arena backup text"
@@ -77,7 +91,7 @@ object Strings {
     const val clearRecentHistory = "Clear recent history"
     const val historyCleared = "Recent history cleared. Lifetime statistics were kept."
     const val resetAllData = "Reset all local data"
-    const val resetConfirmation = "Reset settings, statistics, match setup, and history on this device?"
+    const val resetConfirmation = "Reset settings, profiles, statistics, match setup, and history on this device?"
     const val confirmReset = "Confirm reset"
     const val cancel = "Cancel"
     const val resetComplete = "All local RPS Arena data reset."
@@ -98,6 +112,7 @@ object Strings {
     const val supportEmail = "Support · supportramsandesh@gmail.com"
     const val fundingOptional = "Funding is optional; every game feature remains usable without donating."
 
+    fun profileChip(name: String, active: Boolean): String = if (active) "$name · active" else name
     fun chooseGestureAccessibility(label: String): String = "Choose $label"
     fun timerSeconds(seconds: Int): String = "${seconds}s"
     fun turnTimer(seconds: Int): String =
