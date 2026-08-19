@@ -1,16 +1,34 @@
 ## What changed
 
-Describe the focused change.
+Describe the focused change and the user-visible or engineering reason for it.
 
 ## Validation
 
-- [ ] `gradle :shared:allTests`
-- [ ] `gradle :androidApp:assembleDebug` when Android is affected
-- [ ] `gradle :desktopApp:classes` when desktop is affected
-- [ ] `cargo test --manifest-path rust-engine/Cargo.toml` when Rust is affected
-- [ ] Documentation and `what_changed.md` updated when appropriate
+- [ ] `python3 scripts/check_format.py`
+- [ ] `python3 scripts/check_version.py` when release/versioned UI files are affected
+- [ ] `gradle :shared:allTests --stacktrace`
+- [ ] `gradle :shared:desktopTest --stacktrace` when shared Compose UI is affected
+- [ ] `gradle :androidApp:lintDebug --stacktrace` when Android/shared UI is affected
+- [ ] `gradle :androidApp:assembleDebug --stacktrace` when Android/shared code is affected
+- [ ] `gradle :desktopApp:classes --stacktrace` when desktop/shared code is affected
+- [ ] `cargo test --manifest-path rust-engine/Cargo.toml --all-targets` when Rust is affected
+- [ ] Manual accessibility checks completed when controls, animation, timers, focus, or copy changed
+- [ ] Documentation, `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md` updated when appropriate
 
-## Safety / privacy
+## Data compatibility
 
-- [ ] No secrets, signing keys, tokens, or private credentials were committed.
-- [ ] No new tracking, ads, or network permission was introduced without explicit design documentation.
+- [ ] Existing settings/history/statistics continue to load, or a migration is included.
+- [ ] Backup format compatibility is preserved, or the schema version and migration guidance are updated.
+- [ ] New persisted/imported values are bounded and validated.
+
+## Safety / privacy / security
+
+- [ ] No secrets, signing keys, tokens, certificates, or private credentials were committed.
+- [ ] No analytics, ads, telemetry, mandatory cloud dependency, or Android network permission was introduced without explicit design/privacy review.
+- [ ] Optional networking remains behind the documented private-room transport boundary.
+- [ ] Logs, examples, screenshots, and fixtures contain no private user data.
+
+## Release impact
+
+- [ ] Version numbers remain synchronized when this change is release-visible.
+- [ ] Release notes/changelog describe any user-visible behavior or known limitation.
