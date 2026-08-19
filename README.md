@@ -36,6 +36,10 @@ Real device screenshots are release artifacts rather than fabricated mockups. Th
 - Android + desktop from a Kotlin Multiplatform/Compose Multiplatform codebase.
 - Optional standalone Rust rules engine for experimentation.
 - No account, analytics SDK, ads SDK, cloud model, or Android internet permission in the primary app.
+- Android automatic backup disabled; local SharedPreferences are excluded from cloud/device-transfer backup policy.
+- No-op-by-default structured logger with sensitive-field redaction for any future opt-in diagnostic sink.
+- CI-enforced formatting, docs links/file coverage, committed-secret patterns, Android privacy, versions, tests, lint/builds, and Rust checks.
+- Separate dependency-review/security workflow plus CodeQL static analysis.
 - Exhaustive repository documentation with CI-enforced coverage for every Git-tracked file.
 
 ## Supported platforms
@@ -63,14 +67,14 @@ These are the repository's validated project baselines, not a claim that each nu
 ## Project structure
 
 ```text
-androidApp/   Android entry point, manifest, adaptive icon, packaging
+androidApp/   Android entry point, manifest, adaptive icon, backup/privacy policy, packaging
 desktopApp/   Desktop entry point and native packaging
-shared/       Shared model, engine, state, persistence, networking contracts, UI, tests
+shared/       Shared model, engine, state, persistence, logging, networking contracts, UI, tests
 rust-engine/  Optional standalone Rust rules mirror
 assets/       Editable logo and splash artwork
 docs/         Deep architecture/platform/build/testing/maintenance/file documentation
-scripts/      Formatting/version/documentation coverage/full verification helpers
-.github/      CI, CodeQL, release, Dependabot, issue/PR/funding configuration
+scripts/      Source/security/privacy/version/documentation/full verification helpers
+.github/      ownership, CI/security/CodeQL/release, Dependabot, issue/PR/funding configuration
 gradle/       Version catalog
 ```
 
@@ -84,7 +88,10 @@ The current repository does **not** track a Gradle Wrapper, so commands use `gra
 git clone https://github.com/sanskarIN/rps-arena.git
 cd rps-arena
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
 gradle :desktopApp:run
@@ -112,14 +119,14 @@ Deep references include:
 
 - [`docs/build-system.md`](docs/build-system.md) — Gradle modules, version catalog, source sets, tasks, no-wrapper setup;
 - [`docs/domain-and-gameplay.md`](docs/domain-and-gameplay.md) — models, rules, CPU probabilities, state machine, timers, scoring, invariants;
-- [`docs/storage-and-backup.md`](docs/storage-and-backup.md) — exact keys, codecs, migration, history grammar, backup schema/escaping/limits;
+- [`docs/storage-and-backup.md`](docs/storage-and-backup.md) — exact keys, codecs, migration, history grammar, explicit backup schema/escaping/limits;
 - [`docs/localization.md`](docs/localization.md) — English/Hindi catalogs, canonical vs localized data, adding languages;
 - [`docs/private-room-protocol.md`](docs/private-room-protocol.md) — current no-network room contracts and future LAN security/fairness requirements;
-- [`docs/android-platform.md`](docs/android-platform.md) — every Android app/resource/storage file;
+- [`docs/android-platform.md`](docs/android-platform.md) — every Android app/resource/storage/backup-policy file;
 - [`docs/desktop-platform.md`](docs/desktop-platform.md) — every desktop launcher/build/storage file;
 - [`docs/rust-engine.md`](docs/rust-engine.md) — every optional Rust crate file and parity policy;
-- [`docs/test-catalog.md`](docs/test-catalog.md) — every tracked automated test and its regression responsibility;
-- [`docs/ci-cd.md`](docs/ci-cd.md) — every `.github` automation/configuration file;
+- [`docs/test-catalog.md`](docs/test-catalog.md) — every tracked automated Kotlin/Compose test and its regression responsibility;
+- [`docs/ci-cd.md`](docs/ci-cd.md) — every `.github` ownership/automation/configuration file;
 - [`docs/maintenance.md`](docs/maintenance.md) — long-term maintenance/change/release playbook;
 - [`docs/glossary.md`](docs/glossary.md) — project/build/platform/security terminology;
 - [`docs/branding-assets.md`](docs/branding-assets.md) — SVG/adaptive-icon/theme ownership;
@@ -149,6 +156,8 @@ RPS_ARENA_BACKUP|1
 
 The importer validates size, record count, record types, duplicates, settings values, statistics invariants, and history bounds before replacing local state. Keep exported backup text private if a local player name or gameplay history is sensitive to you. Exact grammar is documented in [`docs/storage-and-backup.md`](docs/storage-and-backup.md).
 
+Android automatic backup is disabled and SharedPreferences are excluded from legacy/cloud/device-transfer policy. The in-app backup text is therefore the explicit, user-controlled portability path rather than a hidden platform backup channel.
+
 ## Private-room architecture
 
 The shared module contains `PrivateRoomGateway`/`PrivateRoomSession` transport contracts plus an in-memory reference implementation for deterministic testing and development. This is deliberately not a hidden network feature: the current primary Android app still declares no internet permission. A future LAN adapter must remain explicit and optional.
@@ -159,7 +168,10 @@ The current room contract is **not** production LAN multiplayer. See [`docs/priv
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
 gradle :androidApp:lintDebug --stacktrace
@@ -168,7 +180,7 @@ gradle :desktopApp:classes --stacktrace
 cargo test --manifest-path rust-engine/Cargo.toml --all-targets
 ```
 
-CI enforces formatting, exhaustive tracked-file documentation coverage, synchronized versions, shared tests, Android lint/build, desktop compilation, and Rust tests. CodeQL separately performs Kotlin/Java security analysis. See [`docs/testing.md`](docs/testing.md), [`docs/test-catalog.md`](docs/test-catalog.md), and [`docs/validation.md`](docs/validation.md).
+Primary CI enforces the fast source/security/privacy/version gates plus shared tests, Android lint/build, desktop compilation, and Rust tests. The focused Security workflow independently rechecks secret/privacy contracts and performs pull-request dependency review. CodeQL separately performs Kotlin/Java security analysis. Tagged/manual release preflight repeats all fast source gates before packaging. See [`docs/testing.md`](docs/testing.md), [`docs/test-catalog.md`](docs/test-catalog.md), [`docs/validation.md`](docs/validation.md), and [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Architecture
 
@@ -178,6 +190,7 @@ The primary flow is:
 Compose UI -> ArenaState -> RulesEngine / CpuStrategy
                        -> ArenaRepository -> PlatformStore
                        -> optional PrivateRoomGateway boundary
+shared utilities      -> SafeLogger (no-op sink by default)
 ```
 
 See [`docs/architecture.md`](docs/architecture.md), [`docs/build-system.md`](docs/build-system.md), and [`docs/adr/`](docs/adr/).
@@ -188,11 +201,11 @@ RPS Arena uses visible text labels, large gesture targets, text-based outcome/ti
 
 ## Privacy and security
 
-RPS Arena is offline-first. Local storage contains preferences, aggregate statistics, and up to 30 recent round summaries. The primary Android app has no internet permission. See [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/storage-and-backup.md`](docs/storage-and-backup.md).
+RPS Arena is offline-first. Local storage contains preferences, aggregate statistics, and up to 30 recent round summaries. The primary Android app has no internet permission, disables automatic backup, and excludes SharedPreferences from cloud/device-transfer policy. Repository checks fail if those Android privacy invariants regress or recognizable high-confidence credential material is committed. See [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/android-platform.md`](docs/android-platform.md), and [`docs/storage-and-backup.md`](docs/storage-and-backup.md).
 
 ## Release
 
-Version 1.1.0 is configured for Android and desktop. Tagged releases can build unsigned/public Android, Linux desktop, and Rust package artifacts with SHA-256 checksums. Store signing/notarization requires private credentials supplied outside the repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
+Version 1.1.0 is configured for Android and desktop. Tagged releases can build unsigned/public Android, Linux desktop, and Rust package artifacts with SHA-256 checksums after repeating the fast source/security/privacy/version preflight. Store signing/notarization requires private credentials supplied outside the repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Roadmap
 
@@ -202,7 +215,7 @@ See [`ROADMAP.md`](ROADMAP.md). Future networking and signing work must remain o
 
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`SECURITY.md`](SECURITY.md), and [`docs/maintenance.md`](docs/maintenance.md). The documented owner commit email is `sanskarin@outlook.in`.
 
-Any new tracked file must also be documented in [`docs/repository-file-reference.md`](docs/repository-file-reference.md).
+Any new tracked file must also be documented in [`docs/repository-file-reference.md`](docs/repository-file-reference.md). `.github/CODEOWNERS` routes maintainer review ownership; repository rules can make code-owner approval mandatory.
 
 ## Support and contact
 
