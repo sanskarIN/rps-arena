@@ -291,14 +291,15 @@ These values are different concepts; do not change one merely because another ch
 ### Android versioning
 
 ```kotlin
-versionCode = 2
-versionName = "1.1.0"
+versionCode = 20508
+versionName = "2.5.8"
 ```
 
 - `versionCode` is the monotonically increasing Android integer used for upgrade ordering.
 - `versionName` is the user-visible semantic version string.
+- The repository maps `major.minor.patch` to `major * 10000 + minor * 100 + patch`, requiring minor/patch values no greater than 99.
 
-The project's version-consistency script checks `versionName` against desktop/shared version declarations. It does not infer Android `versionCode`; maintainers must increment it deliberately for new Android releases.
+The project's version-consistency script checks Android `versionName` against desktop/shared declarations and verifies that Android `versionCode` matches that deterministic semantic mapping.
 
 ### Build features
 
