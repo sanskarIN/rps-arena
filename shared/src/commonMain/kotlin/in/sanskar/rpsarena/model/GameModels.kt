@@ -1,4 +1,4 @@
-package in.sanskar.rpsarena.model
+package `in`.sanskar.rpsarena.model
 
 enum class Gesture(val emoji: String, val label: String) {
     ROCK("🪨", "Rock"),
