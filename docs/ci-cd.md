@@ -358,11 +358,15 @@ Write access is needed for GitHub Release creation. Changes to this workflow the
 
 ## Documentation coverage and release workflow
 
-The main CI workflow now enforces `scripts/check_docs_coverage.py`. The release workflow currently repeats formatting and version checks but does **not** independently repeat the documentation coverage script.
+Both the main CI workflow and the release workflow enforce:
 
-Release policy therefore requires creating version tags from validated `main`, whose required CI has already passed documentation coverage.
+```bash
+python3 scripts/check_docs_coverage.py
+```
 
-A direct future change to make the release workflow repeat documentation coverage is reasonable, but the connector safety layer blocked that workflow-write attempt during this documentation phase; no bypass was used. The checked-in workflow remains the source of truth.
+In the release workflow the check runs in the Android release job immediately after checkout/formatting and before version/build work. Because a tagged `publish` job depends on the successful Android job, incomplete tracked-file documentation blocks release publication.
+
+Release policy still requires creating version tags from validated `main`. Repeating the gate in release automation provides defense in depth; it does not replace exact-head PR CI and CodeQL validation.
 
 ## Release Android job
 
@@ -370,14 +374,15 @@ Runs on Ubuntu and performs:
 
 1. checkout;
 2. format check;
-3. version consistency check;
-4. JDK 17 setup;
-5. Android SDK setup;
-6. Gradle 9.5.1 setup;
-7. shared tests;
-8. `lintRelease`;
-9. `assembleRelease`;
-10. upload APK artifacts.
+3. exhaustive documentation coverage check;
+4. version consistency check;
+5. JDK 17 setup;
+6. Android SDK setup;
+7. Gradle 9.5.1 setup;
+8. shared tests;
+9. `lintRelease`;
+10. `assembleRelease`;
+11. upload APK artifacts.
 
 Artifact name:
 
@@ -672,7 +677,7 @@ When editing workflows:
 |---|---|
 | `.github/workflows/ci.yml` | format/docs/version/build/test/lint validation |
 | `.github/workflows/codeql.yml` | scheduled/PR/push Kotlin/Java static security analysis |
-| `.github/workflows/release.yml` | validate/package/upload/tag release artifacts |
+| `.github/workflows/release.yml` | format/docs/version validation plus package/upload/tag release artifacts |
 | `.github/dependabot.yml` | weekly dependency/action update proposals |
 | `.github/release.yml` | generated release-note categories |
 | `.github/pull_request_template.md` | review/compatibility/documentation checklist |
