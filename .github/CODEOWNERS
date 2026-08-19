@@ -1,0 +1,15 @@
+# Default maintainer review ownership
+* @sanskarIN
+
+# Security and automation changes should always reach the maintainer
+/.github/ @sanskarIN
+/SECURITY.md @sanskarIN
+/scripts/check_for_secrets.py @sanskarIN
+
+# Core shared gameplay and persistence
+/shared/ @sanskarIN
+/rust-engine/ @sanskarIN
+
+# Platform packaging and release entry points
+/androidApp/ @sanskarIN
+/desktopApp/ @sanskarIN
