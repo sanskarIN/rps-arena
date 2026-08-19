@@ -1,4 +1,4 @@
-package in.sanskar.rpsarena.ui
+package `in`.sanskar.rpsarena.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,10 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import in.sanskar.rpsarena.data.ArenaRepository
-import in.sanskar.rpsarena.model.*
-import in.sanskar.rpsarena.state.ArenaScreen
-import in.sanskar.rpsarena.state.ArenaState
+import `in`.sanskar.rpsarena.data.ArenaRepository
+import `in`.sanskar.rpsarena.model.*
+import `in`.sanskar.rpsarena.state.ArenaScreen
+import `in`.sanskar.rpsarena.state.ArenaState
 
 @Composable
 fun RpsArenaApp(repository: ArenaRepository = ArenaRepository()) {
@@ -30,6 +30,7 @@ fun RpsArenaApp(repository: ArenaRepository = ArenaRepository()) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ArenaScaffold(state: ArenaState) {
     Scaffold(
