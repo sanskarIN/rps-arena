@@ -6,12 +6,14 @@ import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
 import `in`.sanskar.rpsarena.model.Difficulty
 import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.LocalProfilesState
 import `in`.sanskar.rpsarena.model.MatchConfig
 import `in`.sanskar.rpsarena.model.MatchMode
 import `in`.sanskar.rpsarena.model.OpponentMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class ArenaRepositoryCodecTest {
@@ -62,7 +64,44 @@ class ArenaRepositoryCodecTest {
     }
 
     @Test
-    fun backupRestoresAllPersistedData() {
+    fun localProfilesCanBeCreatedRenamedActivatedAndDeleted() {
+        val store = MemoryStore()
+        val source = ArenaRepository(store)
+
+        assertEquals(LocalProfilesState.DEFAULT_LOCAL_PROFILE, source.loadProfilesState().activeProfile)
+        val second = assertNotNull(source.createProfile("  Challenger   Two  "))
+        assertEquals(2, second.profiles.size)
+        assertEquals("Challenger Two", second.activeProfile.displayName)
+
+        val renamed = assertNotNull(source.renameProfile(second.activeProfileId, "Arena Ace"))
+        assertEquals("Arena Ace", renamed.activeProfile.displayName)
+
+        val firstId = renamed.profiles.first().id
+        val activated = assertNotNull(source.activateProfile(firstId))
+        assertEquals(firstId, activated.activeProfileId)
+
+        val deleted = assertNotNull(source.deleteProfile(firstId))
+        assertEquals(1, deleted.profiles.size)
+        assertEquals("Arena Ace", deleted.activeProfile.displayName)
+        assertEquals(deleted, ArenaRepository(store).loadProfilesState())
+    }
+
+    @Test
+    fun invalidOrExcessiveProfilesAreRejected() {
+        val source = ArenaRepository(MemoryStore())
+        assertEquals(null, source.createProfile("   "))
+        assertEquals(null, source.createProfile("x".repeat(ArenaRepository.MAX_PROFILE_NAME_LENGTH + 1)))
+        assertEquals(null, source.createProfile("bad\nname"))
+
+        repeat(ArenaRepository.MAX_PROFILES - 1) { index ->
+            assertNotNull(source.createProfile("Player ${index + 2}"))
+        }
+        assertEquals(ArenaRepository.MAX_PROFILES, source.loadProfilesState().profiles.size)
+        assertEquals(null, source.createProfile("One too many"))
+    }
+
+    @Test
+    fun backupRestoresAllPersistedDataIncludingProfiles() {
         val source = ArenaRepository(MemoryStore())
         val settings = ArenaSettings(
             darkTheme = true,
@@ -83,6 +122,8 @@ class ArenaRepositoryCodecTest {
         source.saveConfig(config)
         source.addHistory("Rock vs Scissors — Player 1 won")
         source.addHistory("Paper vs Paper — Draw")
+        source.renameProfile(source.loadProfilesState().activeProfileId, "Primary Player")
+        source.createProfile("Second Player")
 
         val target = ArenaRepository(MemoryStore())
         assertTrue(target.importBackup(source.exportBackup()))
@@ -90,6 +131,22 @@ class ArenaRepositoryCodecTest {
         assertEquals(stats, target.loadStats())
         assertEquals(config, target.loadConfig())
         assertEquals(source.loadHistory(), target.loadHistory())
+        assertEquals(source.loadProfilesState(), target.loadProfilesState())
+    }
+
+    @Test
+    fun legacyV1BackupMigratesToDefaultLocalProfile() {
+        val target = ArenaRepository(MemoryStore())
+        val legacy = """
+            RPS_ARENA_BACKUP_V1
+            settings=false|true|false|true
+            stats=0|0|0|0|0|0
+            config=CLASSIC|CPU|NORMAL|BEST_OF_3|20260819|0
+            history=
+        """.trimIndent()
+
+        assertTrue(target.importBackup(legacy))
+        assertEquals(LocalProfilesState.default(), target.loadProfilesState())
     }
 
     @Test
