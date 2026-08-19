@@ -1,4 +1,4 @@
-package in.sanskar.rpsarena.data
+package `in`.sanskar.rpsarena.data
 
 expect object PlatformStore {
     fun initialize(platformContext: Any? = null)
