@@ -20,6 +20,7 @@ enum class OpponentMode { CPU, LOCAL_TWO_PLAYER }
 enum class Difficulty { EASY, NORMAL, EXPERT }
 enum class MatchMode { BEST_OF_3, BEST_OF_5, ENDLESS, STREAK, TOURNAMENT }
 enum class RoundOutcome { PLAYER_ONE_WIN, PLAYER_TWO_WIN, DRAW }
+enum class LocalTurnPhase { PLAYER_ONE_CHOOSE, PLAYER_TWO_CHOOSE }
 
 data class MatchConfig(
     val variant: GameVariant = GameVariant.CLASSIC,
@@ -72,7 +73,5 @@ data class ArenaSettings(
 
 data class Achievement(
     val id: String,
-    val title: String,
-    val description: String,
     val unlocked: Boolean,
 )
