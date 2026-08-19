@@ -46,4 +46,8 @@ private class UiMemoryStore : KeyValueStore {
     override fun putString(key: String, value: String) {
         values[key] = value
     }
+
+    override fun remove(key: String) {
+        values.remove(key)
+    }
 }
