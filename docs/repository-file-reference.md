@@ -58,7 +58,7 @@ Supported-version security policy, private vulnerability reporting, security bou
 
 ### `PRIVACY.md`
 
-Explains local data, explicit backup text, network/tracking posture, retention/reset, third-party links, and contact. Must stay synchronized with manifest/data behavior.
+Explains local data, explicit backup text, network/tracking posture, retention/reset, Android automatic-backup exclusion, third-party links, and contact. Must stay synchronized with manifest/data behavior.
 
 ### `SUPPORT.md`
 
@@ -85,6 +85,10 @@ Gradle build composition: plugin repositories, centralized dependency repositori
 Gradle/Kotlin runtime build settings: 3 GiB max JVM heap, UTF-8, build cache, configuration cache, parallel build, official Kotlin style, incremental Kotlin compilation.
 
 ## GitHub configuration and automation
+
+### `.github/CODEOWNERS`
+
+Default maintainer ownership for the repository, with explicit coverage for automation/security files, shared gameplay/persistence, Rust, and platform packaging. This routes review attention to `@sanskarIN` when repository branch/ruleset settings use code-owner review requirements.
 
 ### `.github/FUNDING.yml`
 
@@ -116,15 +120,19 @@ Disables blank issues and redirects sensitive security reporting to `SECURITY.md
 
 ### `.github/workflows/ci.yml`
 
-Primary CI: formatting, version consistency, JDK/Android/Gradle setup, shared tests, Android lint/debug APK, desktop classes, and independent Rust tests. Pull requests/pushes to `main`; obsolete runs cancelled via concurrency.
+Primary CI: repository formatting, relative documentation links, exhaustive file-reference coverage, high-confidence committed-secret patterns, Android privacy contract, version consistency, JDK/Android/Gradle setup, shared tests, Android lint/debug APK, desktop classes, and independent Rust tests. Pull requests/pushes to `main`; obsolete runs cancelled via concurrency.
 
 ### `.github/workflows/codeql.yml`
 
 CodeQL Java/Kotlin security analysis on push/PR to `main` and weekly schedule. Sets JDK/Android/Gradle build environment, builds Android/Desktop code, uploads analysis results.
 
+### `.github/workflows/security.yml`
+
+Focused security workflow for pushes/PRs to `main`. Rechecks committed-secret and Android privacy contracts and, on pull requests, runs GitHub dependency review with high-severity findings configured to fail the job.
+
 ### `.github/workflows/release.yml`
 
-Manual/tag release validation and packaging. Builds/tests Android release APK, Linux DEB, Rust crate; uploads artifacts; tag runs merge artifacts, create SHA-256 sums, and publish GitHub Release.
+Manual/tag release validation and packaging. Repeats formatting, docs-link, exhaustive documentation, secret-pattern, Android privacy, and version source gates before Android release tests/build; also builds Linux DEB and Rust crate artifacts. Tag runs merge artifacts, create SHA-256 sums, and publish GitHub Release.
 
 ## Android application module
 
@@ -134,7 +142,7 @@ Android app plugin/configuration: namespace/application ID, SDK levels, Android 
 
 ### `androidApp/src/main/AndroidManifest.xml`
 
-Android application/component declaration. No permissions are declared. Defines backup flag, icons, label, RTL support, theme, and exported launcher `MainActivity` with MAIN/LAUNCHER intent filter.
+Android application/component declaration. No permissions are declared. Explicitly disables Android automatic app backup, points platform backup/data-transfer APIs at exclusion rules, defines icons/label/RTL/theme, and exports only launcher `MainActivity` with MAIN/LAUNCHER intent filter.
 
 ### `androidApp/src/main/kotlin/in/sanskar/rpsarena/MainActivity.kt`
 
@@ -159,6 +167,14 @@ Defines `ic_launcher_background` purple used by adaptive icons.
 ### `androidApp/src/main/res/values/themes.xml`
 
 Android window shell theme `Theme.RpsArena`: no ActionBar, sans font, purple accent, dark system bars. Shared Compose theme owns most in-app colors.
+
+### `androidApp/src/main/res/xml/backup_rules.xml`
+
+Legacy Android full-backup policy. Excludes the entire `sharedpref` domain so the app-private `rps_arena` preferences are not copied by legacy automatic backup mechanisms.
+
+### `androidApp/src/main/res/xml/data_extraction_rules.xml`
+
+Android 12+ data-extraction policy. Excludes the entire `sharedpref` domain from both cloud backup and device-to-device transfer, keeping settings/statistics/history/profile data under explicit in-app backup control.
 
 ## Root visual assets
 
@@ -206,21 +222,33 @@ Five-gesture Rust rule mirror, `Outcome`, `resolve()` win-pair logic, and repres
 
 Read-only text policy checker. Recursively validates relevant tracked/worktree text for UTF-8, final newline, accidental trailing whitespace; permits standard Markdown two-space hard breaks; skips generated/cache directories.
 
-### `scripts/check_version.py`
+### `scripts/check_docs_links.py`
 
-Checks Android `versionName`, desktop `packageVersion`, shared `APP_VERSION`, and verifies About renders shared version constant. Keeps localization from breaking version detection.
+Read-only Markdown relative-link validator. Scans repository Markdown, skips external/mail/data/anchor-only targets, prevents paths escaping repository root, and fails when an internal relative target does not exist.
 
 ### `scripts/check_docs_coverage.py`
 
 Uses `git ls-files -z` and this file to ensure every tracked path is explicitly named in backticks. Fails when documentation file-reference coverage is incomplete.
 
+### `scripts/check_for_secrets.py`
+
+Read-only high-confidence committed-secret scanner for private-key blocks and recognizable GitHub/AWS/Google/generic secret-token formats. It skips generated/IDE directories, large/binary files, and itself to avoid self-matching the detector patterns.
+
+### `scripts/check_android_privacy.py`
+
+Parses the Android manifest and both backup-policy XML files. Fails if automatic backup becomes enabled, backup/data-transfer rule references or SharedPreferences exclusions disappear, XML is invalid, or `android.permission.INTERNET` is introduced into the offline-first v1 manifest.
+
+### `scripts/check_version.py`
+
+Checks Android `versionName`, desktop `packageVersion`, shared `APP_VERSION`, and verifies About renders shared version constant. Keeps localization from breaking version detection.
+
 ### `scripts/verify.sh`
 
-Bash full verification entry point: format, version, shared tests, Android lint/build, desktop classes, optional Cargo tests.
+Bash full verification entry point: formatting, docs links/coverage, secret patterns, Android privacy, version, shared tests, Android lint/build, desktop classes, optional Cargo tests.
 
 ### `scripts/verify.ps1`
 
-PowerShell equivalent of repository verification for Windows environments.
+PowerShell equivalent of repository verification for Windows environments with the same source/build/test gates.
 
 ## Shared module build
 
@@ -236,7 +264,7 @@ Common `expect object` storage contract: initialize/getString/putString. Keeps p
 
 ### `shared/src/androidMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.android.kt`
 
-Android `actual PlatformStore` backed by app-private `SharedPreferences` named `rps_arena`. Requires Context initialization before shared app state reads persistence.
+Android `actual PlatformStore` backed by app-private `SharedPreferences` named `rps_arena`. Requires Context initialization before shared app state reads persistence. Android platform backup rules explicitly exclude this preferences store from automatic cloud/device-transfer backup.
 
 ### `shared/src/desktopMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.desktop.kt`
 
@@ -261,6 +289,12 @@ Authoritative five-gesture defeat matrix, winner resolver, and counter lookup us
 ### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/engine/CpuStrategy.kt`
 
 Seeded local CPU: Easy random; Normal mostly random with later last-move counter behavior; Expert mostly frequency-based prediction after enough history; always variant-filtered.
+
+## Shared logging
+
+### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/logging/SafeLogger.kt`
+
+Transport/sink-neutral structured logger utility. The default sink is no-op, so it creates no telemetry. Optional sinks receive bounded string fields after key-based redaction of password/token/authorization/cookie/email/backup/content/payload-like values; event names must use bounded lowercase snake_case.
 
 ## Shared model
 
@@ -348,6 +382,10 @@ English/Hindi enum label coverage, English canonical gesture-label agreement, sh
 
 Known achievement English/Hindi distinction/nonblank copy and safe unknown-ID fallback.
 
+### `shared/src/commonTest/kotlin/in/sanskar/rpsarena/SafeLoggerTest.kt`
+
+Verifies sensitive-field redaction before a sink can observe data, non-sensitive field length bounding, and rejection of invalid event names.
+
 ## Shared desktop UI test
 
 ### `shared/src/desktopTest/kotlin/in/sanskar/rpsarena/RpsArenaUiTest.kt`
@@ -406,7 +444,7 @@ Current room contracts/reference lifecycle plus future LAN authority/fairness/ve
 
 ### `docs/android-platform.md`
 
-Every Android app/resource/storage file, SDK/manifest/launcher/theme/icon/APK/signing/offline behavior and validation.
+Every Android app/resource/storage file, SDK/manifest/launcher/theme/icon/backup-policy/APK/signing/offline behavior and validation.
 
 ### `docs/desktop-platform.md`
 
@@ -430,7 +468,7 @@ Every tracked automated Kotlin/Compose test with exact regression responsibility
 
 ### `docs/validation.md`
 
-Executable validation contract: CI/CodeQL/release gate and local parity commands.
+Executable validation contract: CI/CodeQL/security/release gate and local parity commands.
 
 ### `docs/accessibility.md`
 
@@ -446,7 +484,7 @@ JDK/SDK/Gradle/desktop/backup/settings/timer/private-room/CI troubleshooting.
 
 ### `docs/ci-cd.md`
 
-Every `.github` automation/config: triggers, permissions, jobs, artifacts, checksums, Dependabot, issue/PR/funding/release behavior.
+Every `.github` automation/config: triggers, permissions, jobs, artifacts, checksums, Dependabot, issue/PR/funding/release/security behavior.
 
 ### `docs/release.md`
 
