@@ -300,7 +300,7 @@ private fun HistoryScreen(state: ArenaState) {
             TextButton(onClick = state::clearHistory, enabled = state.history.isNotEmpty()) { Text(Strings.clear) }
         }
         if (state.canUndoHistoryClear) {
-            TextButton(onClick = state::undoHistoryClear) { Text(Strings.undoHistoryClear) }
+            TextButton(onClick = { state.undoHistoryClear() }) { Text(Strings.undoHistoryClear) }
         }
         Spacer(Modifier.height(8.dp))
         if (state.history.isEmpty()) {
