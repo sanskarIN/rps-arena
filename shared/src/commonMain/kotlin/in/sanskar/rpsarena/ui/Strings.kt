@@ -73,6 +73,10 @@ object Strings {
     const val winRate = "Win rate"
     const val currentStreak = "Current streak"
     const val bestStreak = "Best streak"
+    const val recentTrend = "Recent trend"
+    const val recentTrendEmpty = "Play a round to build a recent-results trend."
+    const val recentTrendLegend = "W = win · L = loss · D = draw"
+    const val recentDecisiveWinRate = "Recent decisive win rate"
 
     const val appearanceAccessibility = "Appearance & accessibility"
     const val followSystemTheme = "Follow system theme"
