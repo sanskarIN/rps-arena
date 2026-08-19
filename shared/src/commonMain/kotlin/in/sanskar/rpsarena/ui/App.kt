@@ -41,9 +41,9 @@ private fun ArenaScaffold(state: ArenaState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("RPS Arena") },
+                title = { Text(Strings.appName) },
                 actions = {
-                    TextButton(onClick = { state.navigate(ArenaScreen.SETTINGS) }) { Text("Settings") }
+                    TextButton(onClick = { state.navigate(ArenaScreen.SETTINGS) }) { Text(Strings.settings) }
                 },
             )
         },
@@ -71,11 +71,11 @@ private fun OnboardingScreen(onDone: () -> Unit) {
     ) {
         Text("🪨 📄 ✂️", style = MaterialTheme.typography.displayMedium)
         Spacer(Modifier.height(20.dp))
-        Text("Welcome to RPS Arena", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text(Strings.welcomeTitle, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
-        Text("Fast, offline-first matches with transparent CPU difficulty and an optional Lizard–Spock ruleset.")
+        Text(Strings.welcomeBody)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onDone) { Text("Enter the Arena") }
+        Button(onClick = onDone) { Text(Strings.enterArena) }
     }
 }
 
@@ -85,15 +85,15 @@ private fun HomeScreen(state: ArenaState) {
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Choose your arena", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Classic strategy. No account. No network required.")
-        Button(onClick = { state.navigate(ArenaScreen.PLAY) }, modifier = Modifier.fillMaxWidth()) { Text("Play") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.STATS) }, modifier = Modifier.fillMaxWidth()) { Text("Stats") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text("History") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.ACHIEVEMENTS) }, modifier = Modifier.fillMaxWidth()) { Text("Achievements") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.ABOUT) }, modifier = Modifier.fillMaxWidth()) { Text("About") }
+        Text(Strings.chooseArena, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(Strings.homeSubtitle)
+        Button(onClick = { state.navigate(ArenaScreen.PLAY) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.play) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.STATS) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.stats) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.history) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.ACHIEVEMENTS) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.achievements) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.ABOUT) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.about) }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text("Made by the Sanskar", style = MaterialTheme.typography.labelLarge)
+        Text(Strings.madeBy, style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -130,57 +130,57 @@ private fun PlayScreen(state: ArenaState) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Play", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        ConfigRow("Opponent") {
-            ChoiceChip("CPU", config.opponentMode == OpponentMode.CPU) {
+        Text(Strings.play, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        ConfigRow(Strings.opponent) {
+            ChoiceChip(Strings.cpu, config.opponentMode == OpponentMode.CPU) {
                 state.updateConfig(config.copy(opponentMode = OpponentMode.CPU))
             }
-            ChoiceChip("2 Player", config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) {
+            ChoiceChip(Strings.twoPlayer, config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) {
                 state.updateConfig(config.copy(opponentMode = OpponentMode.LOCAL_TWO_PLAYER))
             }
         }
-        ConfigRow("Rules") {
-            ChoiceChip("Classic", config.variant == GameVariant.CLASSIC) {
+        ConfigRow(Strings.rules) {
+            ChoiceChip(Strings.classic, config.variant == GameVariant.CLASSIC) {
                 state.updateConfig(config.copy(variant = GameVariant.CLASSIC))
             }
-            ChoiceChip("Lizard–Spock", config.variant == GameVariant.LIZARD_SPOCK) {
+            ChoiceChip(Strings.lizardSpock, config.variant == GameVariant.LIZARD_SPOCK) {
                 state.updateConfig(config.copy(variant = GameVariant.LIZARD_SPOCK))
             }
         }
         if (config.opponentMode == OpponentMode.CPU) {
-            ConfigRow("Difficulty") {
+            ConfigRow(Strings.difficulty) {
                 Difficulty.entries.forEach { difficulty ->
                     ChoiceChip(
-                        difficulty.name.lowercase().replaceFirstChar { it.uppercase() },
+                        Strings.difficultyLabel(difficulty),
                         config.difficulty == difficulty,
                     ) { state.updateConfig(config.copy(difficulty = difficulty)) }
                 }
             }
         }
-        ConfigRow("Mode") {
+        ConfigRow(Strings.mode) {
             MatchMode.entries.forEach { mode ->
                 ChoiceChip(
-                    mode.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },
+                    Strings.matchModeLabel(mode),
                     config.matchMode == mode,
                 ) { state.updateConfig(config.copy(matchMode = mode)) }
             }
         }
-        ConfigRow("Round timer") {
+        ConfigRow(Strings.roundTimer) {
             listOf(0, 5, 10, 15, 30, 60).forEach { seconds ->
                 ChoiceChip(
-                    if (seconds == 0) "Off" else "${seconds}s",
+                    if (seconds == 0) Strings.timerOff else Strings.timerSeconds(seconds),
                     config.roundTimerSeconds == seconds,
                 ) { state.updateConfig(config.copy(roundTimerSeconds = seconds)) }
             }
         }
 
-        Text("Replayable CPU seed", style = MaterialTheme.typography.labelLarge)
+        Text(Strings.seedTitle, style = MaterialTheme.typography.labelLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = seedText,
                 onValueChange = { seedText = it.take(11) },
-                label = { Text("Seed") },
-                supportingText = { Text("Whole number; changing it restarts the current match.") },
+                label = { Text(Strings.seedLabel) },
+                supportingText = { Text(Strings.seedHelp) },
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
@@ -188,28 +188,25 @@ private fun PlayScreen(state: ArenaState) {
                 onClick = {
                     val seed = seedText.toIntOrNull()
                     if (seed == null) {
-                        seedMessage = "Enter a valid whole-number seed."
+                        seedMessage = Strings.seedInvalid
                     } else {
                         state.updateConfig(config.copy(seed = seed))
-                        seedMessage = "Seed applied."
+                        seedMessage = Strings.seedApplied
                     }
                 },
                 modifier = Modifier.align(Alignment.CenterVertically),
-            ) { Text("Apply") }
+            ) { Text(Strings.seedLabel) }
         }
         seedMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 
         ScoreCard(state)
         if (config.roundTimerSeconds > 0 && !state.match.finished) {
-            Text(
-                "Turn timer: ${secondsLeft}s. At zero, a deterministic valid gesture is selected from the active seed.",
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Text(Strings.turnTimer(secondsLeft), style = MaterialTheme.typography.bodySmall)
         }
         if (config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) {
             Text(state.localTurnMessage, fontWeight = FontWeight.SemiBold)
         }
-        Text("Choose a gesture", style = MaterialTheme.typography.titleLarge)
+        Text(Strings.chooseGesture, style = MaterialTheme.typography.titleLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             gestures.take(3).forEach { gesture ->
                 GestureButton(gesture, Modifier.weight(1f)) { state.play(gesture) }
@@ -225,22 +222,16 @@ private fun PlayScreen(state: ArenaState) {
         state.match.rounds.lastOrNull()?.let { round ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Last round", fontWeight = FontWeight.Bold)
+                    Text(Strings.lastRound, fontWeight = FontWeight.Bold)
                     Text("${round.playerOne.emoji} ${round.playerOne.label} vs ${round.playerTwo.emoji} ${round.playerTwo.label}")
-                    Text(
-                        when (round.outcome) {
-                            RoundOutcome.PLAYER_ONE_WIN -> "Player 1 wins the round"
-                            RoundOutcome.PLAYER_TWO_WIN -> if (config.opponentMode == OpponentMode.CPU) "CPU wins the round" else "Player 2 wins the round"
-                            RoundOutcome.DRAW -> "Draw"
-                        },
-                    )
+                    Text(Strings.outcomeLabel(round.outcome, config.opponentMode == OpponentMode.CPU))
                 }
             }
         }
         if (state.match.finished) {
-            Button(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text("New match") }
+            Button(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text(Strings.newMatch) }
         } else if (state.match.rounds.isNotEmpty()) {
-            OutlinedButton(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text("Restart match") }
+            OutlinedButton(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text(Strings.restartMatch) }
         }
     }
 }
@@ -249,9 +240,9 @@ private fun PlayScreen(state: ArenaState) {
 private fun ScoreCard(state: ArenaState) {
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Score("P1", state.match.playerOneScore)
-            Score("Draws", state.match.draws)
-            Score(if (state.config.opponentMode == OpponentMode.CPU) "CPU" else "P2", state.match.playerTwoScore)
+            Score(Strings.playerOneShort, state.match.playerOneScore)
+            Score(Strings.draws, state.match.draws)
+            Score(if (state.config.opponentMode == OpponentMode.CPU) Strings.cpu else Strings.playerTwoShort, state.match.playerTwoScore)
         }
     }
 }
@@ -268,7 +259,7 @@ private fun GestureButton(gesture: Gesture, modifier: Modifier, onClick: () -> U
         onClick = onClick,
         modifier = modifier
             .height(88.dp)
-            .semantics { contentDescription = "Choose ${gesture.label}" },
+            .semantics { contentDescription = Strings.chooseGestureAccessibility(gesture.label) },
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(gesture.emoji, style = MaterialTheme.typography.headlineMedium)
@@ -286,12 +277,12 @@ private fun HistoryScreen(state: ArenaState) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("History", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            TextButton(onClick = state::clearHistory, enabled = state.history.isNotEmpty()) { Text("Clear") }
+            Text(Strings.history, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            TextButton(onClick = state::clearHistory, enabled = state.history.isNotEmpty()) { Text(Strings.clear) }
         }
         Spacer(Modifier.height(8.dp))
         if (state.history.isEmpty()) {
-            Text("No rounds yet. Your latest 30 rounds stay on this device.")
+            Text(Strings.noHistory)
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.history) { line ->
@@ -306,14 +297,14 @@ private fun HistoryScreen(state: ArenaState) {
 private fun StatsScreen(state: ArenaState) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Stats", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        StatLine("Rounds", state.stats.roundsPlayed.toString())
-        StatLine("Wins", state.stats.wins.toString())
-        StatLine("Losses", state.stats.losses.toString())
-        StatLine("Draws", state.stats.draws.toString())
-        StatLine("Win rate", "${state.stats.winRate}%")
-        StatLine("Current streak", state.stats.currentStreak.toString())
-        StatLine("Best streak", state.stats.bestStreak.toString())
+        Text(Strings.stats, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        StatLine(Strings.rounds, state.stats.roundsPlayed.toString())
+        StatLine(Strings.wins, state.stats.wins.toString())
+        StatLine(Strings.losses, state.stats.losses.toString())
+        StatLine(Strings.draws, state.stats.draws.toString())
+        StatLine(Strings.winRate, "${state.stats.winRate}%")
+        StatLine(Strings.currentStreak, state.stats.currentStreak.toString())
+        StatLine(Strings.bestStreak, state.stats.bestStreak.toString())
     }
 }
 
@@ -321,7 +312,7 @@ private fun StatsScreen(state: ArenaState) {
 private fun AchievementsScreen(state: ArenaState) {
     Column(Modifier.fillMaxSize()) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Achievements", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(Strings.achievements, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.achievements) { achievement ->
@@ -352,91 +343,84 @@ private fun SettingsScreen(state: ArenaState) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(Strings.settings, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
 
-        SettingsCard("Appearance & accessibility") {
-            SwitchRow("Follow system theme", settings.followSystemTheme) {
+        SettingsCard(Strings.appearanceAccessibility) {
+            SwitchRow(Strings.followSystemTheme, settings.followSystemTheme) {
                 state.updateSettings(settings.copy(followSystemTheme = it))
             }
-            SwitchRow("Dark theme", settings.darkTheme, enabled = !settings.followSystemTheme) {
+            SwitchRow(Strings.darkTheme, settings.darkTheme, enabled = !settings.followSystemTheme) {
                 state.updateSettings(settings.copy(darkTheme = it))
             }
-            SwitchRow("Reduced motion", settings.reducedMotion) {
+            SwitchRow(Strings.reducedMotion, settings.reducedMotion) {
                 state.updateSettings(settings.copy(reducedMotion = it))
             }
-            Text(
-                "Core game actions use text labels, large touch targets, keyboard-compatible controls, and non-color-only results.",
-                style = MaterialTheme.typography.bodySmall,
-            )
+            Text(Strings.accessibilitySummary, style = MaterialTheme.typography.bodySmall)
         }
 
-        SettingsCard("Privacy & local data") {
-            Text("No account or cloud sync is required. Settings, statistics, and recent history remain local to this device.")
+        SettingsCard(Strings.privacyLocalData) {
+            Text(Strings.privacySummary)
             OutlinedButton(
                 onClick = {
                     backupText = state.exportBackup()
-                    dataMessage = "Backup generated below."
+                    dataMessage = Strings.backupGenerated
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Generate backup") }
+            ) { Text(Strings.generateBackup) }
             OutlinedTextField(
                 value = backupText,
                 onValueChange = { backupText = it },
-                label = { Text("RPS Arena backup text") },
-                supportingText = { Text("Versioned plain text; do not use this field for secrets.") },
+                label = { Text(Strings.backupField) },
+                supportingText = { Text(Strings.backupHelp) },
                 minLines = 4,
                 maxLines = 8,
                 modifier = Modifier.fillMaxWidth(),
             )
             Button(
                 onClick = {
-                    dataMessage = if (state.importBackup(backupText)) {
-                        "Backup imported successfully."
-                    } else {
-                        "Backup rejected: unsupported or malformed data."
-                    }
+                    dataMessage = if (state.importBackup(backupText)) Strings.backupImported else Strings.backupRejected
                 },
                 enabled = backupText.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Import backup") }
+            ) { Text(Strings.importBackup) }
             OutlinedButton(
                 onClick = {
                     state.clearHistory()
-                    dataMessage = "Recent history cleared. Lifetime statistics were kept."
+                    dataMessage = Strings.historyCleared
                 },
                 enabled = state.history.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Clear recent history") }
+            ) { Text(Strings.clearRecentHistory) }
 
             if (!confirmReset) {
                 OutlinedButton(
                     onClick = { confirmReset = true },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Reset all local data") }
+                ) { Text(Strings.resetAllData) }
             } else {
-                Text("Reset settings, statistics, match setup, and history on this device?")
+                Text(Strings.resetConfirmation)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
                             state.resetAllData()
                             backupText = ""
-                            dataMessage = "All local RPS Arena data reset."
+                            dataMessage = Strings.resetComplete
                             confirmReset = false
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Confirm reset") }
+                    ) { Text(Strings.confirmReset) }
                     OutlinedButton(
                         onClick = { confirmReset = false },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Cancel") }
+                    ) { Text(Strings.cancel) }
                 }
             }
             dataMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         }
 
-        SettingsCard("Updates & project") {
-            Text("Updates are distributed through project releases. RPS Arena does not silently install updates or require background network access.")
-            TextButton(onClick = { state.navigate(ArenaScreen.ABOUT) }) { Text("Open About & support") }
+        SettingsCard(Strings.updatesProject) {
+            Text(Strings.updatesSummary)
+            TextButton(onClick = { state.navigate(ArenaScreen.ABOUT) }) { Text(Strings.openAboutSupport) }
         }
     }
 }
@@ -449,19 +433,19 @@ private fun AboutScreen(state: ArenaState) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("About RPS Arena", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Version 1.0.0 · MIT License")
-        Text("An open-source, offline-first Rock Paper Scissors game for Android and desktop.")
-        Text("Optional extended rules: Rock–Paper–Scissors–Lizard–Spock.")
-        Text("CPU modes are local and deterministic from a seed; no hidden online model is used.")
-        Text("Made by the Sanskar", fontWeight = FontWeight.Bold)
-        ExternalLink("Repository", "https://github.com/sanskarIN/rps-arena") { uriHandler.openUri(it) }
-        ExternalLink("GitHub profile", "https://github.com/sanskarIN") { uriHandler.openUri(it) }
-        ExternalLink("Buy Me a Coffee", "https://buymeacoffee.com/sanskarIN") { uriHandler.openUri(it) }
-        ExternalLink("Business · sanskarin@outlook.in", "mailto:sanskarin@outlook.in") { uriHandler.openUri(it) }
-        ExternalLink("Business · sanskarin.business@gmail.com", "mailto:sanskarin.business@gmail.com") { uriHandler.openUri(it) }
-        ExternalLink("Support · supportramsandesh@gmail.com", "mailto:supportramsandesh@gmail.com") { uriHandler.openUri(it) }
-        Text("Funding is optional; every game feature remains usable without donating.", style = MaterialTheme.typography.bodySmall)
+        Text(Strings.aboutTitle, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(Strings.versionLicense)
+        Text(Strings.aboutDescription)
+        Text(Strings.aboutExtended)
+        Text(Strings.aboutCpu)
+        Text(Strings.madeBy, fontWeight = FontWeight.Bold)
+        ExternalLink(Strings.repository, "https://github.com/sanskarIN/rps-arena") { uriHandler.openUri(it) }
+        ExternalLink(Strings.githubProfile, "https://github.com/sanskarIN") { uriHandler.openUri(it) }
+        ExternalLink(Strings.buyMeCoffee, "https://buymeacoffee.com/sanskarIN") { uriHandler.openUri(it) }
+        ExternalLink(Strings.businessOutlook, "mailto:sanskarin@outlook.in") { uriHandler.openUri(it) }
+        ExternalLink(Strings.businessGmail, "mailto:sanskarin.business@gmail.com") { uriHandler.openUri(it) }
+        ExternalLink(Strings.supportEmail, "mailto:supportramsandesh@gmail.com") { uriHandler.openUri(it) }
+        Text(Strings.fundingOptional, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -471,7 +455,7 @@ private fun ExternalLink(label: String, url: String, open: (String) -> Unit) {
 }
 
 @Composable
-private fun BackButton(onClick: () -> Unit) = TextButton(onClick = onClick) { Text("← Back") }
+private fun BackButton(onClick: () -> Unit) = TextButton(onClick = onClick) { Text(Strings.back) }
 
 @Composable
 private fun ConfigRow(label: String, content: @Composable RowScope.() -> Unit) {
