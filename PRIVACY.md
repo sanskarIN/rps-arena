@@ -15,7 +15,13 @@ The app stores only local gameplay preferences and progress needed for its featu
 
 Local profiles are device-local identities, not online accounts. RPS Arena does not create authentication identifiers, upload profile names, or require a remote profile service.
 
-## Backups
+## Platform backup behavior
+
+Android application backup is intentionally disabled at the manifest level, and the project also supplies explicit backup/data-extraction rules that exclude application shared preferences from legacy backup, cloud backup, and device-transfer rule sets. This keeps RPS Arena's application-managed local profile/settings/stat/history store out of normal Android backup participation as far as the platform's documented app controls allow.
+
+The user-controlled RPS Arena backup feature described below is separate from operating-system backup. It exists so data leaves the local application store only when the user explicitly generates and handles the backup text.
+
+## RPS Arena backups
 
 The app can generate a versioned, human-readable backup containing the local settings, profiles, aggregate statistics, match configuration, and recent history described above. Backup text is shown only to the user and is not uploaded by RPS Arena.
 
