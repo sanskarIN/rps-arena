@@ -11,10 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import `in`.sanskar.rpsarena.data.ArenaRepository
@@ -250,13 +252,30 @@ private fun PlayScreen(state: ArenaState) {
     }
 }
 
+@Suppress("DEPRECATION")
 @Composable
 private fun RoundResultCard(round: RoundRecord, cpuOpponent: Boolean) {
+    val clipboardManager = LocalClipboardManager.current
+    val resultText = remember(round, cpuOpponent) {
+        "${Strings.appName}: ${round.playerOne.label} vs ${round.playerTwo.label} — ${Strings.outcomeLabel(round.outcome, cpuOpponent)}"
+    }
+    var copied by remember(round, cpuOpponent) { mutableStateOf(false) }
+
     Card(Modifier.fillMaxWidth().testTag(UiTags.LAST_ROUND)) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(Strings.lastRound, fontWeight = FontWeight.Bold)
             Text("${round.playerOne.emoji} ${round.playerOne.label} vs ${round.playerTwo.emoji} ${round.playerTwo.label}")
             Text(Strings.outcomeLabel(round.outcome, cpuOpponent))
+            OutlinedButton(
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(resultText))
+                    copied = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(Strings.copyResult) }
+            if (copied) {
+                Text(Strings.resultCopied, style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }
