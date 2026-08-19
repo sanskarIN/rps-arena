@@ -211,7 +211,7 @@ private fun PlayScreen(state: ArenaState) {
             Text(Strings.turnTimer(secondsLeft), style = MaterialTheme.typography.bodySmall)
         }
         if (config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) {
-            Text(state.localTurnMessage, fontWeight = FontWeight.SemiBold)
+            Text(Strings.localTurnMessage(state.localTurnPhase), fontWeight = FontWeight.SemiBold)
         }
         Text(Strings.chooseGesture, style = MaterialTheme.typography.titleLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -314,9 +314,10 @@ private fun HistoryScreen(state: ArenaState) {
 
 @Composable
 private fun StatsScreen(state: ArenaState) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
         Text(Strings.stats, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        RecentTrendCard(state.history)
         StatLine(Strings.rounds, state.stats.roundsPlayed.toString())
         StatLine(Strings.wins, state.stats.wins.toString())
         StatLine(Strings.losses, state.stats.losses.toString())
@@ -340,8 +341,8 @@ private fun AchievementsScreen(state: ArenaState) {
                         Text(if (achievement.unlocked) "🏆" else "🔒", style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(achievement.title, fontWeight = FontWeight.Bold)
-                            Text(achievement.description)
+                            Text(Strings.achievementTitle(achievement.id), fontWeight = FontWeight.Bold)
+                            Text(Strings.achievementDescription(achievement.id))
                         }
                     }
                 }
