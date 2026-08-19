@@ -19,8 +19,27 @@ class ArenaRepositoryCodecTest {
 
     @Test
     fun settingsRoundTrip() {
-        val value = ArenaSettings(true, false, true, false, true, true, true)
+        val value = ArenaSettings(
+            darkTheme = true,
+            followSystemTheme = false,
+            reducedMotion = true,
+            onboardingComplete = true,
+        )
         assertEquals(value, repository.decodeSettings(repository.encodeSettings(value)))
+    }
+
+    @Test
+    fun legacySettingsDecodeWithoutPhantomFlags() {
+        val legacy = "true|false|true|false|true|true|true"
+        assertEquals(
+            ArenaSettings(
+                darkTheme = true,
+                followSystemTheme = false,
+                reducedMotion = true,
+                onboardingComplete = true,
+            ),
+            repository.decodeSettings(legacy),
+        )
     }
 
     @Test
