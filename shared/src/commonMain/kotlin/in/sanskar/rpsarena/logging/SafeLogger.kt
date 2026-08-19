@@ -28,7 +28,7 @@ class SafeLogger(private val sink: (LogEvent) -> Unit = {}) {
 
     private fun isSensitiveKey(key: String): Boolean {
         val normalized = key.lowercase()
-        return SENSITIVE_KEY_FRAGMENTS.any(normalized::contains)
+        return SENSITIVE_KEY_FRAGMENTS.any { fragment -> normalized.contains(fragment) }
     }
 
     companion object {
