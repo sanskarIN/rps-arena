@@ -31,9 +31,9 @@ The check proves path coverage, not that every explanation is perfect. Human rev
 
 ## Release validation
 
-The tag workflow repeats version/format verification, shared tests, Android release lint/build, desktop Linux packaging, and Rust package tests before a tagged release can publish public unsigned artifacts and checksums.
+The tag workflow repeats repository formatting, exhaustive documentation coverage, version verification, shared tests, Android release lint/build, desktop Linux packaging, and Rust package tests before a tagged release can publish public unsigned artifacts and checksums.
 
-The release workflow itself currently does not duplicate the new documentation-coverage script step; normal release policy requires tagging validated `main`, whose CI includes that gate. If release workflow behavior changes, keep `docs/ci-cd.md` and this file synchronized.
+Release tags must still be created from validated `main`: the release workflow is a second release-specific gate, not a replacement for pull-request CI and CodeQL on the exact candidate commit. If release workflow behavior changes, keep `docs/ci-cd.md` and this file synchronized.
 
 Signing credentials are intentionally outside the public repository and are not required to validate the open-source build.
 
@@ -74,6 +74,6 @@ Do not merge while the current candidate's required jobs are queued, in progress
 
 ## Validation history
 
-The v1.0.0 build audit established the Kotlin/Android/Desktop/Rust/CodeQL baseline. Version 1.1.0 extends that gate with formatting, synchronized-version, Android lint, persistence migration/backup, timeout, trend, localization/UI, private-room protocol regression coverage, and exhaustive tracked-file documentation coverage.
+The v1.0.0 build audit established the Kotlin/Android/Desktop/Rust/CodeQL baseline. Version 1.1.0 extends that gate with formatting, synchronized-version, Android lint, persistence migration/backup, timeout, trend, localization/UI, private-room protocol regression coverage, and exhaustive tracked-file documentation coverage. The release workflow now independently repeats the formatting, documentation-coverage, and version source gates before release packaging.
 
 `what_changed.md` is the handoff source for the exact current validation result and most recent meaningful commits.
