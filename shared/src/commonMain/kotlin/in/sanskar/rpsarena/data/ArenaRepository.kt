@@ -4,6 +4,11 @@ import `in`.sanskar.rpsarena.model.AppLanguage
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
 import `in`.sanskar.rpsarena.model.ArenaTrend
+import `in`.sanskar.rpsarena.model.Difficulty
+import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.MatchConfig
+import `in`.sanskar.rpsarena.model.MatchMode
+import `in`.sanskar.rpsarena.model.OpponentMode
 
 class ArenaRepository(
     private val readString: (String, String) -> String = { key, defaultValue ->
@@ -25,6 +30,9 @@ class ArenaRepository(
 
     fun saveSettings(value: ArenaSettings) =
         writeString(KEY_SETTINGS_V2, encodeSettings(value.copy(playerName = normalizePlayerName(value.playerName))))
+
+    fun loadMatchConfig(): MatchConfig = decodeMatchConfig(readString(KEY_MATCH_CONFIG_V1, ""))
+    fun saveMatchConfig(value: MatchConfig) = writeString(KEY_MATCH_CONFIG_V1, encodeMatchConfig(value))
 
     fun loadStats(): ArenaStats = decodeStats(readString(KEY_STATS, ""))
     fun saveStats(value: ArenaStats) = writeString(KEY_STATS, encodeStats(value))
@@ -122,6 +130,7 @@ class ArenaRepository(
     fun clearUserData(preserveOnboarding: Boolean = true) {
         val onboarding = preserveOnboarding && loadSettings().onboardingComplete
         saveSettings(ArenaSettings(onboardingComplete = onboarding))
+        saveMatchConfig(MatchConfig())
         saveStats(ArenaStats())
         writeString(KEY_HISTORY, "")
     }
@@ -165,6 +174,37 @@ class ArenaRepository(
             onboardingComplete = p[6].toBooleanStrictOrNull() ?: return null,
             playerName = normalizePlayerName(unescapeField(p[7])),
             language = language,
+        )
+    }
+
+    internal fun encodeMatchConfig(value: MatchConfig): String = listOf(
+        value.variant.name,
+        value.opponentMode.name,
+        value.difficulty.name,
+        value.matchMode.name,
+        value.seed,
+        value.roundTimerSeconds,
+    ).joinToString("|")
+
+    internal fun decodeMatchConfig(raw: String): MatchConfig = decodeMatchConfigOrNull(raw) ?: MatchConfig()
+
+    internal fun decodeMatchConfigOrNull(raw: String): MatchConfig? {
+        val p = raw.split('|')
+        if (p.size != 6) return null
+        val variant = GameVariant.entries.firstOrNull { it.name == p[0] } ?: return null
+        val opponentMode = OpponentMode.entries.firstOrNull { it.name == p[1] } ?: return null
+        val difficulty = Difficulty.entries.firstOrNull { it.name == p[2] } ?: return null
+        val matchMode = MatchMode.entries.firstOrNull { it.name == p[3] } ?: return null
+        val seed = p[4].toIntOrNull() ?: return null
+        val roundTimerSeconds = p[5].toIntOrNull() ?: return null
+        if (roundTimerSeconds !in MatchConfig.ALLOWED_TIMER_SECONDS) return null
+        return MatchConfig(
+            variant = variant,
+            opponentMode = opponentMode,
+            difficulty = difficulty,
+            matchMode = matchMode,
+            seed = seed,
+            roundTimerSeconds = roundTimerSeconds,
         )
     }
 
@@ -218,6 +258,7 @@ class ArenaRepository(
         private const val BACKUP_HEADER = "RPS_ARENA_BACKUP|1"
         private const val KEY_SETTINGS_V1 = "settings_v1"
         private const val KEY_SETTINGS_V2 = "settings_v2"
+        private const val KEY_MATCH_CONFIG_V1 = "match_config_v1"
         private const val KEY_STATS = "stats_v1"
         private const val KEY_HISTORY = "history_v1"
     }
