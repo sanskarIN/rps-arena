@@ -6,8 +6,8 @@ Security fixes are applied to the latest supported release and the `main` branch
 
 | Version | Supported |
 |---|---|
-| 1.1.x | Yes |
-| 1.0.x | Security-critical fixes until 1.1.0 adoption is established |
+| 2.5.x | Yes |
+| 1.x | Security-critical fixes until 2.5.8 adoption is established |
 | < 1.0 | No |
 
 ## Reporting a vulnerability
