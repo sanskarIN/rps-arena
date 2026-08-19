@@ -4,10 +4,14 @@
 
 A release candidate is eligible only when:
 
-- `main` CI is green;
+- `main` CI is green on the exact candidate;
+- focused Security checks are green;
 - CodeQL is green;
 - repository formatting passes;
+- relative documentation links pass;
 - exhaustive tracked-file documentation coverage passes;
+- high-confidence committed-secret scanning passes;
+- Android privacy-contract validation passes;
 - cross-platform version consistency passes;
 - shared tests pass;
 - Android debug/release lint and compilation pass as configured;
@@ -32,7 +36,10 @@ Keep these values synchronized when preparing later versions.
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
 gradle :androidApp:lintDebug --stacktrace
@@ -43,9 +50,15 @@ cargo test --manifest-path rust-engine/Cargo.toml --all-targets
 
 Run the manual checks in `docs/testing.md` and `docs/accessibility.md` before tagging a stable release.
 
+## Android privacy preflight
+
+Before release, verify that the primary Android manifest still has no internet permission, keeps `android:allowBackup="false"`, and points to both backup-policy XML files. The XML policies exclude the complete SharedPreferences domain from legacy backup, Android cloud backup, and device-to-device transfer.
+
+`scripts/check_android_privacy.py` enforces these source invariants in CI, the focused security workflow, local verification, and release preflight.
+
 ## GitHub release artifacts
 
-The tag workflow is designed to build reproducible unsigned/public artifacts without repository secrets. It re-runs formatting, exhaustive documentation coverage, and version consistency before the release build/test/package steps. Store signing remains a separate controlled step.
+The tag workflow is designed to build reproducible unsigned/public artifacts without repository secrets. It re-runs formatting, documentation-link validation, exhaustive documentation coverage, committed-secret patterns, Android privacy, and version consistency before the release build/test/package steps. Store signing remains a separate controlled step.
 
 Recommended release tag format:
 
@@ -53,7 +66,7 @@ Recommended release tag format:
 v1.1.0
 ```
 
-Tag only the audited `main` commit. The tag workflow is an additional release gate and does not replace green pull-request CI and CodeQL evidence on that exact source.
+Tag only the audited `main` commit. The tag workflow is an additional release gate and does not replace green pull-request CI, Security checks, and CodeQL evidence on that exact source.
 
 ## Android signing
 
@@ -71,8 +84,8 @@ Include:
 
 - user-visible features and fixes;
 - supported platforms;
-- privacy/networking behavior;
-- migration/backup compatibility notes;
+- privacy/networking and automatic-backup behavior;
+- migration/explicit-backup compatibility notes;
 - known limitations;
 - verification summary;
 - checksum information for published artifacts;
