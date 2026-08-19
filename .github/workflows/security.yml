@@ -29,6 +29,9 @@ jobs:
       - name: Scan committed source for high-confidence secrets
         run: python scripts/check_for_secrets.py
 
+      - name: Validate Android privacy contract
+        run: python scripts/check_android_privacy.py
+
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
