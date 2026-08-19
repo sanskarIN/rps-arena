@@ -39,6 +39,7 @@ All notable changes to RPS Arena are documented here.
 - Production Android compile/target baseline moved from preview API 37 to stable API 36 for reproducible hosted CI.
 - Kotlin/AGP/Gradle compatibility aligned to Kotlin 2.4.10, AGP 9.1.0, and Gradle 9.5.0.
 - Android and desktop release versions now share `appVersion` from the version catalog; Android `versionCode` is centralized there as well.
+- CI, Documentation, Security checks, and CodeQL now validate PR branches through `pull_request` and reserve `push` validation for `main`, avoiding duplicate runs for the same proposed commit.
 - Match setup now persists across application launches.
 - Recent history is reactive after play, clear, undo, import, and reset operations.
 - History entries are bounded and sanitized before persistence.
