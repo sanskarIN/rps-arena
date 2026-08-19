@@ -86,7 +86,8 @@ Android debug build:
 gradle :androidApp:assembleDebug
 ```
 
-Full setup: [`docs/setup.md`](docs/setup.md)  
+Full setup: [`docs/setup.md`](docs/setup.md)
+
 Development workflow: [`docs/development.md`](docs/development.md)
 
 ## CPU difficulty transparency
