@@ -44,6 +44,7 @@ Real Android and desktop screenshots will be added only from a verified release-
 - Tested private-room/LAN protocol boundary for future opt-in transport work, with no production network dependency in v1.
 - Structured redacting local logging.
 - CI, CodeQL, dependency review, committed-secret scanning, Dependabot, docs validation, and release artifact automation.
+- Android app backup is disabled and shared-preference data is excluded from configured backup/transfer rules; user-controlled RPS Arena text export remains explicit.
 - No account, analytics SDK, ads SDK, cloud dependency, or Android internet permission.
 
 ## Supported platforms
@@ -68,7 +69,7 @@ Real Android and desktop screenshots will be added only from a verified release-
 - Android API **26+**, compile/target API **36**
 - Optional Rust **2024 edition** rules mirror
 
-Dependency versions are centralized in `gradle/libs.versions.toml`.
+Dependency versions and the shared application release version are centralized in `gradle/libs.versions.toml`.
 
 ## Project structure
 
@@ -108,6 +109,7 @@ See [Setup](docs/setup.md) and [Development](docs/development.md) for the full e
 Shared automated coverage includes:
 
 - classic and Lizard–Spock rule relationships;
+- active-ruleset validation at the public state boundary;
 - deterministic CPU behavior;
 - persistence codecs and legacy-settings migration;
 - local profile validation and lifecycle;
@@ -166,7 +168,7 @@ See [Architecture](docs/architecture.md) and the records in [docs/adr/](docs/adr
 
 ## Privacy and security
 
-RPS Arena stores local profile display names, game configuration, settings, aggregate statistics, and recent history on the device. Android requests no internet permission. Backup text is intentionally readable, includes the local data the user chooses to export, and is not secret storage. Copying a completed result writes only that result summary to the platform clipboard after an explicit user action.
+RPS Arena stores local profile display names, game configuration, settings, aggregate statistics, and recent history in its local application store. Android requests no internet permission. Android backup participation is disabled, and the manifest points to explicit legacy/current extraction rules that exclude the shared-preference store from configured backup/transfer paths. The separate RPS Arena backup feature is user-controlled plain text: it includes only the local data the user chooses to export and is not secret storage. Copying a completed result writes only that result summary to the platform clipboard after an explicit user action.
 
 - [Privacy](PRIVACY.md)
 - [Security and responsible disclosure](SECURITY.md)
