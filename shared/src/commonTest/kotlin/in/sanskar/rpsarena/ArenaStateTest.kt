@@ -61,6 +61,33 @@ class ArenaStateTest {
     }
 
     @Test
+    fun sameSeedAndMovesReplaySameCpuSequence() {
+        val first = state()
+        val second = state()
+        val config = MatchConfig(seed = 424242)
+        first.updateConfig(config)
+        second.updateConfig(config)
+        val moves = listOf(
+            Gesture.ROCK,
+            Gesture.PAPER,
+            Gesture.SCISSORS,
+            Gesture.ROCK,
+            Gesture.ROCK,
+        )
+
+        moves.forEach { move ->
+            first.play(move)
+            second.play(move)
+        }
+
+        assertEquals(
+            first.match.rounds.map { it.playerTwo },
+            second.match.rounds.map { it.playerTwo },
+        )
+        assertEquals(first.match.rounds.map { it.outcome }, second.match.rounds.map { it.outcome })
+    }
+
+    @Test
     fun backupImportRefreshesInMemoryState() {
         val values = mutableMapOf<String, String>()
         val repository = repository(values)
