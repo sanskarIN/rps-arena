@@ -23,11 +23,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK 36
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Set up Android SDK 36
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0"
 
       - name: Set up Gradle 9.5.0
         uses: gradle/actions/setup-gradle@v6
@@ -35,8 +34,8 @@ jobs:
           gradle-version: "9.5.0"
           cache-provider: basic
 
-      - name: Run shared tests
-        run: gradle --no-daemon :shared:desktopTest
+      - name: Run all shared tests
+        run: gradle --no-daemon :shared:allTests
 
       - name: Build unsigned Android release APK
         run: gradle --no-daemon :androidApp:assembleRelease
@@ -78,8 +77,8 @@ jobs:
           gradle-version: "9.5.0"
           cache-provider: basic
 
-      - name: Run shared tests
-        run: gradle --no-daemon :shared:desktopTest
+      - name: Run all shared tests
+        run: gradle --no-daemon :shared:allTests
 
       - name: Build current OS desktop distributable
         run: gradle --no-daemon :desktopApp:createDistributable
