@@ -31,6 +31,7 @@ Real Android and desktop screenshots will be added only from a verified release-
 - Local lifetime wins, losses, draws, streaks, win rate, and achievements.
 - Up to 30 recent round summaries stored locally.
 - Recent W/L/D trend with non-color-only labels and decisive win rate.
+- Local `Copy result` action for completed rounds with no network dependency.
 - Versioned plain-text V2 backup/restore for settings, profiles, stats, match setup, and history.
 - Backward-compatible V1 backup migration plus a non-mutating preview before import.
 - Clear-history with one-step undo and confirmed full local-data reset controls.
@@ -116,7 +117,8 @@ Shared automated coverage includes:
 - history clear/undo and data reset behavior;
 - recent-history W/L/D trend derivation;
 - private-room protocol validation;
-- Rust/Kotlin rule-contract checks.
+- Rust/Kotlin rule-contract checks;
+- a shared Compose UI primary-journey regression from onboarding through the first completed round.
 
 Primary CI commands:
 
@@ -164,7 +166,7 @@ See [Architecture](docs/architecture.md) and the records in [docs/adr/](docs/adr
 
 ## Privacy and security
 
-RPS Arena stores local profile display names, game configuration, settings, aggregate statistics, and recent history on the device. Android requests no internet permission. Backup text is intentionally readable, includes the local data the user chooses to export, and is not secret storage.
+RPS Arena stores local profile display names, game configuration, settings, aggregate statistics, and recent history on the device. Android requests no internet permission. Backup text is intentionally readable, includes the local data the user chooses to export, and is not secret storage. Copying a completed result writes only that result summary to the platform clipboard after an explicit user action.
 
 - [Privacy](PRIVACY.md)
 - [Security and responsible disclosure](SECURITY.md)
