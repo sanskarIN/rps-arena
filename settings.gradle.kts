@@ -1,5 +1,7 @@
 rootProject.name = "rps-arena"
 
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 pluginManagement {
     repositories {
         google()
@@ -16,4 +18,6 @@ dependencyResolutionManagement {
     }
 }
 
-include(":composeApp")
+include(":shared")
+include(":androidApp")
+include(":desktopApp")
