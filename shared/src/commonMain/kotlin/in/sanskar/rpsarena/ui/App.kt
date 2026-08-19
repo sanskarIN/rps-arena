@@ -142,7 +142,7 @@ private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
             ConfigRow(strings.difficulty) {
                 Difficulty.entries.forEach { difficulty ->
                     ChoiceChip(
-                        difficulty.name.lowercase().replaceFirstChar { it.uppercase() },
+                        strings.difficultyLabel(difficulty),
                         config.difficulty == difficulty,
                     ) {
                         state.updateConfig(config.copy(difficulty = difficulty))
@@ -153,10 +153,7 @@ private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
 
         ConfigRow(strings.mode) {
             MatchMode.entries.forEach { mode ->
-                ChoiceChip(
-                    mode.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },
-                    config.matchMode == mode,
-                ) {
+                ChoiceChip(strings.modeLabel(mode), config.matchMode == mode) {
                     state.updateConfig(config.copy(matchMode = mode))
                 }
             }
@@ -178,7 +175,7 @@ private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
                 value = seedText,
                 onValueChange = { value -> seedText = value.filter { it == '-' || it.isDigit() }.take(11) },
                 label = { Text(strings.seed) },
-                supportingText = { Text("Same seed + same moves = replayable CPU challenge") },
+                supportingText = { Text(strings.seedReplayHint) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -188,7 +185,7 @@ private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
                 enabled = parsedSeed != null && parsedSeed != config.seed,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Apply seed")
+                Text(strings.applySeed)
             }
         }
 
@@ -203,19 +200,19 @@ private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
         }
 
         state.lastAnnouncement?.let { announcement ->
-            Text(announcement, style = MaterialTheme.typography.bodyMedium)
+            Text(localizeRoundAnnouncement(announcement, strings), style = MaterialTheme.typography.bodyMedium)
         }
 
         Text(strings.chooseGesture, style = MaterialTheme.typography.titleLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             gestures.take(3).forEach { gesture ->
-                GestureButton(gesture, Modifier.weight(1f)) { state.play(gesture) }
+                GestureButton(gesture, strings, Modifier.weight(1f)) { state.play(gesture) }
             }
         }
         if (gestures.size > 3) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 gestures.drop(3).forEach { gesture ->
-                    GestureButton(gesture, Modifier.weight(1f)) { state.play(gesture) }
+                    GestureButton(gesture, strings, Modifier.weight(1f)) { state.play(gesture) }
                 }
             }
         }
@@ -277,16 +274,16 @@ private fun RoundResultCard(round: RoundRecord, strings: ArenaStrings) {
                 RoundEndReason.PLAYED -> {
                     val first = requireNotNull(round.playerOne)
                     val second = requireNotNull(round.playerTwo)
-                    Text("${first.emoji} ${first.label} vs ${second.emoji} ${second.label}")
+                    Text("${first.emoji} ${strings.gestureLabel(first)} vs ${second.emoji} ${strings.gestureLabel(second)}")
                 }
-                RoundEndReason.PLAYER_ONE_TIMEOUT -> Text("Player 1 timed out")
-                RoundEndReason.PLAYER_TWO_TIMEOUT -> Text("Player 2 timed out")
+                RoundEndReason.PLAYER_ONE_TIMEOUT -> Text(strings.playerOneTimeout)
+                RoundEndReason.PLAYER_TWO_TIMEOUT -> Text(strings.playerTwoTimeout)
             }
             Text(
                 when (round.outcome) {
-                    RoundOutcome.PLAYER_ONE_WIN -> "Player 1 wins the round"
-                    RoundOutcome.PLAYER_TWO_WIN -> "Player 2 wins the round"
-                    RoundOutcome.DRAW -> "Draw"
+                    RoundOutcome.PLAYER_ONE_WIN -> strings.playerOneWinsRound
+                    RoundOutcome.PLAYER_TWO_WIN -> strings.playerTwoWinsRound
+                    RoundOutcome.DRAW -> strings.roundDraw
                 },
             )
         }
@@ -311,11 +308,16 @@ private fun Score(label: String, value: Int) = Column(horizontalAlignment = Alig
 }
 
 @Composable
-private fun GestureButton(gesture: Gesture, modifier: Modifier, onClick: () -> Unit) {
+private fun GestureButton(
+    gesture: Gesture,
+    strings: ArenaStrings,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
     FilledTonalButton(onClick = onClick, modifier = modifier.heightIn(min = 88.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(gesture.emoji, style = MaterialTheme.typography.headlineMedium)
-            Text(gesture.label)
+            Text(strings.gestureLabel(gesture))
         }
     }
 }
@@ -331,7 +333,9 @@ private fun HistoryScreen(state: ArenaState, strings: ArenaStrings) {
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.history) { line ->
-                    Card(Modifier.fillMaxWidth()) { Text(line, Modifier.padding(14.dp)) }
+                    Card(Modifier.fillMaxWidth()) {
+                        Text(localizeRoundAnnouncement(line, strings), Modifier.padding(14.dp))
+                    }
                 }
             }
         }
@@ -350,7 +354,10 @@ private fun StatsScreen(state: ArenaState, strings: ArenaStrings) {
         StatLine(strings.draws, state.stats.draws.toString())
         StatLine(strings.winRate, "${state.stats.winRate}%")
         StatLine(strings.bestStreak, state.stats.bestStreak.toString())
-        StatLine(strings.recentTrend, "${trend.wins}W · ${trend.losses}L · ${trend.draws}D")
+        StatLine(
+            strings.recentTrend,
+            "${trend.wins} ${strings.wins} · ${trend.losses} ${strings.losses} · ${trend.draws} ${strings.draws}",
+        )
     }
 }
 
@@ -408,7 +415,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
         SwitchRow(strings.haptics, settings.hapticsEnabled) {
             state.updateSettings(settings.copy(hapticsEnabled = it))
         }
-        Text("Core actions use text labels, large touch targets, visible status feedback, and keyboard-friendly controls.")
+        Text(strings.accessibilityNote)
 
         SectionTitle(strings.playerName)
         OutlinedTextField(
@@ -423,7 +430,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
             enabled = playerName.trim().isNotEmpty() && playerName.trim() != settings.playerName,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Save player name")
+            Text(strings.savePlayerName)
         }
 
         SectionTitle(strings.language)
@@ -458,17 +465,17 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
                 Text(strings.importBackup)
             }
         }
-        state.dataMessage?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        state.dataMessage?.let { Text(localizeDataMessage(it, strings), style = MaterialTheme.typography.bodyMedium) }
 
         if (!confirmReset) {
             OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.fillMaxWidth()) {
                 Text(strings.resetLocalData)
             }
         } else {
-            Text("This removes local stats, history, and preferences from this device.")
+            Text(strings.resetWarning)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { confirmReset = false }, modifier = Modifier.weight(1f)) {
-                    Text("Cancel")
+                    Text(strings.cancel)
                 }
                 Button(
                     onClick = {
@@ -477,7 +484,7 @@ private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
                     },
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Confirm reset")
+                    Text(strings.confirmReset)
                 }
             }
         }
@@ -493,16 +500,64 @@ private fun AboutScreen(state: ArenaState, strings: ArenaStrings) {
         BackButton(strings) { state.navigate(ArenaScreen.HOME) }
         Text("${strings.about} ${strings.appName}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(strings.aboutBody)
-        Text("Optional extended rules: Rock–Paper–Scissors–Lizard–Spock.")
+        Text(strings.extendedRules)
         Text(strings.cpuTransparency)
-        Text("Version: 1.1.0")
-        Text("License: MIT")
+        Text("${strings.version}: 1.1.0")
+        Text("${strings.license}: MIT")
         Text(strings.madeBy, fontWeight = FontWeight.Bold)
         Text("Business: sanskarin@outlook.in · sanskarin.business@gmail.com")
         Text("Support: supportramsandesh@gmail.com")
         Text("GitHub: github.com/sanskarIN/rps-arena")
         Text("Support development: buymeacoffee.com/sanskarIN")
     }
+}
+
+private fun localizeRoundAnnouncement(raw: String, strings: ArenaStrings): String {
+    if (raw == "Player 1 timed out — Player 2 won") {
+        return "${strings.playerOneTimeout} — ${strings.playerTwoWinsRound}"
+    }
+    if (raw == "Player 2 timed out — Player 1 won") {
+        return "${strings.playerTwoTimeout} — ${strings.playerOneWinsRound}"
+    }
+
+    val delimiter = " — "
+    val parts = raw.split(delimiter, limit = 2)
+    if (parts.size != 2) return raw
+    val gestureParts = parts[0].split(" vs ", limit = 2)
+    if (gestureParts.size != 2) return raw
+
+    val first = Gesture.entries.firstOrNull { it.label == gestureParts[0] }
+    val second = Gesture.entries.firstOrNull { it.label == gestureParts[1] }
+    if (first == null || second == null) return raw
+
+    val outcome = when (parts[1]) {
+        "Player 1 won" -> strings.playerOneWinsRound
+        "Player 2 won" -> strings.playerTwoWinsRound
+        "Draw" -> strings.roundDraw
+        else -> parts[1]
+    }
+    return "${strings.gestureLabel(first)} vs ${strings.gestureLabel(second)}$delimiter$outcome"
+}
+
+private fun localizeDataMessage(raw: String, strings: ArenaStrings): String = when {
+    raw == "Backup text is ready to copy and save securely." -> strings.backupReady
+    raw == "Local statistics, history, and preferences were reset." -> strings.localDataReset
+    raw == "Unsupported or missing backup header" -> strings.invalidBackupHeader
+    raw == "Backup is too large" -> strings.backupTooLarge
+    raw == "Backup contains too many records" -> strings.backupTooManyRecords
+    raw == "Malformed backup record" -> strings.malformedBackupRecord
+    raw == "Invalid settings record" -> strings.invalidSettingsRecord
+    raw == "Invalid stats record" -> strings.invalidStatsRecord
+    raw == "Backup has no settings record" -> strings.backupMissingSettings
+    raw == "Backup has no stats record" -> strings.backupMissingStats
+    raw == "Duplicate settings record" -> strings.duplicateSettingsRecord
+    raw == "Duplicate stats record" -> strings.duplicateStatsRecord
+    raw.startsWith("Unknown backup record:") -> "${strings.unknownBackupRecord}:${raw.substringAfter(':')}"
+    raw.startsWith("Imported settings, statistics, and ") -> {
+        val count = raw.removePrefix("Imported settings, statistics, and ").substringBefore(' ')
+        "${strings.backupImportedPrefix} $count ${strings.historyRecords}"
+    }
+    else -> raw
 }
 
 @Composable
