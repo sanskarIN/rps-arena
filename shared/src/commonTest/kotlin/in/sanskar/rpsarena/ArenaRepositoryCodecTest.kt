@@ -232,6 +232,25 @@ class ArenaRepositoryCodecTest {
     }
 
     @Test
+    fun malformedBackupRowsAreRejectedWithoutMutation() {
+        val target = ArenaRepository(MemoryStore())
+        val original = ArenaStats(1, 1, 0, 0, 1, 1)
+        target.saveStats(original)
+        val malformed = """
+            RPS_ARENA_BACKUP_V1
+            settings=false|true|false|true
+            this-row-has-no-separator
+            stats=0|0|0|0|0|0
+            config=CLASSIC|CPU|NORMAL|BEST_OF_3|20260819|0
+            history=
+        """.trimIndent()
+
+        assertNull(target.previewBackup(malformed))
+        assertFalse(target.importBackup(malformed))
+        assertEquals(original, target.loadStats())
+    }
+
+    @Test
     fun oversizedBackupIsRejectedWithoutMutation() {
         val target = ArenaRepository(MemoryStore())
         val original = ArenaStats(1, 1, 0, 0, 1, 1)
