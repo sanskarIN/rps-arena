@@ -21,6 +21,8 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         private set
     var match by mutableStateOf(MatchSnapshot(config))
         private set
+    var history by mutableStateOf(repository.loadHistory())
+        private set
     var pendingPlayerOne by mutableStateOf<Gesture?>(null)
         private set
     var localTurnMessage by mutableStateOf("Player 1: choose secretly")
@@ -28,7 +30,6 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
 
     private var cpu = CpuStrategy(config.seed)
 
-    val history: List<String> get() = repository.loadHistory()
     val achievements: List<Achievement> get() = listOf(
         Achievement("first_win", "First Victory", "Win your first round", stats.wins >= 1),
         Achievement("ten_rounds", "Arena Regular", "Play 10 rounds", stats.roundsPlayed >= 10),
@@ -66,6 +67,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
 
     fun clearHistory() {
         repository.clearHistory()
+        history = emptyList()
     }
 
     fun exportBackup(): String = repository.exportBackup()
@@ -75,6 +77,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         settings = repository.loadSettings()
         stats = repository.loadStats()
         config = repository.loadConfig()
+        history = repository.loadHistory()
         resetMatch()
         screen = ArenaScreen.HOME
         return true
@@ -85,6 +88,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         settings = repository.loadSettings()
         stats = repository.loadStats()
         config = repository.loadConfig()
+        history = emptyList()
         resetMatch()
         screen = ArenaScreen.HOME
     }
@@ -141,6 +145,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         )
         updateStats(outcome)
         repository.addHistory(historyLine(round))
+        history = repository.loadHistory()
     }
 
     private fun updateStats(outcome: RoundOutcome) {
