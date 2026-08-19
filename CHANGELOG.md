@@ -31,7 +31,7 @@ All notable changes to RPS Arena are documented here.
 - Android adaptive icon assets and project logo/splash artwork.
 - Optional standalone Rust rules engine with formatting, Clippy, tests, and benchmark support.
 - CI, CodeQL, Dependabot, documentation-link validation, security checks, and tagged/manual release artifact workflows.
-- High-confidence committed-secret scanner and pull-request dependency review workflow.
+- High-confidence committed-secret scanner, Android privacy-contract validator, and pull-request dependency review workflow.
 - Canonical setup, development, architecture, testing, release, troubleshooting, accessibility, performance, roadmap, repository-settings, and ADR documentation.
 
 ### Changed
@@ -44,7 +44,7 @@ All notable changes to RPS Arena are documented here.
 - Recent history is reactive after play, clear, undo, import, and reset operations.
 - History entries are bounded and sanitized before persistence.
 - Player-one history rows include an explicit `Player 1 (...)` role prefix so profile names such as `CPU` or `Player 2` cannot be confused with opponent outcomes.
-- Backup decoding is size-bounded and stages settings, stats, match configuration, profiles, and history validation before mutation.
+- Backup decoding is size-bounded, rejects malformed/duplicate key rows, and stages settings, stats, match configuration, profiles, and history validation before mutation.
 - Repository persistence accepts injected in-memory storage for common regression and UI tests.
 - User-facing achievement and local-turn text moved out of domain/state models into the UI copy catalog.
 - Recent trend status values are non-interactive semantic surfaces rather than fake clickable controls.
@@ -61,6 +61,8 @@ All notable changes to RPS Arena are documented here.
 - CI no longer attempts to install unavailable preview Android platform 37.
 - Public game-state calls now reject Lizard/Spock when the Classic ruleset is active instead of relying only on UI gesture filtering.
 - Malformed backup/stat data is rejected or safely defaulted instead of silently replacing valid state.
+- Duplicate backup keys can no longer silently overwrite an earlier key during parsing.
+- Malformed backup key/value rows can no longer be silently ignored.
 - Backup history validation now completes before any imported state is written.
 - History clear can be recovered once instead of being immediately irreversible.
 - Recent trend parsing no longer risks misclassifying player-one wins when a local profile display name resembles an opponent label.
@@ -73,8 +75,8 @@ All notable changes to RPS Arena are documented here.
 - Android manifest backup participation is disabled, with explicit legacy and Android 12+ extraction rules excluding shared-preference data from configured backup and device-transfer paths.
 - Local profile display names are device-local, included only in user-generated backups, and intentionally excluded from structured logs.
 - The copy-result action writes only the user-selected round summary to the platform clipboard after an explicit user action.
-- Backup preview and import use the same defensive decoder; malformed, oversized, or internally inconsistent data is rejected.
-- CI scans committed source for high-confidence credential patterns and reviews dependency changes on pull requests.
+- Backup preview and import use the same defensive decoder; malformed, duplicate-keyed, oversized, or internally inconsistent data is rejected before mutation.
+- CI scans committed source for high-confidence credential patterns, validates the Android privacy contract, and reviews dependency changes on pull requests.
 - Dependabot tracks Gradle, Cargo, and GitHub Actions dependencies.
 - Distribution signing material remains outside the public repository.
 
