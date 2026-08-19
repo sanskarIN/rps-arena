@@ -33,7 +33,7 @@ Meaning:
 - `bash` runs the Bash interpreter.
 - `scripts/verify.sh` is the repository verification script.
 - `set -euo pipefail` inside the script causes failures, undefined variables, and failed pipeline commands to stop verification instead of silently continuing.
-- The script runs formatting, exhaustive tracked-file documentation coverage, version consistency, shared tests, Android lint/build, desktop compilation, and Rust tests when Cargo exists.
+- The script runs formatting, relative documentation-link validation, exhaustive tracked-file documentation coverage, high-confidence committed-secret detection, Android privacy-contract validation, version consistency, shared tests, Android lint/build, desktop compilation, and Rust tests when Cargo exists.
 
 ### Full PowerShell verification
 
@@ -46,7 +46,7 @@ Meaning:
 - `powershell` starts Windows PowerShell.
 - `-ExecutionPolicy Bypass` applies only to this process and allows the repository script to run when the machine policy otherwise blocks local scripts. It does not permanently change the system execution policy.
 - `-File scripts/verify.ps1` tells PowerShell which script to execute.
-- The PowerShell script runs the same formatting, documentation-coverage, version, Kotlin/Android/desktop, and optional Rust gates as the shell script.
+- The PowerShell script runs the same source/security/privacy/version, Kotlin/Android/desktop, and optional Rust gates as the shell script.
 
 If you are already inside PowerShell and local scripts are allowed:
 
@@ -77,6 +77,24 @@ Meaning:
 
 This command does **not** rewrite files. It is a validator, not an auto-formatter.
 
+## Documentation link verification
+
+```bash
+python3 scripts/check_docs_links.py
+```
+
+Meaning:
+
+- scans repository Markdown files;
+- extracts local Markdown links/images;
+- ignores external HTTP/HTTPS, mail, telephone, data, and anchor-only targets;
+- resolves relative paths from the document containing each link;
+- rejects paths that escape repository root;
+- fails when a local target does not exist;
+- does not fetch the internet or modify documents.
+
+Use it after renaming/moving documentation or any path linked from Markdown. It complements, but does not replace, the every-file documentation coverage gate.
+
 ## Documentation coverage verification
 
 ```bash
@@ -97,6 +115,42 @@ Because it uses `git ls-files`, run it inside a real Git checkout rather than fr
 
 When adding, renaming, or deleting a tracked file, update `docs/repository-file-reference.md` in the same change.
 
+## Committed-secret pattern verification
+
+```bash
+python3 scripts/check_for_secrets.py
+```
+
+Meaning:
+
+- scans source-sized repository files for several high-confidence credential shapes;
+- detects private-key headers and recognizable GitHub/AWS/Google/generic secret-token forms;
+- skips generated/cache/IDE directories, oversized files, non-UTF-8/binary data, and the checker itself;
+- reports path/line/category without echoing the matched credential value;
+- exits non-zero when a pattern is found;
+- does not alter source files or rotate credentials.
+
+This checker is defense in depth. It cannot prove that the repository contains no secret and does not replace GitHub secret scanning, code review, `.gitignore`, or immediate credential rotation if a real secret is exposed.
+
+## Android privacy-contract verification
+
+```bash
+python3 scripts/check_android_privacy.py
+```
+
+Meaning:
+
+- parses `androidApp/src/main/AndroidManifest.xml`;
+- parses `androidApp/src/main/res/xml/backup_rules.xml`;
+- parses `androidApp/src/main/res/xml/data_extraction_rules.xml`;
+- requires `android:allowBackup="false"`;
+- requires the manifest to reference both backup-policy resources;
+- requires the complete SharedPreferences domain to be excluded from legacy backup, cloud backup, and device transfer;
+- fails if `android.permission.INTERNET` appears in the primary offline-first v1 manifest;
+- does not run an emulator or modify files.
+
+This source-level contract protects the current local-data/privacy posture. A future deliberate networking/storage policy change must update the code, checker, tests/docs, and privacy/security review together rather than simply deleting the gate.
+
 ## Version consistency verification
 
 ```bash
@@ -112,6 +166,21 @@ Meaning:
 - Fails if those versions differ or if a required declaration cannot be found.
 
 Use this after changing a release version.
+
+## Fast source gate sequence
+
+The CI/release/local preflight sequence is:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
+python3 scripts/check_version.py
+```
+
+These are deliberately fast/read-only checks and should run before Gradle/Cargo work.
 
 ## Gradle task syntax
 
@@ -149,7 +218,7 @@ Meaning:
 
 - Compiles the shared Kotlin Multiplatform test source sets.
 - Runs test tasks available for configured targets.
-- Includes shared business-rule, persistence, protocol, localization, and configured desktop test coverage.
+- Includes shared business-rule, persistence, protocol, localization, safe-logging, and configured desktop UI test coverage.
 - Does not install an Android APK on a device.
 
 For desktop UI tests specifically:
@@ -449,7 +518,8 @@ The repository Python validators and build/test commands use process exit status
 
 - Read an error before deleting caches or SDKs.
 - Never paste signing passwords, tokens, API keys, private certificates, or personal backup data into command history, issue reports, or CI logs.
+- If the committed-secret checker reports a real credential, remove it from the candidate source and rotate/revoke it; do not merely add a detector exception.
 - Do not run release/tag commands unless the intended commit is validated.
 - Prefer repository-scoped Git identity/configuration when you do not intend to change every local repository.
 - Generated `build/`, `.gradle/`, and `rust-engine/target/` content can be recreated; source files and signing credentials cannot.
-- Do not remove a failing documentation/build/security check merely to make CI green; determine whether the source or the check is wrong and document the correction.
+- Do not remove a failing documentation/build/security/privacy check merely to make CI green; determine whether the source or the check is wrong and document the correction.
