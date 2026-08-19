@@ -4,6 +4,8 @@ import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
 import `in`.sanskar.rpsarena.model.Difficulty
 import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.LocalProfile
+import `in`.sanskar.rpsarena.model.LocalProfilesState
 import `in`.sanskar.rpsarena.model.MatchConfig
 import `in`.sanskar.rpsarena.model.MatchMode
 import `in`.sanskar.rpsarena.model.OpponentMode
@@ -17,6 +19,72 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
 
     fun loadConfig(): MatchConfig = decodeConfig(store.getString(KEY_CONFIG))
     fun saveConfig(value: MatchConfig) = store.putString(KEY_CONFIG, encodeConfig(value))
+
+    fun loadProfilesState(): LocalProfilesState {
+        val ids = store.getString(KEY_PROFILE_IDS)
+            .split('|')
+            .map { it.trim() }
+            .filter { it.matches(PROFILE_ID_PATTERN) }
+            .distinct()
+            .take(MAX_PROFILES)
+
+        val profiles = ids.mapNotNull { id ->
+            normalizeProfileName(store.getString(profileNameKey(id)))?.let { name ->
+                LocalProfile(id = id, displayName = name)
+            }
+        }.ifEmpty { listOf(LocalProfilesState.DEFAULT_LOCAL_PROFILE) }
+
+        val requestedActive = store.getString(KEY_ACTIVE_PROFILE)
+        val activeId = requestedActive.takeIf { requested -> profiles.any { it.id == requested } }
+            ?: profiles.first().id
+        return LocalProfilesState(profiles = profiles, activeProfileId = activeId)
+    }
+
+    fun createProfile(displayName: String): LocalProfilesState? {
+        val name = normalizeProfileName(displayName) ?: return null
+        val current = loadProfilesState()
+        if (current.profiles.size >= MAX_PROFILES) return null
+        val id = generateProfileId(current.profiles)
+        val updated = LocalProfilesState(
+            profiles = current.profiles + LocalProfile(id, name),
+            activeProfileId = id,
+        )
+        saveProfilesState(updated)
+        return updated
+    }
+
+    fun renameProfile(profileId: String, displayName: String): LocalProfilesState? {
+        val name = normalizeProfileName(displayName) ?: return null
+        val current = loadProfilesState()
+        if (current.profiles.none { it.id == profileId }) return null
+        val updated = current.copy(
+            profiles = current.profiles.map { profile ->
+                if (profile.id == profileId) profile.copy(displayName = name) else profile
+            },
+        )
+        saveProfilesState(updated)
+        return updated
+    }
+
+    fun activateProfile(profileId: String): LocalProfilesState? {
+        val current = loadProfilesState()
+        if (current.profiles.none { it.id == profileId }) return null
+        val updated = current.copy(activeProfileId = profileId)
+        saveProfilesState(updated)
+        return updated
+    }
+
+    fun deleteProfile(profileId: String): LocalProfilesState? {
+        val current = loadProfilesState()
+        if (current.profiles.size <= 1 || current.profiles.none { it.id == profileId }) return null
+        val profiles = current.profiles.filterNot { it.id == profileId }
+        val updated = LocalProfilesState(
+            profiles = profiles,
+            activeProfileId = if (current.activeProfileId == profileId) profiles.first().id else current.activeProfileId,
+        )
+        saveProfilesState(updated)
+        return updated
+    }
 
     fun loadHistory(): List<String> = store.getString(KEY_HISTORY)
         .lineSequence()
@@ -38,20 +106,30 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         saveSettings(ArenaSettings())
         saveStats(ArenaStats())
         saveConfig(MatchConfig())
+        saveProfilesState(LocalProfilesState.default())
         clearHistory()
     }
 
-    fun exportBackup(): String = buildString {
-        appendLine(BACKUP_HEADER)
-        appendLine("settings=${encodeSettings(loadSettings())}")
-        appendLine("stats=${encodeStats(loadStats())}")
-        appendLine("config=${encodeConfig(loadConfig())}")
-        append("history=${loadHistory().joinToString("\t") { escapeHistory(it) }}")
+    fun exportBackup(): String {
+        val profilesState = loadProfilesState()
+        return buildString {
+            appendLine(BACKUP_HEADER_V2)
+            appendLine("settings=${encodeSettings(loadSettings())}")
+            appendLine("stats=${encodeStats(loadStats())}")
+            appendLine("config=${encodeConfig(loadConfig())}")
+            appendLine("activeProfile=${profilesState.activeProfileId}")
+            appendLine("profileIds=${profilesState.profiles.joinToString("|") { it.id }}")
+            profilesState.profiles.forEach { profile ->
+                appendLine("profile.${profile.id}=${escapeBackupValue(profile.displayName)}")
+            }
+            append("history=${loadHistory().joinToString("\t") { escapeHistory(it) }}")
+        }
     }
 
     fun importBackup(raw: String): Boolean {
         val lines = raw.replace("\r\n", "\n").trim().split('\n')
-        if (lines.firstOrNull() != BACKUP_HEADER) return false
+        val header = lines.firstOrNull() ?: return false
+        if (header != BACKUP_HEADER_V1 && header != BACKUP_HEADER_V2) return false
 
         val values = lines.drop(1).mapNotNull { line ->
             val separator = line.indexOf('=')
@@ -69,9 +147,16 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         }
         if (history.size > MAX_HISTORY || history.any { it.length > MAX_HISTORY_LINE_LENGTH }) return false
 
+        val profilesState = if (header == BACKUP_HEADER_V2) {
+            decodeBackupProfiles(values) ?: return false
+        } else {
+            LocalProfilesState.default()
+        }
+
         saveSettings(settings)
         saveStats(stats)
         saveConfig(config)
+        saveProfilesState(profilesState)
         store.putString(KEY_HISTORY, history.joinToString("\n"))
         return true
     }
@@ -157,6 +242,61 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         }.getOrNull()
     }
 
+    private fun saveProfilesState(value: LocalProfilesState) {
+        val validProfiles = value.profiles
+            .filter { it.id.matches(PROFILE_ID_PATTERN) }
+            .mapNotNull { profile ->
+                normalizeProfileName(profile.displayName)?.let { name -> profile.copy(displayName = name) }
+            }
+            .distinctBy { it.id }
+            .take(MAX_PROFILES)
+            .ifEmpty { listOf(LocalProfilesState.DEFAULT_LOCAL_PROFILE) }
+        val activeId = value.activeProfileId.takeIf { id -> validProfiles.any { it.id == id } }
+            ?: validProfiles.first().id
+        store.putString(KEY_PROFILE_IDS, validProfiles.joinToString("|") { it.id })
+        validProfiles.forEach { profile -> store.putString(profileNameKey(profile.id), profile.displayName) }
+        store.putString(KEY_ACTIVE_PROFILE, activeId)
+    }
+
+    private fun decodeBackupProfiles(values: Map<String, String>): LocalProfilesState? {
+        val ids = values["profileIds"]
+            ?.split('|')
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?: return null
+        if (ids.isEmpty() || ids.size > MAX_PROFILES || ids.distinct().size != ids.size) return null
+        if (ids.any { !it.matches(PROFILE_ID_PATTERN) }) return null
+
+        val profiles = ids.map { id ->
+            val rawName = values["profile.$id"] ?: return null
+            val name = unescapeBackupValue(rawName)?.let(::normalizeProfileName) ?: return null
+            LocalProfile(id, name)
+        }
+        val activeId = values["activeProfile"] ?: return null
+        if (profiles.none { it.id == activeId }) return null
+        return LocalProfilesState(profiles, activeId)
+    }
+
+    private fun generateProfileId(profiles: List<LocalProfile>): String {
+        val existing = profiles.map { it.id }.toSet()
+        var suffix = 1
+        while (suffix <= MAX_PROFILE_ID_SUFFIX) {
+            val candidate = "profile-$suffix"
+            if (candidate !in existing) return candidate
+            suffix += 1
+        }
+        return "profile-${MAX_PROFILE_ID_SUFFIX + 1}"
+    }
+
+    private fun normalizeProfileName(raw: String): String? {
+        if (raw.any { it == '\n' || it == '\r' || it.code < 0x20 }) return null
+        val name = raw.trim().replace(Regex("\\s+"), " ")
+        if (name.length !in 1..MAX_PROFILE_NAME_LENGTH) return null
+        return name
+    }
+
+    private fun profileNameKey(id: String): String = "$KEY_PROFILE_NAME_PREFIX$id"
+
     private fun escapeHistory(value: String): String = value
         .replace("\\", "\\\\")
         .replace("\t", "\\t")
@@ -182,13 +322,54 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         return result.toString()
     }
 
+    private fun escapeBackupValue(value: String): String = buildString(value.length) {
+        value.forEach { character ->
+            when (character) {
+                '\\' -> append("\\\\")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                else -> append(character)
+            }
+        }
+    }
+
+    private fun unescapeBackupValue(value: String): String? {
+        val result = StringBuilder(value.length)
+        var index = 0
+        while (index < value.length) {
+            val character = value[index]
+            if (character != '\\') {
+                result.append(character)
+                index += 1
+                continue
+            }
+            if (index + 1 >= value.length) return null
+            when (value[index + 1]) {
+                '\\' -> result.append('\\')
+                'n' -> result.append('\n')
+                'r' -> result.append('\r')
+                else -> return null
+            }
+            index += 2
+        }
+        return result.toString()
+    }
+
     companion object {
         const val MAX_HISTORY = 30
+        const val MAX_PROFILES = 6
+        const val MAX_PROFILE_NAME_LENGTH = 24
+        private const val MAX_PROFILE_ID_SUFFIX = 9_999
         private const val MAX_HISTORY_LINE_LENGTH = 240
-        private const val BACKUP_HEADER = "RPS_ARENA_BACKUP_V1"
+        private const val BACKUP_HEADER_V1 = "RPS_ARENA_BACKUP_V1"
+        private const val BACKUP_HEADER_V2 = "RPS_ARENA_BACKUP_V2"
         private const val KEY_SETTINGS = "settings_v1"
         private const val KEY_STATS = "stats_v1"
         private const val KEY_CONFIG = "config_v1"
         private const val KEY_HISTORY = "history_v1"
+        private const val KEY_PROFILE_IDS = "profiles_v1"
+        private const val KEY_ACTIVE_PROFILE = "active_profile_v1"
+        private const val KEY_PROFILE_NAME_PREFIX = "profile_name_v1:"
+        private val PROFILE_ID_PATTERN = Regex("profile-[1-9][0-9]{0,4}")
     }
 }
