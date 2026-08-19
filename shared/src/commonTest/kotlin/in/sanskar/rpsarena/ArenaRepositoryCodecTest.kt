@@ -202,7 +202,7 @@ class ArenaRepositoryCodecTest {
             activeProfile=profile-1
             profileIds=profile-1
             profile.profile-1=Replacement
-            history=good\t
+            history=bad\q
         """.trimIndent()
 
         assertNull(target.previewBackup(invalid))
