@@ -1,6 +1,6 @@
 # What Changed
 
-## Current milestone — v1.1.0 product completion and release hardening
+## Current milestone — v2.5.8 product completion and release hardening
 
 Date: 2026-08-19
 Repository: `sanskarIN/rps-arena`
@@ -12,7 +12,7 @@ This file is the detailed repository handoff log. It intentionally contains impl
 
 ## Milestone scope
 
-Version 1.1.0 completes the remaining practical product requirements that can be implemented safely in the public repository without private signing credentials, mandatory network infrastructure, or a paid/cloud backend.
+Version 2.5.8 completes the remaining practical product requirements that can be implemented safely in the public repository without private signing credentials, mandatory network infrastructure, or a paid/cloud backend.
 
 The milestone covers:
 
@@ -72,19 +72,22 @@ A change that adds/renames a tracked file without updating the exhaustive refere
 
 ### Release-workflow hardening
 
-The final audit removed the remaining release-workflow documentation-coverage gap.
+The final audit removed the remaining release-workflow documentation-coverage gap and expanded the fast release preflight.
 
 `.github/workflows/release.yml` now runs:
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 ```
 
-before the Android release build/test/package steps. A tagged release cannot reach publication when the Android release job fails this documentation gate.
+before the Android release build/test/package steps. A tagged release cannot reach publication when the Android release job fails these source, documentation, secret-pattern, privacy, or version gates.
 
-Version tags must still be created from a validated `main` commit. The release-time check is defense in depth and does not replace exact-head pull-request CI and CodeQL validation.
+Version tags must still be created from a validated `main` commit. The release-time checks are defense in depth and do not replace exact-head pull-request CI, Security checks, and CodeQL validation.
 
 The synchronized release/validation behavior is documented in `docs/ci-cd.md`, `docs/validation.md`, `docs/release.md`, `CHANGELOG.md`, the pull-request description, and this handoff.
 
@@ -468,15 +471,18 @@ The desktop UI test suite now covers:
 `.github/workflows/ci.yml` now validates:
 
 1. repository formatting;
-2. exhaustive tracked-file documentation coverage;
-3. cross-platform version consistency;
-4. shared Kotlin tests, including desktop UI tests;
-5. Android lint;
-6. Android debug assembly;
-7. desktop JVM compilation;
-8. Rust tests.
+2. relative Markdown documentation links;
+3. exhaustive tracked-file documentation coverage;
+4. high-confidence committed-secret patterns;
+5. Android offline/automatic-backup privacy contract;
+6. cross-platform semantic version consistency plus Android numeric `versionCode` mapping;
+7. shared Kotlin tests, including desktop UI tests;
+8. Android lint;
+9. Android debug assembly;
+10. desktop JVM compilation;
+11. Rust tests.
 
-Separate CodeQL automation remains enabled for Kotlin/Java security analysis.
+The focused `Security checks` workflow independently re-runs secret/privacy checks and performs pull-request dependency review. Separate CodeQL automation remains enabled for Kotlin/Java security analysis.
 
 ### Formatting checker
 
@@ -507,7 +513,7 @@ If one or more paths are missing, it prints the missing list and exits with fail
 
 all match.
 
-It also verifies that the About screen actually renders `$APP_VERSION` rather than duplicating a localized/hard-coded version string.
+It also verifies that the About screen actually renders `$APP_VERSION` rather than duplicating a localized/hard-coded version string, and that Android `versionCode` equals `major * 10000 + minor * 100 + patch`. For 2.5.8, the required code is `20508`.
 
 ### Local verification scripts
 
@@ -516,17 +522,19 @@ Updated:
 - `scripts/verify.sh`;
 - `scripts/verify.ps1`.
 
-They now run formatting, documentation coverage, version consistency, Kotlin/Android/Desktop validation, and optional Rust tests when Cargo is available.
+They now run formatting, documentation links/coverage, committed-secret patterns, Android privacy, version consistency, Kotlin/Android/Desktop validation, and optional Rust tests when Cargo is available.
 
 ## Release engineering
 
 ### Version
 
-- Android `versionCode = 2`.
-- Android `versionName = "1.1.0"`.
-- Desktop `packageVersion = "1.1.0"`.
-- Shared `APP_VERSION = "1.1.0"`.
+- Android `versionCode = 20508`.
+- Android `versionName = "2.5.8"`.
+- Desktop `packageVersion = "2.5.8"`.
+- Shared `APP_VERSION = "2.5.8"`.
 - Shared `APP_LICENSE = "MIT"`.
+
+The Android numeric version convention is now deterministic: `major * 10000 + minor * 100 + patch`, with minor and patch limited to values no greater than 99. `scripts/check_version.py` enforces it.
 
 ### Release workflow
 
@@ -534,7 +542,7 @@ Added `.github/workflows/release.yml`.
 
 For manual/tag validation it can:
 
-- run repository formatting, exhaustive documentation coverage, and version consistency checks;
+- run repository formatting, documentation links/coverage, committed-secret patterns, Android privacy, and version consistency checks;
 - run shared tests;
 - run Android release lint;
 - build an unsigned Android release APK;
@@ -548,7 +556,7 @@ For validated version tags it additionally:
 - generates SHA-256 checksums;
 - creates a GitHub Release with generated notes.
 
-The release workflow now independently repeats `check_docs_coverage.py` before release packaging. Normal release policy still requires tagging a validated `main` commit whose PR CI and CodeQL passed on the exact source candidate.
+The release workflow independently repeats the fast source gates before release packaging. Normal release policy still requires tagging a validated `main` commit whose PR CI, Security checks, and CodeQL passed on the exact source candidate.
 
 ### Signing boundary
 
@@ -663,12 +671,16 @@ Security-sensitive issue creation is directed to `SECURITY.md` rather than a pub
 ## Key automation changed/added
 
 - `.github/workflows/ci.yml`
+- `.github/workflows/security.yml`
 - `.github/workflows/release.yml`
 - `.github/release.yml`
 - `.github/ISSUE_TEMPLATE/config.yml`
 - `.github/pull_request_template.md`
 - `scripts/check_format.py`
+- `scripts/check_docs_links.py`
 - `scripts/check_docs_coverage.py`
+- `scripts/check_for_secrets.py`
+- `scripts/check_android_privacy.py`
 - `scripts/check_version.py`
 - `scripts/verify.sh`
 - `scripts/verify.ps1`
@@ -679,7 +691,10 @@ Repository verification target:
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
 gradle :androidApp:lintDebug --stacktrace
@@ -694,7 +709,7 @@ Dedicated desktop UI command:
 gradle :shared:desktopTest --stacktrace
 ```
 
-Release validation additionally repeats the formatting/documentation/version source gates and exercises Android release lint/assembly, Linux desktop packaging, Rust packaging, artifact upload, and checksum generation.
+Release validation additionally repeats the formatting/documentation/secret/privacy/version source gates and exercises Android release lint/assembly, Linux desktop packaging, Rust packaging, artifact upload, and checksum generation.
 
 ## Validation status
 
@@ -711,15 +726,15 @@ Previous validation PR `#9` passed before merge:
 Validated v1.0 PR head: `4c2e93330055986d6b87ab002a97b7929c5a2275`.
 Validation merge commit: `4b19247605ce7a94a8e6c819a63f6cd300d00d94`.
 
-### v1.1 candidate
+### v2.5.8 candidate
 
-Pull request `#11` is the v1.1 validation gate.
+Pull request `#11` is the v2.5.8 validation gate.
 
-This commit is intended to be the final documentation handoff/freeze for the current branch. Required CI and CodeQL must run on the exact post-handoff PR head before merge.
+This handoff is intended to describe the final repository state for the current branch. Required CI, Security checks, and CodeQL must run on the exact post-handoff PR head before merge.
 
-Repeated implementation/documentation commits intentionally restarted/cancelled obsolete workflow runs through `cancel-in-progress: true`; earlier green or queued SHAs do not validate the final candidate.
+Repeated implementation/documentation commits intentionally restart/cancel obsolete workflow runs through `cancel-in-progress: true`; earlier green or queued SHAs do not validate the final candidate.
 
-The final CI must prove `scripts/check_docs_coverage.py` passes, which mechanically confirms that every Git-tracked path is represented in `docs/repository-file-reference.md`. The release workflow now repeats that same documentation check before release packaging.
+The final CI must prove `scripts/check_docs_coverage.py` passes, which mechanically confirms that every Git-tracked path is represented in `docs/repository-file-reference.md`. The release workflow repeats that same documentation check before release packaging.
 
 If a required job fails, fix only the actual failure in a focused commit, update this handoff when materially necessary, and revalidate the new exact head. Do not bypass the gate.
 
@@ -764,7 +779,7 @@ Future incompatible backup changes must use a new schema/header and migration do
 
 ## Known limitations / intentional boundaries
 
-- A real LAN socket/discovery adapter is not shipped in v1.1.0; the shared room contract plus no-network in-memory reference adapter are implemented and tested.
+- A real LAN socket/discovery adapter is not shipped in v2.5.8; the shared room contract plus no-network in-memory reference adapter are implemented and tested.
 - Android device/emulator instrumentation UI tests are not part of the current hosted CI baseline; desktop Compose UI smoke tests plus documented Android manual accessibility/device checks remain the current practical coverage.
 - Store signing/notarization is not automated with real credentials because authorized signing secrets are not stored in the repository.
 - Public release artifacts are intentionally unsigned/reproducible until a controlled signing environment is configured.
@@ -777,9 +792,9 @@ Future incompatible backup changes must use a new schema/header and migration do
 
 No open repository issues were found during the start-of-milestone audit.
 
-Any CI/CodeQL finding on PR `#11` takes priority over optional future roadmap work.
+Any CI/Security/CodeQL finding on PR `#11` takes priority over optional future roadmap work.
 
-## Next optional tasks after a green v1.1 merge
+## Next optional tasks after a green v2.5.8 merge
 
 1. Implement a real opt-in LAN adapter only after explicit product/security/privacy approval.
 2. Add Android emulator/device Compose instrumentation to CI when runner cost/stability is accepted.
@@ -788,9 +803,9 @@ Any CI/CodeQL finding on PR `#11` takes priority over optional future roadmap wo
 5. Expand localization to additional languages only when translations can be maintained and tested at the same quality level.
 6. Consider adding the official Gradle Wrapper in a dedicated integrity-reviewed build-system change so local Gradle selection can be pinned by the repository itself.
 
-## v1.1.0 release-notes draft
+## v2.5.8 release-notes draft
 
-RPS Arena 1.1.0 expands the offline Android/Desktop arena with optional round timers, replayable CPU challenge seeds, local profile naming, recent W/L/D trends, versioned local backup/import, substantially broader Hindi localization, responsive configuration controls, reduced-motion result behavior, and a transport-neutral private-room architecture. Persistence/import validation is stricter, the private-room reference protocol now enforces lifecycle authority and input integrity, shared/desktop UI regression coverage is broader, CI enforces formatting/exhaustive tracked-file documentation/version consistency/Android lint, and tagged/manual release validation independently repeats the formatting/documentation/version source gates before generating unsigned Android/Linux/Rust artifacts with checksums. The repository now includes a role-based deep documentation set covering commands, toolchain/upgrades, build architecture, game rules/state, storage/backup, localization, room protocol, Android, desktop, Rust, tests, GitHub automation, branding, maintenance, terminology, and every tracked file. Primary gameplay remains account-free, telemetry-free, ad-free, cloud-free, and offline-first.
+RPS Arena 2.5.8 expands the offline Android/Desktop arena with optional round timers, replayable CPU challenge seeds, local profile naming, recent W/L/D trends, versioned local backup/import, substantially broader Hindi localization, responsive configuration controls, reduced-motion result behavior, and a transport-neutral private-room architecture. Persistence/import validation is stricter, the private-room reference protocol enforces lifecycle authority and input integrity, shared/desktop UI regression coverage is broader, CI enforces formatting, relative documentation links, exhaustive tracked-file documentation, committed-secret patterns, Android privacy, synchronized semantic versions, Android numeric version-code mapping, Android lint/builds, desktop compilation, and Rust tests. Tagged/manual release validation independently repeats the fast source gates before generating unsigned Android/Linux/Rust artifacts with checksums. The repository includes a role-based deep documentation set covering commands, toolchain/upgrades, build architecture, game rules/state, storage/backup, localization, room protocol, Android, desktop, Rust, tests, GitHub automation, branding, maintenance, terminology, and every tracked file. Primary gameplay remains account-free, telemetry-free, ad-free, cloud-free, and offline-first.
 
 ## Representative milestone commits
 
@@ -832,6 +847,27 @@ This milestone intentionally uses many small, cohesive commits rather than one l
 - `refactor: simplify private room event validation branch`
 - `ui: wrap configuration chips on narrow screens`
 - `ci: allow intentional Markdown hard break spacing`.
+
+Representative v2.5.8 release-alignment messages include:
+
+- `chore(android): bump release version to 2.5.8`
+- `chore(desktop): bump package version to 2.5.8`
+- `chore(shared): expose version 2.5.8 in app metadata`
+- `ci(version): enforce semantic Android version codes`
+- `docs(changelog): retarget completion release to 2.5.8`
+- `docs(roadmap): retarget completion milestone to v2.5.8`
+- `docs(security): mark 2.5.x as supported release line`
+- `docs(release): define v2.5.8 release metadata and tag`
+- `docs(readme): publish 2.5.8 release metadata`
+- `docs(build): document 2.5.8 semantic version mapping`
+- `docs(desktop): align package reference with 2.5.8`
+- `docs(github): align milestone and release tag with v2.5.8`
+- `docs(glossary): refresh 2.5.8 version and workflow terms`
+- `docs(protocol): align current candidate with v2.5.8`
+- `docs(localization): align shared version metadata with 2.5.8`
+- `docs(android): align platform versioning with 2.5.8`
+- `docs(rust): align app candidate reference with 2.5.8`
+- `docs(validation): align exact release gate with 2.5.8`.
 
 Representative deep-documentation/coverage messages include:
 
