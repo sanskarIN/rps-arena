@@ -16,12 +16,14 @@ No unreleased user-visible changes are currently queued.
 - Recent 10-round win/loss/draw trend summary.
 - Versioned `RPS_ARENA_BACKUP|1` backup export/import for settings, statistics, and recent history.
 - Confirmed local-data reset flow.
-- English and Hindi core UI catalogs.
+- English and Hindi localization for navigation, gameplay choices, difficulty/match modes, results, timeout feedback, history rendering, backup/reset feedback, settings, and achievements.
 - Reduced-motion-aware round-result transition behavior.
-- Branded light/dark color schemes, reusable layout tokens, and rounded Material 3 component shapes.
+- Branded light/dark color schemes, reusable layout tokens, responsive max-width content framing, and rounded Material 3 component shapes.
+- Wrapping configuration-chip layouts so match and timer options remain reachable on narrow screens.
 - Transport-neutral private-room multiplayer contracts with a deterministic in-memory two-player reference adapter.
-- Regression tests for timer invariants, timeout behavior, backup validation/restore, settings migration, history/profile sanitization, trends, deterministic replay, and private-room protocol constraints.
-- Compose desktop UI smoke tests covering onboarding, primary play navigation, language switching, backup controls, and destructive reset confirmation.
+- Shared app metadata constants for language-neutral About/version rendering.
+- Regression tests for timer invariants, timeout behavior, backup validation/restore, settings migration, history/profile sanitization, trends, deterministic replay, localization catalogs, achievement copy, and private-room protocol constraints.
+- Compose desktop UI smoke tests covering onboarding, primary play navigation, English/Hindi switching, Hindi gameplay/achievement copy, backup controls, and destructive reset confirmation.
 - Repository formatting and cross-platform version consistency verification scripts.
 - Android lint as a required CI gate.
 - Tagged release workflow for unsigned Android, Linux desktop, and Rust package artifacts with SHA-256 checksums.
@@ -32,13 +34,17 @@ No unreleased user-visible changes are currently queued.
 - Settings persistence now uses `settings_v2` and migrates compatible `settings_v1` data automatically.
 - Android package version is now `1.1.0` (`versionCode = 2`).
 - Desktop package version is now `1.1.0`.
+- Version validation now checks Android, desktop, shared metadata, and that About renders the shared version constant instead of depending on English UI text.
 - The root `ROADMAP.md` is now the canonical roadmap source.
 - History and local profile input are length-bounded and sanitized before persistence.
 - Contribution, support, privacy, and security documentation now reflect backup, optional room-transport, and release-signing boundaries.
+- The formatting gate permits the standard two-space Markdown hard-break syntax while still rejecting accidental trailing whitespace elsewhere.
 
 ### Security and reliability
 - Backup import rejects oversized input, excessive record counts, duplicate settings/stat records, unknown record types, invalid settings, invalid statistics invariants, and malformed records before replacing local state.
 - Private-room reference sessions reject events that claim a different participant identity and enforce a two-participant maximum.
+- Private-room client sessions cannot forge gateway-owned join/leave lifecycle events and reject gesture events with non-positive round numbers.
+- Closing a room session broadcasts its leave lifecycle event only once.
 - Primary gameplay remains offline-first and does not add an Android internet permission.
 
 ## [1.0.0] - 2026-08-19
