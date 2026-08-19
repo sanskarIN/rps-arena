@@ -28,6 +28,7 @@ gradle --no-daemon :androidApp:assembleDebug
 gradle --no-daemon :androidApp:lintDebug
 gradle --no-daemon :desktopApp:classes
 python scripts/check_docs_links.py
+python scripts/check_android_privacy.py
 python scripts/check_for_secrets.py
 ```
 
@@ -45,6 +46,7 @@ Also require:
 - successful latest CI workflow for Kotlin/Android/Desktop and Rust;
 - successful latest CodeQL analysis;
 - successful latest Documentation workflow;
+- successful Android privacy-contract validation;
 - successful committed-secret scan;
 - successful dependency review for the release pull request when GitHub dependency review is available;
 - Dependabot/security-alert review;
@@ -54,6 +56,20 @@ Also require:
 - confirmation that repository rules/protection use exact observed check names, if enabled.
 
 Do not treat cancelled superseded workflow runs as failures; evaluate the workflows attached to the exact release-candidate commit.
+
+## Android local-data privacy gate
+
+Before release, keep the Android privacy contract intact:
+
+- `android.permission.INTERNET` is absent from the v1 manifest;
+- `android:allowBackup` remains `false`;
+- `android:fullBackupContent` points to `@xml/backup_rules`;
+- `android:dataExtractionRules` points to `@xml/data_extraction_rules`;
+- legacy backup rules exclude all application shared preferences;
+- current cloud-backup rules exclude all application shared preferences;
+- current device-transfer rules exclude all application shared preferences.
+
+`scripts/check_android_privacy.py` enforces these repository invariants. The user-controlled RPS Arena V2 text export/import remains the explicit portability mechanism for application data.
 
 ## Backup compatibility gate
 
