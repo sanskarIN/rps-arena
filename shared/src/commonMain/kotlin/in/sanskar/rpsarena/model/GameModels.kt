@@ -67,9 +67,6 @@ data class ArenaSettings(
     val darkTheme: Boolean = false,
     val followSystemTheme: Boolean = true,
     val reducedMotion: Boolean = false,
-    val soundEnabled: Boolean = true,
-    val hapticsEnabled: Boolean = true,
-    val extendedVariant: Boolean = false,
     val onboardingComplete: Boolean = false,
 )
 
