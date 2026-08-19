@@ -1,6 +1,6 @@
 # Testing
 
-RPS Arena concentrates automated confidence on deterministic rules, CPU behavior, persistence, state transitions, data safety, primary UI behavior, and platform build integration.
+RPS Arena concentrates automated confidence on deterministic rules, CPU behavior, persistence, state transitions, data safety, privacy boundaries, primary UI behavior, and platform build integration.
 
 ## Shared tests
 
@@ -75,12 +75,15 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets --all-features
 ```
 
-## Documentation and security verification
+## Documentation, privacy, and security verification
 
 ```bash
 python scripts/check_docs_links.py
+python scripts/check_android_privacy.py
 python scripts/check_for_secrets.py
 ```
+
+`check_android_privacy.py` fails if the Android manifest regains INTERNET permission, application backup is enabled, required backup/extraction-rule references are removed, or the shared-preference exclusions disappear from legacy/current backup and device-transfer rules.
 
 The committed-secret scanner intentionally looks only for high-confidence credential patterns and is complementary to, not a replacement for, GitHub-native secret scanning/push protection when those features are available.
 
@@ -92,7 +95,9 @@ The committed-secret scanner intentionally looks only for high-confidence creden
 
 `.github/workflows/docs.yml` validates repository-local Markdown links.
 
-`.github/workflows/security.yml` runs the committed-secret scanner on pushes and pull requests and GitHub dependency review on pull requests.
+`.github/workflows/security.yml` runs the committed-secret scanner and Android privacy-contract validator, plus GitHub dependency review on pull requests.
+
+CI, Documentation, Security checks, and CodeQL run proposed changes through the `pull_request` event and post-merge changes through `push` to `main`; feature branches are not separately duplicated under `push`.
 
 `.github/dependabot.yml` tracks Gradle, Cargo, and GitHub Actions dependency updates.
 
@@ -103,6 +108,8 @@ Once branch protection/rulesets are enabled, only exact check names that have be
 Every deterministic bug should receive a regression test when practical. Fixes should not rely on manual testing alone for rules, persistence, serialization, profile validation, timer behavior, backup safety, trend derivation, or state transitions.
 
 Public state/domain entry points must validate ruleset constraints even when the current UI already prevents invalid input. UI filtering is not treated as the only integrity boundary.
+
+Privacy-sensitive manifest/resource invariants should have deterministic repository checks when platform lint alone does not encode the intended product policy.
 
 Primary UI journeys should use stable semantic tags and assertions rather than screenshots or layout-coordinate taps.
 
