@@ -56,6 +56,7 @@ The checker validates path coverage. Human review still evaluates whether each e
 Documentation coverage is now included in:
 
 - `.github/workflows/ci.yml`;
+- `.github/workflows/release.yml`;
 - `scripts/verify.sh`;
 - `scripts/verify.ps1`;
 - `.github/pull_request_template.md`;
@@ -67,15 +68,25 @@ Documentation coverage is now included in:
 - `docs/ci-cd.md`;
 - `docs/command-reference.md`.
 
-A change that adds/renames a tracked file without updating the exhaustive reference should fail the primary CI gate.
+A change that adds/renames a tracked file without updating the exhaustive reference should fail normal CI, and the tagged/manual release preflight independently rechecks the same coverage before release packaging.
 
-### Release-workflow boundary
+### Release-workflow hardening
 
-An attempt was made to duplicate the documentation-coverage step directly inside `.github/workflows/release.yml`. The connected write was blocked by the connector safety layer, and no bypass or alternate unsafe write path was used.
+The final audit removed the remaining release-workflow documentation-coverage gap.
 
-The checked-in release workflow therefore remains unchanged in this respect. Release policy requires version tags to be created from validated `main`, whose normal CI includes the documentation-coverage gate.
+`.github/workflows/release.yml` now runs:
 
-This distinction is documented accurately in `docs/ci-cd.md` and `docs/validation.md` rather than claiming the tag workflow contains a step that was not actually committed.
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_version.py
+```
+
+before the Android release build/test/package steps. A tagged release cannot reach publication when the Android release job fails this documentation gate.
+
+Version tags must still be created from a validated `main` commit. The release-time check is defense in depth and does not replace exact-head pull-request CI and CodeQL validation.
+
+The synchronized release/validation behavior is documented in `docs/ci-cd.md`, `docs/validation.md`, `docs/release.md`, `CHANGELOG.md`, the pull-request description, and this handoff.
 
 ### New deep documentation set
 
@@ -93,7 +104,7 @@ Added:
 - `docs/desktop-platform.md` — every desktop launcher/build/storage file, JVM behavior, Java Preferences, UI tests, and host-dependent DEB/MSI/DMG packaging/signing boundaries;
 - `docs/rust-engine.md` — every optional Rust crate file, rule parity, Cargo tests/package, lock/dependency policy, FFI/WASM/security boundaries;
 - `docs/test-catalog.md` — every tracked Kotlin/Compose automated test file and its exact regression responsibility/assertions;
-- `docs/ci-cd.md` — every `.github` automation/configuration file, triggers, permissions, concurrency, CI/CodeQL/release jobs, artifacts/checksums, Dependabot, issue/PR/funding configuration;
+- `docs/ci-cd.md` — every `.github` automation/configuration file, triggers, permissions, jobs, failure meaning, artifact paths, documentation coverage, and maintenance rules;
 - `docs/maintenance.md` — long-term versions/dependencies/gameplay/storage/language/network/platform/test/docs/release/secret-incident maintenance playbook;
 - `docs/branding-assets.md` — root SVG, Android adaptive-icon, platform-theme/shared-theme ownership and rebranding/accessibility/export checklist;
 - `docs/glossary.md` — project/build/KMP/Android/Desktop/Rust/CI/security/release terminology and repository-specific identifiers;
@@ -108,9 +119,10 @@ Expanded/relinked:
 - `CONTRIBUTING.md` — requires documentation coverage and updating the exhaustive file reference for every tracked-file addition/rename/removal;
 - `.github/pull_request_template.md` — adds documentation-coverage command and every-file reference checklist;
 - `docs/testing.md` — makes format/docs/version source gates explicit before compilation and links the per-test catalog;
-- `docs/validation.md` — defines the every-file coverage gate and exact-head validation rule;
-- `CHANGELOG.md` — records the exhaustive documentation/coverage milestone;
-- `docs/ci-cd.md` — reflects the actual CI documentation gate and the unchanged release workflow.
+- `docs/validation.md` — defines the every-file coverage gate, release-time recheck, and exact-head validation rule;
+- `docs/release.md` — defines the complete source/build/release checklist and shared version locations;
+- `CHANGELOG.md` — records the exhaustive documentation/coverage milestone and release-time recheck;
+- `docs/ci-cd.md` — reflects the actual CI and release documentation gates.
 
 ### Every-file documentation policy
 
@@ -522,7 +534,7 @@ Added `.github/workflows/release.yml`.
 
 For manual/tag validation it can:
 
-- run repository format/version checks;
+- run repository formatting, exhaustive documentation coverage, and version consistency checks;
 - run shared tests;
 - run Android release lint;
 - build an unsigned Android release APK;
@@ -536,7 +548,7 @@ For validated version tags it additionally:
 - generates SHA-256 checksums;
 - creates a GitHub Release with generated notes.
 
-The release workflow does not currently duplicate the new documentation-coverage command. Normal release policy therefore requires tagging a validated `main` commit whose CI already passed the documentation gate.
+The release workflow now independently repeats `check_docs_coverage.py` before release packaging. Normal release policy still requires tagging a validated `main` commit whose PR CI and CodeQL passed on the exact source candidate.
 
 ### Signing boundary
 
@@ -615,7 +627,7 @@ Added/expanded:
 - documented Discussions categories;
 - documented recommended labels/milestones;
 - documented merge policy that preserves meaningful granular commits;
-- CI-enforced requirement that every tracked file be represented in the exhaustive file reference.
+- CI/release-enforced requirement that every tracked file be represented in the exhaustive file reference.
 
 Security-sensitive issue creation is directed to `SECURITY.md` rather than a public blank issue.
 
@@ -682,7 +694,7 @@ Dedicated desktop UI command:
 gradle :shared:desktopTest --stacktrace
 ```
 
-Release validation additionally exercises Android release lint/assembly, Linux desktop packaging, Rust packaging, artifact upload, and checksum generation.
+Release validation additionally repeats the formatting/documentation/version source gates and exercises Android release lint/assembly, Linux desktop packaging, Rust packaging, artifact upload, and checksum generation.
 
 ## Validation status
 
@@ -707,7 +719,7 @@ This commit is intended to be the final documentation handoff/freeze for the cur
 
 Repeated implementation/documentation commits intentionally restarted/cancelled obsolete workflow runs through `cancel-in-progress: true`; earlier green or queued SHAs do not validate the final candidate.
 
-The final CI must now additionally prove `scripts/check_docs_coverage.py` passes, which mechanically confirms that every Git-tracked path is represented in `docs/repository-file-reference.md`.
+The final CI must prove `scripts/check_docs_coverage.py` passes, which mechanically confirms that every Git-tracked path is represented in `docs/repository-file-reference.md`. The release workflow now repeats that same documentation check before release packaging.
 
 If a required job fails, fix only the actual failure in a focused commit, update this handoff when materially necessary, and revalidate the new exact head. Do not bypass the gate.
 
@@ -756,7 +768,6 @@ Future incompatible backup changes must use a new schema/header and migration do
 - Android device/emulator instrumentation UI tests are not part of the current hosted CI baseline; desktop Compose UI smoke tests plus documented Android manual accessibility/device checks remain the current practical coverage.
 - Store signing/notarization is not automated with real credentials because authorized signing secrets are not stored in the repository.
 - Public release artifacts are intentionally unsigned/reproducible until a controlled signing environment is configured.
-- The release workflow does not currently repeat `check_docs_coverage.py`; version tags must be created from `main` only after the normal CI documentation gate is green.
 - iOS packaging is not part of the current release gate.
 - Sound/haptics preferences are persisted product settings; platform-specific effect engines are not added solely to inflate dependency count or permissions.
 - The primary app remains fully offline and does not request Android internet permission.
@@ -779,7 +790,7 @@ Any CI/CodeQL finding on PR `#11` takes priority over optional future roadmap wo
 
 ## v1.1.0 release-notes draft
 
-RPS Arena 1.1.0 expands the offline Android/Desktop arena with optional round timers, replayable CPU challenge seeds, local profile naming, recent W/L/D trends, versioned local backup/import, substantially broader Hindi localization, responsive configuration controls, reduced-motion result behavior, and a transport-neutral private-room architecture. Persistence/import validation is stricter, the private-room reference protocol now enforces lifecycle authority and input integrity, shared/desktop UI regression coverage is broader, CI enforces formatting/exhaustive tracked-file documentation/version consistency/Android lint, and tagged builds can generate unsigned Android/Linux/Rust artifacts with checksums. The repository now includes a role-based deep documentation set covering commands, toolchain/upgrades, build architecture, game rules/state, storage/backup, localization, room protocol, Android, desktop, Rust, tests, GitHub automation, branding, maintenance, terminology, and every tracked file. Primary gameplay remains account-free, telemetry-free, ad-free, cloud-free, and offline-first.
+RPS Arena 1.1.0 expands the offline Android/Desktop arena with optional round timers, replayable CPU challenge seeds, local profile naming, recent W/L/D trends, versioned local backup/import, substantially broader Hindi localization, responsive configuration controls, reduced-motion result behavior, and a transport-neutral private-room architecture. Persistence/import validation is stricter, the private-room reference protocol now enforces lifecycle authority and input integrity, shared/desktop UI regression coverage is broader, CI enforces formatting/exhaustive tracked-file documentation/version consistency/Android lint, and tagged/manual release validation independently repeats the formatting/documentation/version source gates before generating unsigned Android/Linux/Rust artifacts with checksums. The repository now includes a role-based deep documentation set covering commands, toolchain/upgrades, build architecture, game rules/state, storage/backup, localization, room protocol, Android, desktop, Rust, tests, GitHub automation, branding, maintenance, terminology, and every tracked file. Primary gameplay remains account-free, telemetry-free, ad-free, cloud-free, and offline-first.
 
 ## Representative milestone commits
 
@@ -800,6 +811,7 @@ This milestone intentionally uses many small, cohesive commits rather than one l
 - `ci: enforce formatting and Android lint gates`
 - `ci: verify synchronized release versions`
 - `ci: add reproducible tagged release artifact workflow`
+- `ci: enforce documentation coverage in release workflow`
 - `test: enable Compose desktop UI test runtime`
 - `test: add desktop UI smoke coverage for primary journeys`
 - `ui: add shared responsive layout design tokens`
@@ -852,7 +864,11 @@ Representative deep-documentation/coverage messages include:
 - `docs: synchronize CI guide with documentation coverage gate`
 - `docs: explain documentation coverage and full verification commands`
 - `docs: enforce exhaustive documentation in contributor workflow`
-- `docs: record exhaustive repository documentation milestone`.
+- `docs: record exhaustive repository documentation milestone`
+- `docs: synchronize validation with release documentation gate`
+- `docs: strengthen release verification checklist`
+- `docs: document release documentation coverage gate`
+- `docs: record release documentation gate hardening`.
 
 ## Commit identity
 
