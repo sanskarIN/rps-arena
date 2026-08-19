@@ -213,6 +213,25 @@ class ArenaRepositoryCodecTest {
     }
 
     @Test
+    fun duplicateBackupKeysAreRejectedWithoutMutation() {
+        val target = ArenaRepository(MemoryStore())
+        val original = ArenaStats(1, 1, 0, 0, 1, 1)
+        target.saveStats(original)
+        val duplicate = """
+            RPS_ARENA_BACKUP_V1
+            settings=false|true|false|true
+            stats=0|0|0|0|0|0
+            stats=1|1|0|0|1|1
+            config=CLASSIC|CPU|NORMAL|BEST_OF_3|20260819|0
+            history=
+        """.trimIndent()
+
+        assertNull(target.previewBackup(duplicate))
+        assertFalse(target.importBackup(duplicate))
+        assertEquals(original, target.loadStats())
+    }
+
+    @Test
     fun oversizedBackupIsRejectedWithoutMutation() {
         val target = ArenaRepository(MemoryStore())
         val original = ArenaStats(1, 1, 0, 0, 1, 1)
