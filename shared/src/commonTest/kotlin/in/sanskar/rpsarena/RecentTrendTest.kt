@@ -35,6 +35,23 @@ class RecentTrendTest {
     }
 
     @Test
+    fun profiledPlayerOneHistoryCannotBeConfusedWithOpponentLabels() {
+        val trend = HistoryTrendParser.parse(
+            listOf(
+                "Rock vs Scissors — Player 1 (Player 2) won",
+                "Paper vs Rock — Player 1 (CPU) won",
+                "Scissors vs Paper — Player 2 won",
+                "Rock vs Paper — CPU won",
+            ),
+        )
+
+        assertEquals(
+            listOf(TrendResult.WIN, TrendResult.WIN, TrendResult.LOSS, TrendResult.LOSS),
+            trend.results,
+        )
+    }
+
+    @Test
     fun ignoresUnknownHistoryAndHonorsLimit() {
         val trend = HistoryTrendParser.parse(
             listOf(
