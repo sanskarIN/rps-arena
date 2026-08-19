@@ -14,6 +14,7 @@ Current common tests cover:
 - migration of the previous seven-field settings format;
 - corrupted-stat fallback;
 - local profile create, rename, activate, delete, input normalization, and maximum-count validation;
+- physical removal of discarded profile-name keys after profile delete, full reset, and backup import replacing the profile set;
 - versioned V2 backup/restore including local profiles;
 - migration of V1 backups to the default local profile;
 - non-mutating backup preview;
@@ -113,6 +114,8 @@ Public state/domain entry points must validate ruleset constraints even when the
 
 Backup parsing must reject ambiguous duplicate keys and malformed key/value rows rather than silently overwriting or ignoring them. Preview and import share the same parser so both paths enforce the same contract before mutation.
 
+Profile deletion semantics include removing obsolete display-name keys from the underlying production preference store. Tests that cover delete/reset/import cleanup should inspect storage presence, not only the active decoded profile list.
+
 Privacy-sensitive manifest/resource invariants should have deterministic repository checks when platform lint alone does not encode the intended product policy.
 
 Primary UI journeys should use stable semantic tags and assertions rather than screenshots or layout-coordinate taps.
@@ -133,6 +136,9 @@ Before a release candidate, verify:
 - local two-player timeout on both turns;
 - settings/config persistence after restart;
 - create, rename, select, and delete local profiles;
+- deleted profile aliases are absent after restarting/reloading storage;
+- full reset removes extra local profile aliases and restores default profile state;
+- importing a smaller profile set does not leave discarded local aliases active/persisted;
 - profile persistence after restart;
 - generated V2 backup preview and successful restore;
 - V1 backup migration;
