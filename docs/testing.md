@@ -18,7 +18,9 @@ Current common tests cover:
 - migration of V1 backups to the default local profile;
 - non-mutating backup preview;
 - oversized and malformed backup rejection;
-- atomic rejection before mutation when backup history is invalid;
+- malformed backup key/value-row rejection;
+- duplicate backup-key rejection;
+- atomic rejection before mutation when backup history or backup keys are invalid;
 - validated history replacement;
 - match-configuration persistence;
 - CPU timeout behavior;
@@ -109,6 +111,8 @@ Every deterministic bug should receive a regression test when practical. Fixes s
 
 Public state/domain entry points must validate ruleset constraints even when the current UI already prevents invalid input. UI filtering is not treated as the only integrity boundary.
 
+Backup parsing must reject ambiguous duplicate keys and malformed key/value rows rather than silently overwriting or ignoring them. Preview and import share the same parser so both paths enforce the same contract before mutation.
+
 Privacy-sensitive manifest/resource invariants should have deterministic repository checks when platform lint alone does not encode the intended product policy.
 
 Primary UI journeys should use stable semantic tags and assertions rather than screenshots or layout-coordinate taps.
@@ -132,7 +136,7 @@ Before a release candidate, verify:
 - profile persistence after restart;
 - generated V2 backup preview and successful restore;
 - V1 backup migration;
-- malformed/oversized backup rejection without data loss;
+- malformed/duplicate-key/oversized backup rejection without data loss;
 - history clear and one-step undo;
 - undo invalidation after new history is written;
 - recent W/L/D trend and decisive win-rate display;
