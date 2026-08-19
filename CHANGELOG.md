@@ -18,12 +18,15 @@ No unreleased user-visible changes are currently queued.
 - Confirmed local-data reset flow.
 - English and Hindi core UI catalogs.
 - Reduced-motion-aware round-result transition behavior.
+- Branded light/dark color schemes, reusable layout tokens, and rounded Material 3 component shapes.
 - Transport-neutral private-room multiplayer contracts with a deterministic in-memory two-player reference adapter.
-- Regression tests for timeout behavior, backup validation/restore, settings migration, trends, and private-room protocol constraints.
+- Regression tests for timer invariants, timeout behavior, backup validation/restore, settings migration, history/profile sanitization, trends, deterministic replay, and private-room protocol constraints.
+- Compose desktop UI smoke tests covering onboarding, primary play navigation, language switching, backup controls, and destructive reset confirmation.
 - Repository formatting and cross-platform version consistency verification scripts.
 - Android lint as a required CI gate.
 - Tagged release workflow for unsigned Android, Linux desktop, and Rust package artifacts with SHA-256 checksums.
-- Setup, development, troubleshooting, accessibility, performance, architecture, testing, release, and ADR documentation.
+- GitHub repository-settings guidance for rulesets, security features, labels, milestones, Discussions, and release settings.
+- Setup, development, troubleshooting, accessibility, performance, architecture, testing, validation, release, and ADR documentation.
 
 ### Changed
 - Settings persistence now uses `settings_v2` and migrates compatible `settings_v1` data automatically.
@@ -31,6 +34,7 @@ No unreleased user-visible changes are currently queued.
 - Desktop package version is now `1.1.0`.
 - The root `ROADMAP.md` is now the canonical roadmap source.
 - History and local profile input are length-bounded and sanitized before persistence.
+- Contribution, support, privacy, and security documentation now reflect backup, optional room-transport, and release-signing boundaries.
 
 ### Security and reliability
 - Backup import rejects oversized input, excessive record counts, duplicate settings/stat records, unknown record types, invalid settings, invalid statistics invariants, and malformed records before replacing local state.
