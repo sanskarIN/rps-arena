@@ -248,10 +248,7 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
             else -> return null
         }
 
-        val values = lines.drop(1).mapNotNull { line ->
-            val separator = line.indexOf('=')
-            if (separator <= 0) null else line.substring(0, separator) to line.substring(separator + 1)
-        }.toMap()
+        val values = parseBackupValues(lines.drop(1)) ?: return null
 
         val settings = decodeSettingsOrNull(values["settings"].orEmpty()) ?: return null
         val stats = decodeStatsOrNull(values["stats"].orEmpty()) ?: return null
@@ -270,6 +267,18 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
             LocalProfilesState.default()
         }
         return DecodedBackup(formatVersion, settings, stats, config, profilesState, history)
+    }
+
+    private fun parseBackupValues(lines: List<String>): Map<String, String>? {
+        val values = linkedMapOf<String, String>()
+        lines.forEach { line ->
+            val separator = line.indexOf('=')
+            if (separator <= 0) return null
+            val key = line.substring(0, separator)
+            if (!BACKUP_KEY_PATTERN.matches(key) || key in values) return null
+            values[key] = line.substring(separator + 1)
+        }
+        return values
     }
 
     private fun isValidHistory(lines: List<String>): Boolean {
@@ -415,6 +424,7 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         private const val KEY_ACTIVE_PROFILE = "active_profile_v1"
         private const val KEY_PROFILE_NAME_PREFIX = "profile_name_v1:"
         private val PROFILE_ID_PATTERN = Regex("profile-[1-9][0-9]{0,4}")
+        private val BACKUP_KEY_PATTERN = Regex("[A-Za-z][A-Za-z0-9.-]{0,63}")
     }
 }
 
