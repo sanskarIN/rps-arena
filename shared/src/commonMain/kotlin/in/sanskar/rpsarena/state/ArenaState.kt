@@ -17,7 +17,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         private set
     var stats by mutableStateOf(repository.loadStats())
         private set
-    var config by mutableStateOf(MatchConfig())
+    var config by mutableStateOf(repository.loadMatchConfig())
         private set
     var match by mutableStateOf(MatchSnapshot(config))
         private set
@@ -57,7 +57,8 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
     }
 
     fun updateConfig(value: MatchConfig) {
-        config = value
+        repository.saveMatchConfig(value)
+        config = repository.loadMatchConfig()
         resetMatch()
     }
 
@@ -133,6 +134,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         repository.clearUserData(preserveOnboarding = true)
         settings = repository.loadSettings()
         stats = repository.loadStats()
+        config = repository.loadMatchConfig()
         backupText = ""
         resetMatch()
         dataMessage = "Local statistics, history, and preferences were reset."
