@@ -1,7 +1,7 @@
-package in.sanskar.rpsarena.data
+package `in`.sanskar.rpsarena.data
 
-import in.sanskar.rpsarena.model.ArenaSettings
-import in.sanskar.rpsarena.model.ArenaStats
+import `in`.sanskar.rpsarena.model.ArenaSettings
+import `in`.sanskar.rpsarena.model.ArenaStats
 
 class ArenaRepository(private val store: PlatformStore = PlatformStore) {
     fun loadSettings(): ArenaSettings = decodeSettings(store.getString(KEY_SETTINGS))

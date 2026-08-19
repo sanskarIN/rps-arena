@@ -31,7 +31,7 @@
 - Compose Multiplatform 1.11.0
 - Android Gradle Plugin 9.3.0
 - Gradle 9.5.1
-- Android API 26+ / target 37
+- Android API 26+ / compile + target SDK 36
 - Optional Rust 2024 edition engine
 
 ## Project structure
@@ -47,7 +47,7 @@ docs/         Architecture, release, testing and support documentation
 
 ## Build
 
-Requirements: JDK 17+, Gradle 9.5.1, Android SDK 37 for Android, and a supported desktop OS.
+Requirements: JDK 17+, Gradle 9.5.1, Android SDK 36 for Android, and a supported desktop OS.
 
 ```bash
 gradle :shared:allTests

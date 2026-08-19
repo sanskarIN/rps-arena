@@ -1,8 +1,8 @@
-package in.sanskar.rpsarena.engine
+package `in`.sanskar.rpsarena.engine
 
-import in.sanskar.rpsarena.model.Difficulty
-import in.sanskar.rpsarena.model.GameVariant
-import in.sanskar.rpsarena.model.Gesture
+import `in`.sanskar.rpsarena.model.Difficulty
+import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.Gesture
 import kotlin.random.Random
 
 class CpuStrategy(seed: Int) {
