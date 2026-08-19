@@ -1,8 +1,11 @@
 package `in`.sanskar.rpsarena
 
 import `in`.sanskar.rpsarena.data.ArenaRepository
+import `in`.sanskar.rpsarena.model.Difficulty
+import `in`.sanskar.rpsarena.model.GameVariant
 import `in`.sanskar.rpsarena.model.Gesture
 import `in`.sanskar.rpsarena.model.MatchConfig
+import `in`.sanskar.rpsarena.model.MatchMode
 import `in`.sanskar.rpsarena.model.OpponentMode
 import `in`.sanskar.rpsarena.model.RoundEndReason
 import `in`.sanskar.rpsarena.model.RoundOutcome
@@ -85,6 +88,47 @@ class ArenaStateTest {
             second.match.rounds.map { it.playerTwo },
         )
         assertEquals(first.match.rounds.map { it.outcome }, second.match.rounds.map { it.outcome })
+    }
+
+    @Test
+    fun matchConfigurationPersistsAcrossStateInstances() {
+        val values = mutableMapOf<String, String>()
+        val repository = repository(values)
+        val expected = MatchConfig(
+            variant = GameVariant.LIZARD_SPOCK,
+            opponentMode = OpponentMode.LOCAL_TWO_PLAYER,
+            difficulty = Difficulty.EXPERT,
+            matchMode = MatchMode.TOURNAMENT,
+            seed = -424242,
+            roundTimerSeconds = 20,
+        )
+
+        ArenaState(repository).updateConfig(expected)
+        val restored = ArenaState(repository)
+
+        assertEquals(expected, restored.config)
+        assertEquals(expected, restored.match.config)
+    }
+
+    @Test
+    fun clearUserDataResetsPersistedMatchConfiguration() {
+        val values = mutableMapOf<String, String>()
+        val repository = repository(values)
+        val state = ArenaState(repository)
+        state.updateConfig(
+            MatchConfig(
+                variant = GameVariant.LIZARD_SPOCK,
+                opponentMode = OpponentMode.LOCAL_TWO_PLAYER,
+                matchMode = MatchMode.ENDLESS,
+                seed = 7,
+                roundTimerSeconds = 30,
+            ),
+        )
+
+        state.clearUserData()
+
+        assertEquals(MatchConfig(), state.config)
+        assertEquals(MatchConfig(), ArenaState(repository).config)
     }
 
     @Test
