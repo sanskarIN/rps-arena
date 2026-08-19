@@ -8,6 +8,7 @@ Current common tests cover:
 
 - classic Rock–Paper–Scissors relationships;
 - Lizard–Spock relationships;
+- rejection of extended Lizard/Spock gestures at the public state boundary while Classic rules are active;
 - valid seeded CPU output and reproducibility;
 - settings/stat/config codecs;
 - migration of the previous seven-field settings format;
@@ -100,6 +101,8 @@ Once branch protection/rulesets are enabled, only exact check names that have be
 ## Regression policy
 
 Every deterministic bug should receive a regression test when practical. Fixes should not rely on manual testing alone for rules, persistence, serialization, profile validation, timer behavior, backup safety, trend derivation, or state transitions.
+
+Public state/domain entry points must validate ruleset constraints even when the current UI already prevents invalid input. UI filtering is not treated as the only integrity boundary.
 
 Primary UI journeys should use stable semantic tags and assertions rather than screenshots or layout-coordinate taps.
 
