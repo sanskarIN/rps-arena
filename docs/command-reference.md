@@ -146,7 +146,7 @@ Meaning:
 - requires `android:allowBackup="false"`;
 - requires the manifest to reference both backup-policy resources;
 - requires the complete SharedPreferences domain to be excluded from legacy backup, cloud backup, and device transfer;
-- fails if `android.permission.INTERNET` appears in the primary offline-first v1 manifest;
+- fails if `android.permission.INTERNET` appears in the primary offline-first Android manifest;
 - does not run an emulator or modify files.
 
 This source-level contract protects the current local-data/privacy posture. A future deliberate networking/storage policy change must update the code, checker, tests/docs, and privacy/security review together rather than simply deleting the gate.
@@ -159,11 +159,14 @@ python3 scripts/check_version.py
 
 Meaning:
 
-- Reads Android `versionName` from `androidApp/build.gradle.kts`.
+- Reads Android `versionName` and numeric `versionCode` from `androidApp/build.gradle.kts`.
 - Reads desktop `packageVersion` from `desktopApp/build.gradle.kts`.
 - Reads shared `APP_VERSION` from `AppMetadata.kt`.
 - Verifies that the About UI renders the shared version constant.
-- Fails if those versions differ or if a required declaration cannot be found.
+- Requires Android `versionCode` to equal `major * 10000 + minor * 100 + patch` for the semantic `versionName`.
+- Fails if versions differ, the numeric mapping is wrong, or a required declaration cannot be found.
+
+For v2.5.8, the required Android code is `20508`.
 
 Use this after changing a release version.
 
@@ -472,17 +475,17 @@ You normally do not need to run this command directly unless debugging documenta
 Create an annotated tag after the exact `main` commit is validated:
 
 ```bash
-git tag -a v1.1.0 -m "RPS Arena v1.1.0"
+git tag -a v2.5.8 -m "RPS Arena v2.5.8"
 ```
 
 - `tag -a` creates an annotated tag object.
-- `v1.1.0` follows the repository's semantic-version release convention.
+- `v2.5.8` is the current release tag and follows the repository's semantic-version release convention.
 - `-m` supplies the tag message.
 
 Push only that tag:
 
 ```bash
-git push origin v1.1.0
+git push origin v2.5.8
 ```
 
 The release workflow listens for tags matching `v*` and can build/publish release artifacts.
