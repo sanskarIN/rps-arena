@@ -40,7 +40,8 @@ class AppController(private val repository: AppRepository) {
 
     fun updateSettings(transform: (AppSettings) -> AppSettings) {
         val previous = settings
-        settings = transform(settings).copy(roundTimerSeconds = transform(settings).roundTimerSeconds.coerceIn(0, 60))
+        val next = transform(settings)
+        settings = next.copy(roundTimerSeconds = next.roundTimerSeconds.coerceIn(0, 60))
         repository.saveSettings(settings)
         if (settings.seed != previous.seed) cpuStrategy = CpuStrategy(settings.seed)
         if (
