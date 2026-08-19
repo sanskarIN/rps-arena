@@ -90,11 +90,16 @@ object Strings {
     const val backupGenerated = "Backup generated below."
     const val backupField = "RPS Arena backup text"
     const val backupHelp = "Versioned plain text; do not use this field for secrets."
-    const val importBackup = "Import backup"
+    const val backupPreview = "Validated backup preview"
+    const val backupPreviewHelp = "Review this summary before replacing local data. Previewing does not change anything."
+    const val backupNoPreview = "Paste a valid RPS Arena backup to preview it before import."
+    const val importBackup = "Import validated backup"
     const val backupImported = "Backup imported successfully."
     const val backupRejected = "Backup rejected: unsupported or malformed data."
     const val clearRecentHistory = "Clear recent history"
-    const val historyCleared = "Recent history cleared. Lifetime statistics were kept."
+    const val historyCleared = "Recent history cleared. You can undo this until new history is written."
+    const val undoHistoryClear = "Undo history clear"
+    const val historyRestored = "Recent history restored."
     const val resetAllData = "Reset all local data"
     const val resetConfirmation = "Reset settings, profiles, statistics, match setup, and history on this device?"
     const val confirmReset = "Confirm reset"
@@ -122,6 +127,14 @@ object Strings {
     fun timerSeconds(seconds: Int): String = "${seconds}s"
     fun turnTimer(seconds: Int): String =
         "Turn timer: ${seconds}s. At zero, a deterministic valid gesture is selected from the active seed."
+
+    fun backupPreviewSummary(
+        version: Int,
+        activeProfile: String,
+        profileCount: Int,
+        rounds: Int,
+        historyEntries: Int,
+    ): String = "Format v$version · Active: $activeProfile · Profiles: $profileCount · Rounds: $rounds · History: $historyEntries"
 
     fun localTurnMessage(phase: LocalTurnPhase): String = when (phase) {
         LocalTurnPhase.PLAYER_ONE_CHOOSE -> "Player 1: choose secretly"
