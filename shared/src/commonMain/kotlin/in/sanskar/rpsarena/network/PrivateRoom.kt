@@ -119,13 +119,16 @@ class InMemoryPrivateRoomGateway : PrivateRoomGateway {
 
         override fun send(event: RoomEvent): Boolean {
             if (closed || room.sessions[participant.id] !== this) return false
-            val senderId = when (event) {
-                is RoomEvent.GestureSelected -> event.participantId
-                is RoomEvent.RestartRequested -> event.participantId
-                is RoomEvent.ParticipantJoined -> event.participant.id
-                is RoomEvent.ParticipantLeft -> event.participantId
+            val valid = when (event) {
+                is RoomEvent.GestureSelected ->
+                    event.participantId == participant.id && event.round > 0
+                is RoomEvent.RestartRequested ->
+                    event.participantId == participant.id
+                is RoomEvent.ParticipantJoined,
+                is RoomEvent.ParticipantLeft,
+                -> false
             }
-            if (senderId != participant.id) return false
+            if (!valid) return false
             broadcast(room, event, exceptParticipantId = participant.id)
             return true
         }
