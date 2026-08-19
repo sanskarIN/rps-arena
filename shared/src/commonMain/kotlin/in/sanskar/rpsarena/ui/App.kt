@@ -49,15 +49,20 @@ private fun ArenaScaffold(state: ArenaState) {
             )
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
-            when (state.screen) {
-                ArenaScreen.HOME -> HomeScreen(state)
-                ArenaScreen.PLAY -> PlayScreen(state)
-                ArenaScreen.HISTORY -> HistoryScreen(state)
-                ArenaScreen.STATS -> StatsScreen(state)
-                ArenaScreen.ACHIEVEMENTS -> AchievementsScreen(state)
-                ArenaScreen.SETTINGS -> SettingsScreen(state)
-                ArenaScreen.ABOUT -> AboutScreen(state)
+        Box(
+            Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            contentAlignment = Alignment.TopCenter,
+        ) {
+            Box(Modifier.fillMaxHeight().fillMaxWidth().widthIn(max = 960.dp)) {
+                when (state.screen) {
+                    ArenaScreen.HOME -> HomeScreen(state)
+                    ArenaScreen.PLAY -> PlayScreen(state)
+                    ArenaScreen.HISTORY -> HistoryScreen(state)
+                    ArenaScreen.STATS -> StatsScreen(state)
+                    ArenaScreen.ACHIEVEMENTS -> AchievementsScreen(state)
+                    ArenaScreen.SETTINGS -> SettingsScreen(state)
+                    ArenaScreen.ABOUT -> AboutScreen(state)
+                }
             }
         }
     }
@@ -88,6 +93,7 @@ private fun HomeScreen(state: ArenaState) {
     ) {
         Text(Strings.chooseArena, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(Strings.homeSubtitle)
+        Text("${Strings.activeProfile}: ${state.activeProfile.displayName}", style = MaterialTheme.typography.labelLarge)
         Button(onClick = { state.navigate(ArenaScreen.PLAY) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.play) }
         OutlinedButton(onClick = { state.navigate(ArenaScreen.STATS) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.stats) }
         OutlinedButton(onClick = { state.navigate(ArenaScreen.HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.history) }
@@ -253,7 +259,7 @@ private fun RoundResultCard(round: RoundRecord, cpuOpponent: Boolean) {
 private fun ScoreCard(state: ArenaState) {
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Score(Strings.playerOneShort, state.match.playerOneScore)
+            Score(state.activeProfile.displayName.take(12), state.match.playerOneScore)
             Score(Strings.draws, state.match.draws)
             Score(if (state.config.opponentMode == OpponentMode.CPU) Strings.cpu else Strings.playerTwoShort, state.match.playerTwoScore)
         }
@@ -357,6 +363,8 @@ private fun SettingsScreen(state: ArenaState) {
     ) {
         BackButton { state.navigate(ArenaScreen.HOME) }
         Text(Strings.settings, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+
+        LocalProfilesSettings(state)
 
         SettingsCard(Strings.appearanceAccessibility) {
             SwitchRow(Strings.followSystemTheme, settings.followSystemTheme) {
