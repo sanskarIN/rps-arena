@@ -15,15 +15,27 @@ The app stores only local gameplay preferences and progress needed for its featu
 
 The current application does not collect passwords, payment data, contacts, precise location, device identifiers for tracking, advertising identifiers, or account credentials.
 
-## Backup text
+## Android automatic backup and device transfer
+
+Android automatic app backup is explicitly disabled with `android:allowBackup="false"`.
+
+The app also supplies legacy and Android 12+ backup/data-extraction rules that exclude the complete SharedPreferences domain from cloud backup and device-to-device transfer. This prevents RPS Arena's local settings, statistics, history, and profile preferences from being copied by Android's automatic backup mechanisms.
+
+The repository enforces this privacy boundary with `scripts/check_android_privacy.py`, which fails CI/release validation if automatic backup is re-enabled, the exclusion rules disappear, or `android.permission.INTERNET` is introduced into the offline-first v1 manifest.
+
+## Explicit backup text
 
 The Settings screen can prepare a versioned plain-text backup containing local settings, aggregate statistics, and recent history. The app does not upload this backup. Copying, storing, or sharing exported backup text is controlled by the user and by the destination application chosen outside RPS Arena.
 
 A backup can include the local player display name and recent match summaries. Treat it as personal local data if those details are sensitive to you.
 
+The in-app plain-text backup is deliberately separate from Android automatic backup. Disabling Android automatic backup does not remove the user's explicit export/import controls.
+
 ## Network and tracking
 
 The primary Android application does not request internet permission and does not include analytics, advertising, telemetry, remote-account, or cloud-model SDKs.
+
+The shared `SafeLogger` utility has a no-op default sink, so it does not create or upload telemetry. If a future local/platform sink is introduced, sensitive key categories are redacted before events reach that sink and the change must receive privacy/security review.
 
 The repository contains transport-neutral private-room interfaces and an in-memory reference adapter that performs no network I/O. A future real LAN adapter, if approved, must be an explicit optional feature and will require a privacy review before release. The offline game must remain usable without it.
 
