@@ -1,4 +1,4 @@
-package in.sanskar.rpsarena.ui
+package `in`.sanskar.rpsarena.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -15,10 +15,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import in.sanskar.rpsarena.data.ArenaRepository
-import in.sanskar.rpsarena.model.*
-import in.sanskar.rpsarena.state.ArenaScreen
-import in.sanskar.rpsarena.state.ArenaState
+import `in`.sanskar.rpsarena.data.ArenaRepository
+import `in`.sanskar.rpsarena.model.*
+import `in`.sanskar.rpsarena.state.ArenaScreen
+import `in`.sanskar.rpsarena.state.ArenaState
 import kotlinx.coroutines.delay
 
 @Composable
