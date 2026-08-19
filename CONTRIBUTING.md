@@ -47,7 +47,10 @@ Before opening or updating a pull request, run the smallest relevant checks and 
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
 gradle :androidApp:lintDebug --stacktrace
@@ -67,6 +70,7 @@ The documentation coverage command uses Git's tracked-file list, so run it from 
 - Preserve deterministic seeded behavior unless the change explicitly revises the CPU contract.
 - Preserve backup compatibility or add an explicit migration/version bump.
 - Keep history and imported data bounded and validated.
+- Preserve `android:allowBackup="false"`, SharedPreferences backup/device-transfer exclusions, and the no-internet primary manifest unless a deliberate reviewed privacy/networking policy change replaces them.
 - Update accessibility behavior/docs when changing controls, timers, animation, focus, or copy.
 - Update all shipped language catalogs/tests for core visible copy.
 - Update `docs/repository-file-reference.md` for every added, renamed, or removed tracked file.
@@ -74,7 +78,8 @@ The documentation coverage command uses Git's tracked-file list, so run it from 
 - Update `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md` for milestone/release work.
 - Do not add tracking, ads, mandatory cloud dependencies, or unnecessary network access.
 - Never commit signing keys, API tokens, store credentials, certificates, personal user data, or generated secrets.
-- Do not merge while required CI/CodeQL checks on the exact current PR head are queued, cancelled without replacement, or failing.
+- Treat `scripts/check_for_secrets.py` as defense in depth; rotate/revoke a real credential if it is ever exposed rather than only removing it from the latest diff.
+- Do not merge while required CI/Security/CodeQL checks on the exact current PR head are queued, cancelled without replacement, or failing.
 
 ## Adding or renaming files
 
@@ -94,6 +99,18 @@ python3 scripts/check_docs_coverage.py
 
 A filename mention without meaningful ownership/purpose documentation may satisfy the mechanical path checker but should still fail human review.
 
+## Android privacy changes
+
+Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/android-platform.md`](docs/android-platform.md) before changing the Android manifest, platform persistence, or backup rules.
+
+Run:
+
+```bash
+python3 scripts/check_android_privacy.py
+```
+
+Do not remove the checker simply because a new platform feature conflicts with it. If the product's privacy policy intentionally changes, update implementation, policy resources, validation, documentation, and release notes together.
+
 ## Networking changes
 
 Primary gameplay is offline-first. Networking changes must remain behind the optional `PrivateRoomGateway` boundary, document permissions/privacy impact, validate participant/message input, and keep the game usable when networking is unavailable or disabled.
@@ -103,6 +120,12 @@ Read [`docs/private-room-protocol.md`](docs/private-room-protocol.md) before imp
 ## Persistence and backup changes
 
 Read [`docs/storage-and-backup.md`](docs/storage-and-backup.md). Persistence formats are compatibility contracts: preserve old decode/migration paths, validate imported data before writes, keep limits explicit, and add regression tests.
+
+Android automatic backup is intentionally disabled; the explicit versioned text export/import is the supported user-controlled backup mechanism.
+
+## Logging/diagnostics changes
+
+`SafeLogger` has a no-op default sink and redacts sensitive key categories before any explicit sink receives fields. Do not introduce a remote/telemetry sink as a casual diagnostics change. Any sink that changes data collection/transmission behavior requires privacy/security review and documentation.
 
 ## Localization
 
@@ -129,6 +152,10 @@ Read [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md). 
 ## Security reports
 
 Do not disclose suspected vulnerabilities in a public issue before following [`SECURITY.md`](SECURITY.md).
+
+## Ownership
+
+`.github/CODEOWNERS` routes default repository review ownership to `@sanskarIN` and explicitly covers security/automation, shared core, Rust, and platform packaging. Repository rulesets determine whether code-owner approval is mandatory.
 
 ## Long-term maintenance
 
