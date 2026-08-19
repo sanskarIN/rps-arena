@@ -41,12 +41,29 @@ def extract(pattern: str, text: str, source: str) -> str:
     return match.group(1)
 
 
+def semantic_version_code(version: str) -> int:
+    major, minor, patch = (int(part) for part in version.split("."))
+    if minor > 99 or patch > 99:
+        raise ValueError(
+            "Android semantic versionCode mapping requires minor and patch values <= 99"
+        )
+    return major * 10_000 + minor * 100 + patch
+
+
 def main() -> int:
     try:
+        android_text = EXPECTED_FILES["android"].read_text(encoding="utf-8")
         android = extract(
             r'versionName\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"',
-            EXPECTED_FILES["android"].read_text(encoding="utf-8"),
+            android_text,
             "androidApp/build.gradle.kts",
+        )
+        android_code = int(
+            extract(
+                r"versionCode\s*=\s*([0-9]+)",
+                android_text,
+                "androidApp/build.gradle.kts versionCode",
+            )
         )
         desktop = extract(
             r'packageVersion\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"',
@@ -61,7 +78,15 @@ def main() -> int:
         app_text = EXPECTED_FILES["app"].read_text(encoding="utf-8")
         if 'Text("${strings.version}: $APP_VERSION")' not in app_text:
             raise ValueError("About UI is not rendering the shared APP_VERSION constant")
-    except ValueError as error:
+
+        expected_android_code = semantic_version_code(android)
+        if android_code != expected_android_code:
+            raise ValueError(
+                "Android versionCode mismatch: "
+                f"versionName={android} requires versionCode={expected_android_code}, "
+                f"found {android_code}"
+            )
+    except (ValueError, OSError) as error:
         print(error, file=sys.stderr)
         return 1
 
@@ -73,7 +98,7 @@ def main() -> int:
         )
         return 1
 
-    print(f"Version check passed: {android}")
+    print(f"Version check passed: {android} (Android versionCode {android_code})")
     return 0
 
 
