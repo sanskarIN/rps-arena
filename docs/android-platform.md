@@ -85,19 +85,23 @@ API 26 is the current minimum supported Android version. Raising it intentionall
 ## Android version
 
 ```kotlin
-versionCode = 2
-versionName = "1.1.0"
+versionCode = 20508
+versionName = "2.5.8"
 ```
 
-`versionCode` must increase for a later Android distribution release.
-
-`versionName` is synchronized with desktop/shared metadata by `scripts/check_version.py`.
-
-A future v1.1.1 would normally update at least:
+`versionCode` is the Android distribution ordering value. This repository maps semantic versions deterministically as:
 
 ```text
-versionCode -> 3
-versionName -> 1.1.1
+major * 10000 + minor * 100 + patch
+```
+
+with `minor` and `patch` limited to values no greater than 99. `scripts/check_version.py` enforces this mapping and also synchronizes `versionName` with desktop/shared metadata.
+
+A future v2.5.9 would therefore update at least:
+
+```text
+versionCode -> 20509
+versionName -> 2.5.9
 ```
 
 plus desktop/shared version constants and changelog/release docs.
