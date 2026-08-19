@@ -125,8 +125,7 @@ class InMemoryPrivateRoomGateway : PrivateRoomGateway {
                 is RoomEvent.RestartRequested ->
                     event.participantId == participant.id
                 is RoomEvent.ParticipantJoined,
-                is RoomEvent.ParticipantLeft,
-                -> false
+                is RoomEvent.ParticipantLeft -> false
             }
             if (!valid) return false
             broadcast(room, event, exceptParticipantId = participant.id)
