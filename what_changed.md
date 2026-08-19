@@ -8,7 +8,7 @@ Working PR: `#11` (`feature/phase-7-completion` -> `main`)
 License: MIT
 Primary product posture: offline-first; no account, analytics SDK, ads SDK, cloud model, or Android internet permission required for primary gameplay.
 
-This file is the detailed repository handoff log. It intentionally contains implementation, migration, verification, limitation, and release information that would otherwise have been repeated in chat.
+This file is the detailed repository handoff log. It intentionally contains implementation, migration, verification, limitation, documentation, and release information that would otherwise have been repeated in chat.
 
 ## Milestone scope
 
@@ -25,7 +25,102 @@ The milestone covers:
 - broader unit/protocol/UI test coverage;
 - stricter CI/release automation;
 - complete setup/development/testing/security/privacy/release documentation;
+- exhaustive file-by-file repository documentation;
 - GitHub governance and release-maintenance guidance.
+
+## Deep documentation completion phase
+
+The repository documentation was expanded beyond overview guides into a maintainable, file-complete reference set.
+
+### Documentation coverage is now enforceable
+
+Added:
+
+```text
+scripts/check_docs_coverage.py
+```
+
+The script:
+
+1. executes `git ls-files -z` to obtain the authoritative list of Git-tracked paths;
+2. reads `docs/repository-file-reference.md`;
+3. requires every tracked path to appear exactly in backticks in that file;
+4. prints every missing path and exits non-zero when coverage is incomplete.
+
+This means a future source/config/resource/test/workflow/documentation file cannot be silently added without also being represented in the exhaustive repository file reference.
+
+The checker validates path coverage. Human review still evaluates whether each explanation is accurate, useful, and sufficiently deep.
+
+### Coverage gate integration
+
+Documentation coverage is now included in:
+
+- `.github/workflows/ci.yml`;
+- `scripts/verify.sh`;
+- `scripts/verify.ps1`;
+- `.github/pull_request_template.md`;
+- `CONTRIBUTING.md`;
+- `docs/testing.md`;
+- `docs/validation.md`;
+- `docs/setup.md`;
+- `README.md`;
+- `docs/ci-cd.md`;
+- `docs/command-reference.md`.
+
+A change that adds/renames a tracked file without updating the exhaustive reference should fail the primary CI gate.
+
+### Release-workflow boundary
+
+An attempt was made to duplicate the documentation-coverage step directly inside `.github/workflows/release.yml`. The connected write was blocked by the connector safety layer, and no bypass or alternate unsafe write path was used.
+
+The checked-in release workflow therefore remains unchanged in this respect. Release policy requires version tags to be created from validated `main`, whose normal CI includes the documentation-coverage gate.
+
+This distinction is documented accurately in `docs/ci-cd.md` and `docs/validation.md` rather than claiming the tag workflow contains a step that was not actually committed.
+
+### New deep documentation set
+
+Added:
+
+- `docs/documentation-index.md` — role/goal-based navigation across the documentation set;
+- `docs/command-reference.md` — detailed meaning, prerequisites, side effects, diagnostics, and safety of repository Python/Gradle/Cargo/Git/tag commands;
+- `docs/toolchain.md` — JDK/Gradle/Android SDK/IDE/Python/Git/Rust installation, inspection, environment variables, and safe upgrade workflow;
+- `docs/build-system.md` — root Gradle/settings/properties/version catalog, modules, source sets, dependencies, tasks, outputs, packaging, and current no-Gradle-Wrapper architecture;
+- `docs/domain-and-gameplay.md` — gestures, rules, CPU probabilities, deterministic seed behavior, match modes, state transitions, timers, scores, streaks, achievements, history grammar, and invariants;
+- `docs/storage-and-backup.md` — PlatformStore implementations, exact keys/codecs, settings migration, stat invariants, history format, backup grammar/escaping/limits/import/reset/privacy compatibility;
+- `docs/localization.md` — English/Hindi catalogs, enum-keyed labels, canonical vs localized data, achievements, persisted language compatibility, RTL/additional-language guidance;
+- `docs/private-room-protocol.md` — room-code/session/event semantics, participant/lifecycle authority, current no-network adapter, and future LAN fairness/security/privacy/versioning/failure requirements;
+- `docs/android-platform.md` — every Android build/source/manifest/resource/storage file, SDK/versioning, adaptive icons/theme, APK behavior, signing and offline checks;
+- `docs/desktop-platform.md` — every desktop launcher/build/storage file, JVM behavior, Java Preferences, UI tests, and host-dependent DEB/MSI/DMG packaging/signing boundaries;
+- `docs/rust-engine.md` — every optional Rust crate file, rule parity, Cargo tests/package, lock/dependency policy, FFI/WASM/security boundaries;
+- `docs/test-catalog.md` — every tracked Kotlin/Compose automated test file and its exact regression responsibility/assertions;
+- `docs/ci-cd.md` — every `.github` automation/configuration file, triggers, permissions, concurrency, CI/CodeQL/release jobs, artifacts/checksums, Dependabot, issue/PR/funding configuration;
+- `docs/maintenance.md` — long-term versions/dependencies/gameplay/storage/language/network/platform/test/docs/release/secret-incident maintenance playbook;
+- `docs/branding-assets.md` — root SVG, Android adaptive-icon, platform-theme/shared-theme ownership and rebranding/accessibility/export checklist;
+- `docs/glossary.md` — project/build/KMP/Android/Desktop/Rust/CI/security/release terminology and repository-specific identifiers;
+- `docs/repository-file-reference.md` — exhaustive file-by-file description of every Git-tracked repository file, including itself.
+
+### Existing documentation connected to the deep set
+
+Expanded/relinked:
+
+- `README.md` — now exposes the complete documentation set, documents the no-Gradle-Wrapper setup, adds documentation coverage to quick-start/quality gates, and distinguishes project baseline versions from global-latest claims;
+- `docs/setup.md` — adds Python/documentation/version prechecks, local Gradle explanation, deep documentation links, and generated/machine-specific file guidance;
+- `CONTRIBUTING.md` — requires documentation coverage and updating the exhaustive file reference for every tracked-file addition/rename/removal;
+- `.github/pull_request_template.md` — adds documentation-coverage command and every-file reference checklist;
+- `docs/testing.md` — makes format/docs/version source gates explicit before compilation and links the per-test catalog;
+- `docs/validation.md` — defines the every-file coverage gate and exact-head validation rule;
+- `CHANGELOG.md` — records the exhaustive documentation/coverage milestone;
+- `docs/ci-cd.md` — reflects the actual CI documentation gate and the unchanged release workflow.
+
+### Every-file documentation policy
+
+For every future tracked file addition, rename, or deletion:
+
+1. update `docs/repository-file-reference.md` in the same change;
+2. explain ownership/purpose/compatibility implications, not only the filename;
+3. run `python3 scripts/check_docs_coverage.py`;
+4. update `docs/documentation-index.md` when a new subject-area guide is added;
+5. update `what_changed.md` for milestone-level work.
 
 ## Gameplay and match controls
 
@@ -361,12 +456,13 @@ The desktop UI test suite now covers:
 `.github/workflows/ci.yml` now validates:
 
 1. repository formatting;
-2. cross-platform version consistency;
-3. shared Kotlin tests, including desktop UI tests;
-4. Android lint;
-5. Android debug assembly;
-6. desktop JVM compilation;
-7. Rust tests.
+2. exhaustive tracked-file documentation coverage;
+3. cross-platform version consistency;
+4. shared Kotlin tests, including desktop UI tests;
+5. Android lint;
+6. Android debug assembly;
+7. desktop JVM compilation;
+8. Rust tests.
 
 Separate CodeQL automation remains enabled for Kotlin/Java security analysis.
 
@@ -379,6 +475,15 @@ Separate CodeQL automation remains enabled for Kotlin/Java security analysis.
 - accidental trailing spaces/tabs.
 
 The standard two-space Markdown hard-break syntax is explicitly allowed so valid Markdown formatting does not become a false CI failure.
+
+### Documentation coverage checker
+
+`scripts/check_docs_coverage.py` checks:
+
+- the current Git-tracked path list from `git ls-files -z`;
+- exact path presence inside `docs/repository-file-reference.md`.
+
+If one or more paths are missing, it prints the missing list and exits with failure. It does not mutate files.
 
 ### Version checker
 
@@ -399,7 +504,7 @@ Updated:
 - `scripts/verify.sh`;
 - `scripts/verify.ps1`.
 
-They mirror the repository quality gate and run optional Rust tests when Cargo is available.
+They now run formatting, documentation coverage, version consistency, Kotlin/Android/Desktop validation, and optional Rust tests when Cargo is available.
 
 ## Release engineering
 
@@ -431,6 +536,8 @@ For validated version tags it additionally:
 - generates SHA-256 checksums;
 - creates a GitHub Release with generated notes.
 
+The release workflow does not currently duplicate the new documentation-coverage command. Normal release policy therefore requires tagging a validated `main` commit whose CI already passed the documentation gate.
+
 ### Signing boundary
 
 The public repository does not contain:
@@ -456,18 +563,35 @@ Signed store/notarized automation remains a separate credential-dependent task a
 - `SUPPORT.md`
 - `what_changed.md`
 
-### Development/product documentation
+### Deep development/product documentation
 
+- `docs/documentation-index.md`
 - `docs/setup.md`
+- `docs/toolchain.md`
+- `docs/command-reference.md`
+- `docs/build-system.md`
 - `docs/development.md`
 - `docs/architecture.md`
+- `docs/domain-and-gameplay.md`
+- `docs/storage-and-backup.md`
+- `docs/localization.md`
+- `docs/private-room-protocol.md`
+- `docs/android-platform.md`
+- `docs/desktop-platform.md`
+- `docs/rust-engine.md`
+- `docs/branding-assets.md`
 - `docs/testing.md`
+- `docs/test-catalog.md`
 - `docs/validation.md`
-- `docs/release.md`
-- `docs/troubleshooting.md`
 - `docs/accessibility.md`
 - `docs/performance.md`
+- `docs/troubleshooting.md`
+- `docs/ci-cd.md`
+- `docs/release.md`
 - `docs/github-settings.md`
+- `docs/maintenance.md`
+- `docs/glossary.md`
+- `docs/repository-file-reference.md`
 - `docs/ROADMAP.md` pointer to canonical root roadmap.
 
 ### Architecture decisions
@@ -475,14 +599,14 @@ Signed store/notarized automation remains a separate credential-dependent task a
 - `docs/adr/0001-offline-first-kmp.md`
 - `docs/adr/0002-private-room-boundary.md`
 
-Legacy uppercase duplicate architecture/testing/release/validation documents were removed in favor of the lowercase canonical files.
+Legacy uppercase duplicate architecture/testing/release/validation documents were removed in favor of lowercase canonical files.
 
 ## GitHub governance and maintenance
 
 Added/expanded:
 
 - issue-template configuration;
-- pull-request quality checklist;
+- pull-request quality and documentation-coverage checklist;
 - generated release-note category configuration;
 - Dependabot configuration remains active for Gradle, Cargo, and GitHub Actions;
 - CodeQL remains configured for Kotlin/Java;
@@ -490,7 +614,8 @@ Added/expanded:
 - documented recommended security settings;
 - documented Discussions categories;
 - documented recommended labels/milestones;
-- documented merge policy that preserves meaningful granular commits.
+- documented merge policy that preserves meaningful granular commits;
+- CI-enforced requirement that every tracked file be represented in the exhaustive file reference.
 
 Security-sensitive issue creation is directed to `SECURITY.md` rather than a public blank issue.
 
@@ -531,6 +656,7 @@ Security-sensitive issue creation is directed to `SECURITY.md` rather than a pub
 - `.github/ISSUE_TEMPLATE/config.yml`
 - `.github/pull_request_template.md`
 - `scripts/check_format.py`
+- `scripts/check_docs_coverage.py`
 - `scripts/check_version.py`
 - `scripts/verify.sh`
 - `scripts/verify.ps1`
@@ -541,6 +667,7 @@ Repository verification target:
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_coverage.py
 python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
 gradle :androidApp:lintDebug --stacktrace
@@ -576,9 +703,13 @@ Validation merge commit: `4b19247605ce7a94a8e6c819a63f6cd300d00d94`.
 
 Pull request `#11` is the v1.1 validation gate.
 
-The implementation/documentation candidate represented by this handoff must not be merged until the final PR head has green CI and CodeQL results. Repeated source/documentation commits during the implementation phase intentionally restarted/cancelled earlier queued runs through the workflow concurrency policy; after this handoff commit the branch is intended to remain frozen for the final run.
+This commit is intended to be the final documentation handoff/freeze for the current branch. Required CI and CodeQL must run on the exact post-handoff PR head before merge.
 
-If a required job fails, the failure must be fixed in a focused commit and this section updated before merge.
+Repeated implementation/documentation commits intentionally restarted/cancelled obsolete workflow runs through `cancel-in-progress: true`; earlier green or queued SHAs do not validate the final candidate.
+
+The final CI must now additionally prove `scripts/check_docs_coverage.py` passes, which mechanically confirms that every Git-tracked path is represented in `docs/repository-file-reference.md`.
+
+If a required job fails, fix only the actual failure in a focused commit, update this handoff when materially necessary, and revalidate the new exact head. Do not bypass the gate.
 
 ## Migrations and compatibility
 
@@ -625,9 +756,11 @@ Future incompatible backup changes must use a new schema/header and migration do
 - Android device/emulator instrumentation UI tests are not part of the current hosted CI baseline; desktop Compose UI smoke tests plus documented Android manual accessibility/device checks remain the current practical coverage.
 - Store signing/notarization is not automated with real credentials because authorized signing secrets are not stored in the repository.
 - Public release artifacts are intentionally unsigned/reproducible until a controlled signing environment is configured.
+- The release workflow does not currently repeat `check_docs_coverage.py`; version tags must be created from `main` only after the normal CI documentation gate is green.
 - iOS packaging is not part of the current release gate.
 - Sound/haptics preferences are persisted product settings; platform-specific effect engines are not added solely to inflate dependency count or permissions.
 - The primary app remains fully offline and does not request Android internet permission.
+- The repository currently relies on an installed/setup Gradle and does not track the standard Gradle Wrapper; this is explicitly documented rather than hidden.
 
 ## Open issues
 
@@ -642,14 +775,15 @@ Any CI/CodeQL finding on PR `#11` takes priority over optional future roadmap wo
 3. Configure signed Android/Desktop release automation only after authorized secrets are provisioned outside Git.
 4. Evaluate optional iOS packaging as a separate milestone.
 5. Expand localization to additional languages only when translations can be maintained and tested at the same quality level.
+6. Consider adding the official Gradle Wrapper in a dedicated integrity-reviewed build-system change so local Gradle selection can be pinned by the repository itself.
 
 ## v1.1.0 release-notes draft
 
-RPS Arena 1.1.0 expands the offline Android/Desktop arena with optional round timers, replayable CPU challenge seeds, local profile naming, recent W/L/D trends, versioned local backup/import, substantially broader Hindi localization, responsive configuration controls, reduced-motion result behavior, and a transport-neutral private-room architecture. Persistence/import validation is stricter, the private-room reference protocol now enforces lifecycle authority and input integrity, shared/desktop UI regression coverage is broader, CI enforces formatting/version consistency/Android lint, and tagged builds can generate unsigned Android/Linux/Rust artifacts with checksums. Primary gameplay remains account-free, telemetry-free, ad-free, cloud-free, and offline-first.
+RPS Arena 1.1.0 expands the offline Android/Desktop arena with optional round timers, replayable CPU challenge seeds, local profile naming, recent W/L/D trends, versioned local backup/import, substantially broader Hindi localization, responsive configuration controls, reduced-motion result behavior, and a transport-neutral private-room architecture. Persistence/import validation is stricter, the private-room reference protocol now enforces lifecycle authority and input integrity, shared/desktop UI regression coverage is broader, CI enforces formatting/exhaustive tracked-file documentation/version consistency/Android lint, and tagged builds can generate unsigned Android/Linux/Rust artifacts with checksums. The repository now includes a role-based deep documentation set covering commands, toolchain/upgrades, build architecture, game rules/state, storage/backup, localization, room protocol, Android, desktop, Rust, tests, GitHub automation, branding, maintenance, terminology, and every tracked file. Primary gameplay remains account-free, telemetry-free, ad-free, cloud-free, and offline-first.
 
 ## Representative milestone commits
 
-This milestone intentionally uses many small, cohesive commits rather than one large implementation commit. Representative messages include:
+This milestone intentionally uses many small, cohesive commits rather than one large implementation commit. Representative implementation/quality messages include:
 
 - `feat: extend game model for timers profiles and localization`
 - `feat: add versioned backup migration and trend persistence`
@@ -685,10 +819,40 @@ This milestone intentionally uses many small, cohesive commits rather than one l
 - `fix: use valid code in room close regression test`
 - `refactor: simplify private room event validation branch`
 - `ui: wrap configuration chips on narrow screens`
-- `ci: allow intentional Markdown hard break spacing`
-- `docs: mark localization responsiveness and room hardening complete`
-- `docs: record localization responsiveness and protocol hardening`
-- `docs: expand validation coverage for localization and room security`
+- `ci: allow intentional Markdown hard break spacing`.
+
+Representative deep-documentation/coverage messages include:
+
+- `docs: add exhaustive command reference`
+- `docs: add deep toolchain install and upgrade guide`
+- `docs: explain complete Gradle build architecture`
+- `docs: document complete game domain and state machine`
+- `docs: document storage migration and backup schema deeply`
+- `docs: document localization architecture and language expansion`
+- `docs: define private room protocol and LAN security boundary`
+- `docs: document every Android platform file and behavior`
+- `docs: document every desktop platform file and package path`
+- `docs: document optional Rust engine and parity policy`
+- `docs: document every GitHub automation and CI release gate`
+- `docs: catalog every tracked automated test file`
+- `docs: add complete repository maintenance playbook`
+- `docs: document branding assets and visual ownership`
+- `docs: add comprehensive project terminology glossary`
+- `docs: add role based documentation navigation index`
+- `ci: add every tracked file documentation coverage check`
+- `docs: add exhaustive every tracked file reference`
+- `build: enforce documentation coverage in shell verification`
+- `build: enforce documentation coverage in PowerShell verification`
+- `ci: require complete tracked file documentation coverage`
+- `chore: require tracked file documentation in pull requests`
+- `docs: document tracked file coverage as a required quality gate`
+- `docs: extend validation contract to exhaustive file coverage`
+- `docs: connect setup guide to complete repository documentation`
+- `docs: expose complete repository documentation from readme`
+- `docs: synchronize CI guide with documentation coverage gate`
+- `docs: explain documentation coverage and full verification commands`
+- `docs: enforce exhaustive documentation in contributor workflow`
+- `docs: record exhaustive repository documentation milestone`.
 
 ## Commit identity
 
