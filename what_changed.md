@@ -2,10 +2,10 @@
 
 ## Current milestone — v1.1.0 product completion and release hardening
 
-Date: 2026-08-19  
-Repository: `sanskarIN/rps-arena`  
-Working PR: `#11` (`feature/phase-7-completion` -> `main`)  
-License: MIT  
+Date: 2026-08-19
+Repository: `sanskarIN/rps-arena`
+Working PR: `#11` (`feature/phase-7-completion` -> `main`)
+License: MIT
 Primary product posture: offline-first; no account, analytics SDK, ads SDK, cloud model, or Android internet permission required for primary gameplay.
 
 This file is the repository handoff log. It records implementation details that would otherwise have been repeated in chat.
@@ -216,7 +216,7 @@ The previous validation PR `#9` passed before merge:
 - optional Rust engine tests: passed;
 - CodeQL Kotlin/Java analysis: passed.
 
-Validated v1.0 PR head: `4c2e93330055986d6b87ab002a97b7929c5a2275`.  
+Validated v1.0 PR head: `4c2e93330055986d6b87ab002a97b7929c5a2275`.
 Validation merge commit: `4b19247605ce7a94a8e6c819a63f6cd300d00d94`.
 
 ### v1.1 candidate
@@ -269,6 +269,7 @@ RPS Arena 1.1.0 expands the offline Android/Desktop arena with optional round ti
 
 This milestone intentionally uses many small, cohesive commits. Representative recent commits include:
 
+- `5d4b7b7` — `fix: remove trailing markdown whitespace from readme`
 - `14c1286` — `chore: expand pull request quality and compatibility checklist`
 - `b39b63e` — `chore: guide issue creation to security and support paths`
 - `1d5566b` — `docs: synchronize changelog with final quality additions`
