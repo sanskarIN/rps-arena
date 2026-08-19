@@ -1,6 +1,6 @@
 # Testing
 
-RPS Arena concentrates automated confidence on deterministic rules, CPU behavior, persistence, state transitions, data safety, and platform build integration.
+RPS Arena concentrates automated confidence on deterministic rules, CPU behavior, persistence, state transitions, data safety, primary UI behavior, and platform build integration.
 
 ## Shared tests
 
@@ -25,9 +25,22 @@ Current common tests cover:
 - timer-disabled behavior;
 - one-step history-clear undo and invalidation when new history is written;
 - complete local-data reset;
-- recent-history win/loss/draw trend parsing, limits, and decisive win rate;
+- recent-history win/loss/draw trend parsing, limits, reserved-looking local profile names, and decisive win rate;
 - private-room protocol validation and in-memory transport contract behavior;
 - Kotlin/Rust rule-contract fixtures.
+
+## Compose UI regression test
+
+`RpsArenaUiTest` exercises the primary shared UI journey using an isolated in-memory repository and stable semantic test tags:
+
+1. first-run onboarding is rendered;
+2. onboarding is completed;
+3. Home is reached;
+4. Play is opened;
+5. Rock is selected;
+6. the first round result is rendered.
+
+The test intentionally targets semantic controls rather than visible English text so copy changes do not make the primary journey test fragile.
 
 Run all shared target tests:
 
@@ -35,7 +48,7 @@ Run all shared target tests:
 gradle --no-daemon :shared:allTests
 ```
 
-The desktop shared suite can also be run directly:
+The desktop shared suite, including the shared Compose UI test, can also be run directly:
 
 ```bash
 gradle --no-daemon :shared:desktopTest
@@ -72,7 +85,7 @@ The committed-secret scanner intentionally looks only for high-confidence creden
 
 ## CI policy
 
-`.github/workflows/ci.yml` runs Kotlin/platform verification and Rust checks.
+`.github/workflows/ci.yml` runs Kotlin/platform verification and Rust checks. The shared test task includes the primary Compose UI regression test through the desktop test runtime.
 
 `.github/workflows/codeql.yml` runs Java/Kotlin CodeQL analysis independently from the Android application build.
 
@@ -87,6 +100,8 @@ Once branch protection/rulesets are enabled, only exact check names that have be
 ## Regression policy
 
 Every deterministic bug should receive a regression test when practical. Fixes should not rely on manual testing alone for rules, persistence, serialization, profile validation, timer behavior, backup safety, trend derivation, or state transitions.
+
+Primary UI journeys should use stable semantic tags and assertions rather than screenshots or layout-coordinate taps.
 
 ## Manual product checklist
 
@@ -111,6 +126,7 @@ Before a release candidate, verify:
 - history clear and one-step undo;
 - undo invalidation after new history is written;
 - recent W/L/D trend and decisive win-rate display;
+- completed-round `Copy result` action and copied text content;
 - confirmed full local reset;
 - light/dark/system themes;
 - reduced-motion round-result behavior;
@@ -121,6 +137,7 @@ Before a release candidate, verify:
 - keyboard navigation on desktop;
 - gesture semantic labels with a screen reader;
 - trend semantics that announce Win/Loss/Draw rather than relying on color;
+- copy-result action has an explicit text label and success state;
 - large text/scaling where supported;
 - no clipped critical controls on narrow screens;
 - bounded readable layout on wide desktop windows;
@@ -133,6 +150,6 @@ Do not call a commit release-ready solely because source inspection looks correc
 
 ## Future automated coverage
 
-Add stable Compose UI tests for onboarding/navigation, profile management, settings, backup controls, and the primary play journey when the chosen Compose testing stack is stable across the supported targets. Android instrumentation and desktop interaction tests should be added where they provide reproducible value rather than fragile snapshots.
+Expand Compose UI coverage beyond the existing primary journey to profile management, Settings, backup preview/import, history undo, reduced-motion behavior, and accessibility semantics where the test stack can represent them reliably. Android instrumentation and deeper desktop interaction tests should be added where they provide reproducible value rather than fragile snapshots.
 
 Any production LAN/private-room transport requires malformed-input, disconnect, replay, concurrency, and fuzz/property testing before release.
