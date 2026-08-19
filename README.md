@@ -36,6 +36,7 @@ Real device screenshots are release artifacts rather than fabricated mockups. Th
 - Android + desktop from a Kotlin Multiplatform/Compose Multiplatform codebase.
 - Optional standalone Rust rules engine for experimentation.
 - No account, analytics SDK, ads SDK, cloud model, or Android internet permission in the primary app.
+- Exhaustive repository documentation with CI-enforced coverage for every Git-tracked file.
 
 ## Supported platforms
 
@@ -57,38 +58,74 @@ Real device screenshots are release artifacts rather than fabricated mockups. Th
 - Android API 26+ / compile + target SDK 36
 - Optional Rust 2024 edition rules engine
 
+These are the repository's validated project baselines, not a claim that each number is globally the newest available version.
+
 ## Project structure
 
 ```text
-androidApp/   Android entry point and packaging
+androidApp/   Android entry point, manifest, adaptive icon, packaging
 desktopApp/   Desktop entry point and native packaging
 shared/       Shared model, engine, state, persistence, networking contracts, UI, tests
 rust-engine/  Optional standalone Rust rules mirror
-assets/       Logo and splash artwork
-docs/         Setup, architecture, testing, accessibility, performance and release docs
-scripts/      Repository formatting/version verification helpers
+assets/       Editable logo and splash artwork
+docs/         Deep architecture/platform/build/testing/maintenance/file documentation
+scripts/      Formatting/version/documentation coverage/full verification helpers
+.github/      CI, CodeQL, release, Dependabot, issue/PR/funding configuration
+gradle/       Version catalog
 ```
 
 ## Quick start
 
-Requirements: JDK 17+, Gradle 9.5.1, Android SDK 36 for Android, and a supported desktop OS.
+Requirements: JDK 17, a local Gradle compatible with the validated 9.5.1 baseline, Android SDK 36 for Android, Python 3 for repository checks, and a supported desktop OS.
+
+The current repository does **not** track a Gradle Wrapper, so commands use `gradle` rather than `./gradlew`.
 
 ```bash
 git clone https://github.com/sanskarIN/rps-arena.git
 cd rps-arena
-gradle :shared:allTests
+python3 scripts/check_format.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_version.py
+gradle :shared:allTests --stacktrace
 gradle :desktopApp:run
 ```
 
 Android debug build:
 
 ```bash
-gradle :androidApp:assembleDebug
+gradle :androidApp:assembleDebug --stacktrace
 ```
 
 Full setup: [`docs/setup.md`](docs/setup.md)
 
+Deep tool installation/upgrade guidance: [`docs/toolchain.md`](docs/toolchain.md)
+
+Command meanings: [`docs/command-reference.md`](docs/command-reference.md)
+
 Development workflow: [`docs/development.md`](docs/development.md)
+
+## Complete documentation
+
+Start with the role-based [`docs/documentation-index.md`](docs/documentation-index.md).
+
+Deep references include:
+
+- [`docs/build-system.md`](docs/build-system.md) — Gradle modules, version catalog, source sets, tasks, no-wrapper setup;
+- [`docs/domain-and-gameplay.md`](docs/domain-and-gameplay.md) — models, rules, CPU probabilities, state machine, timers, scoring, invariants;
+- [`docs/storage-and-backup.md`](docs/storage-and-backup.md) — exact keys, codecs, migration, history grammar, backup schema/escaping/limits;
+- [`docs/localization.md`](docs/localization.md) — English/Hindi catalogs, canonical vs localized data, adding languages;
+- [`docs/private-room-protocol.md`](docs/private-room-protocol.md) — current no-network room contracts and future LAN security/fairness requirements;
+- [`docs/android-platform.md`](docs/android-platform.md) — every Android app/resource/storage file;
+- [`docs/desktop-platform.md`](docs/desktop-platform.md) — every desktop launcher/build/storage file;
+- [`docs/rust-engine.md`](docs/rust-engine.md) — every optional Rust crate file and parity policy;
+- [`docs/test-catalog.md`](docs/test-catalog.md) — every tracked automated test and its regression responsibility;
+- [`docs/ci-cd.md`](docs/ci-cd.md) — every `.github` automation/configuration file;
+- [`docs/maintenance.md`](docs/maintenance.md) — long-term maintenance/change/release playbook;
+- [`docs/glossary.md`](docs/glossary.md) — project/build/platform/security terminology;
+- [`docs/branding-assets.md`](docs/branding-assets.md) — SVG/adaptive-icon/theme ownership;
+- [`docs/repository-file-reference.md`](docs/repository-file-reference.md) — exhaustive every-tracked-file reference.
+
+`python3 scripts/check_docs_coverage.py` uses `git ls-files` and fails CI if any tracked path is absent from the exhaustive file reference.
 
 ## CPU difficulty transparency
 
@@ -96,7 +133,7 @@ Development workflow: [`docs/development.md`](docs/development.md)
 - **Normal:** mostly random; after enough history it can counter the player's latest gesture.
 - **Expert:** after enough history it estimates the player's most frequent allowed gesture and usually counters it while retaining randomness.
 
-The CPU does not use internet services or hidden machine-learning models. Given the same seed, difficulty, ruleset, and player-move history, its random sequence is reproducible.
+The CPU does not use internet services or hidden machine-learning models. Given the same seed, difficulty, ruleset, and player-move history, its random sequence is reproducible. Exact thresholds are documented in [`docs/domain-and-gameplay.md`](docs/domain-and-gameplay.md).
 
 ## Timed matches
 
@@ -110,25 +147,28 @@ Settings can prepare a plain-text, versioned local backup beginning with:
 RPS_ARENA_BACKUP|1
 ```
 
-The importer validates size, record count, record types, duplicates, settings values, statistics invariants, and history bounds before replacing local state. Keep exported backup text private if a local player name or gameplay history is sensitive to you.
+The importer validates size, record count, record types, duplicates, settings values, statistics invariants, and history bounds before replacing local state. Keep exported backup text private if a local player name or gameplay history is sensitive to you. Exact grammar is documented in [`docs/storage-and-backup.md`](docs/storage-and-backup.md).
 
 ## Private-room architecture
 
 The shared module contains `PrivateRoomGateway`/`PrivateRoomSession` transport contracts plus an in-memory reference implementation for deterministic testing and development. This is deliberately not a hidden network feature: the current primary Android app still declares no internet permission. A future LAN adapter must remain explicit and optional.
 
+The current room contract is **not** production LAN multiplayer. See [`docs/private-room-protocol.md`](docs/private-room-protocol.md) for that boundary and future wire-protocol/security requirements.
+
 ## Testing and quality gates
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_coverage.py
 python3 scripts/check_version.py
-gradle :shared:allTests
-gradle :androidApp:lintDebug
-gradle :androidApp:assembleDebug
-gradle :desktopApp:classes
+gradle :shared:allTests --stacktrace
+gradle :androidApp:lintDebug --stacktrace
+gradle :androidApp:assembleDebug --stacktrace
+gradle :desktopApp:classes --stacktrace
 cargo test --manifest-path rust-engine/Cargo.toml --all-targets
 ```
 
-CI enforces formatting, synchronized versions, shared tests, Android lint/build, desktop compilation, Rust tests, and CodeQL security analysis. See [`docs/testing.md`](docs/testing.md) and [`docs/validation.md`](docs/validation.md).
+CI enforces formatting, exhaustive tracked-file documentation coverage, synchronized versions, shared tests, Android lint/build, desktop compilation, and Rust tests. CodeQL separately performs Kotlin/Java security analysis. See [`docs/testing.md`](docs/testing.md), [`docs/test-catalog.md`](docs/test-catalog.md), and [`docs/validation.md`](docs/validation.md).
 
 ## Architecture
 
@@ -140,7 +180,7 @@ Compose UI -> ArenaState -> RulesEngine / CpuStrategy
                        -> optional PrivateRoomGateway boundary
 ```
 
-See [`docs/architecture.md`](docs/architecture.md) and [`docs/adr/`](docs/adr/).
+See [`docs/architecture.md`](docs/architecture.md), [`docs/build-system.md`](docs/build-system.md), and [`docs/adr/`](docs/adr/).
 
 ## Accessibility
 
@@ -148,11 +188,11 @@ RPS Arena uses visible text labels, large gesture targets, text-based outcome/ti
 
 ## Privacy and security
 
-RPS Arena is offline-first. Local storage contains preferences, aggregate statistics, and up to 30 recent round summaries. The primary Android app has no internet permission. See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
+RPS Arena is offline-first. Local storage contains preferences, aggregate statistics, and up to 30 recent round summaries. The primary Android app has no internet permission. See [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/storage-and-backup.md`](docs/storage-and-backup.md).
 
 ## Release
 
-Version 1.1.0 is configured for Android and desktop. Tagged releases can build unsigned/public Android, Linux desktop, and Rust package artifacts with SHA-256 checksums. Store signing/notarization requires private credentials supplied outside the repository. See [`docs/release.md`](docs/release.md).
+Version 1.1.0 is configured for Android and desktop. Tagged releases can build unsigned/public Android, Linux desktop, and Rust package artifacts with SHA-256 checksums. Store signing/notarization requires private credentials supplied outside the repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Roadmap
 
@@ -160,7 +200,9 @@ See [`ROADMAP.md`](ROADMAP.md). Future networking and signing work must remain o
 
 ## Contributing
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), and [`SECURITY.md`](SECURITY.md). The documented owner commit email is `sanskarin@outlook.in`.
+Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`SECURITY.md`](SECURITY.md), and [`docs/maintenance.md`](docs/maintenance.md). The documented owner commit email is `sanskarin@outlook.in`.
+
+Any new tracked file must also be documented in [`docs/repository-file-reference.md`](docs/repository-file-reference.md).
 
 ## Support and contact
 
