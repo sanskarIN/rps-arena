@@ -1,25 +1,78 @@
 name: Feature request
-description: Suggest an improvement
+description: Propose a focused improvement to RPS Arena.
 title: "[Feature]: "
-labels: ["enhancement"]
+labels:
+  - enhancement
 body:
+  - type: markdown
+    attributes:
+      value: |
+        RPS Arena prioritizes reliable offline play, accessibility, privacy, and maintainability. Please describe the user problem before the implementation idea.
+
   - type: textarea
     id: problem
     attributes:
-      label: Problem or opportunity
-      description: What user need would this address?
+      label: Problem or user need
+      description: What is difficult, missing, confusing, or repetitive today?
     validations:
       required: true
+
   - type: textarea
-    id: solution
+    id: proposal
     attributes:
-      label: Proposed solution
+      label: Proposed behavior
+      description: Describe the smallest useful product behavior, not only a library or technology choice.
     validations:
       required: true
-  - type: checkboxes
-    id: principles
+
+  - type: dropdown
+    id: platforms
     attributes:
-      label: Project principles
+      label: Primary scope
       options:
-        - label: This can preserve the offline-first default.
-        - label: This does not require adding tracking or ads.
+        - Shared Android + desktop
+        - Android
+        - Windows/macOS/Linux desktop
+        - Shared game engine/state
+        - Optional Rust engine
+        - Documentation/build/repository
+        - Future private-room architecture
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: offline_privacy
+    attributes:
+      label: Offline/privacy impact
+      description: Would this add networking, accounts, analytics, new permissions, external services, additional local data, or clipboard/file access? Explain why it is needed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: accessibility
+    attributes:
+      label: Accessibility considerations
+      description: Consider keyboard/touch use, screen readers, text scaling, motion, and non-color-only state.
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Persistence or compatibility impact
+      description: Does this change settings, history, profiles, backup format, game rules, or release compatibility?
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional simpler approaches or workarounds.
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched existing issues and the roadmap for this request.
+          required: true
+        - label: This request preserves core offline gameplay or clearly explains why a new dependency/permission is justified.
+          required: true
