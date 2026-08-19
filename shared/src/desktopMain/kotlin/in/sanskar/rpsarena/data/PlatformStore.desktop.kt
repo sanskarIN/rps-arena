@@ -1,4 +1,4 @@
-package in.sanskar.rpsarena.data
+package `in`.sanskar.rpsarena.data
 
 import java.util.prefs.Preferences
 
