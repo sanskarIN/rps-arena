@@ -102,12 +102,7 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
     }
 
     fun replaceHistory(lines: List<String>): Boolean {
-        if (lines.size > MAX_HISTORY) return false
-        if (lines.any { line ->
-                line.isBlank() ||
-                    line.length > MAX_HISTORY_LINE_LENGTH ||
-                    line.any { it == '\n' || it == '\r' || it.code < 0x20 && it != '\t' }
-            }) return false
+        if (!isValidHistory(lines)) return false
         store.putString(KEY_HISTORY, lines.joinToString("\n"))
         return true
     }
@@ -158,7 +153,8 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         saveStats(decoded.stats)
         saveConfig(decoded.config)
         saveProfilesState(decoded.profilesState)
-        return replaceHistory(decoded.history)
+        replaceHistory(decoded.history)
+        return true
     }
 
     internal fun encodeSettings(value: ArenaSettings): String = listOf(
@@ -266,7 +262,7 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         } else {
             historyRaw.split('\t').map { unescapeHistory(it) ?: return null }
         }
-        if (history.size > MAX_HISTORY || history.any { it.length > MAX_HISTORY_LINE_LENGTH }) return null
+        if (!isValidHistory(history)) return null
 
         val profilesState = if (formatVersion == 2) {
             decodeBackupProfiles(values) ?: return null
@@ -274,6 +270,19 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
             LocalProfilesState.default()
         }
         return DecodedBackup(formatVersion, settings, stats, config, profilesState, history)
+    }
+
+    private fun isValidHistory(lines: List<String>): Boolean {
+        if (lines.size > MAX_HISTORY) return false
+        return lines.none { line ->
+            line.isBlank() ||
+                line.length > MAX_HISTORY_LINE_LENGTH ||
+                line.any { character ->
+                    character == '\n' ||
+                        character == '\r' ||
+                        (character.code < 0x20 && character != '\t')
+                }
+        }
     }
 
     private fun saveProfilesState(value: LocalProfilesState) {
