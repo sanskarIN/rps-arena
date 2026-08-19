@@ -1,37 +1,95 @@
 name: Bug report
-description: Report a reproducible problem
+description: Report a reproducible RPS Arena defect.
 title: "[Bug]: "
-labels: ["bug"]
+labels:
+  - bug
 body:
   - type: markdown
     attributes:
-      value: Thanks for helping improve RPS Arena.
+      value: |
+        Thanks for helping improve RPS Arena. Do not include passwords, tokens, signing keys, full backup text, personal data, or undisclosed security details in a public issue. Use SECURITY.md for vulnerabilities.
+
   - type: dropdown
     id: platform
     attributes:
       label: Platform
-      options: [Android, Windows, macOS, Linux, Shared logic]
+      options:
+        - Android
+        - Windows
+        - macOS
+        - Linux
+        - Shared/common code
+        - Rust engine
+        - Repository/build/docs
+        - Other
     validations:
       required: true
-  - type: textarea
-    id: problem
-    attributes:
-      label: What happened?
-      description: Describe the problem and expected behavior.
-    validations:
-      required: true
-  - type: textarea
-    id: reproduce
-    attributes:
-      label: Reproduction steps
-      placeholder: "1. Open…\n2. Tap…\n3. Observe…"
-    validations:
-      required: true
+
   - type: input
     id: version
     attributes:
-      label: App/version
+      label: Version or commit
+      description: Release version or commit SHA where the problem occurs.
+      placeholder: v1.0.0 or abc1234
+    validations:
+      required: true
+
   - type: textarea
-    id: extra
+    id: steps
     attributes:
-      label: Additional context
+      label: Reproduction steps
+      description: Use the smallest reliable sequence you can.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: dropdown
+    id: data_impact
+    attributes:
+      label: Local data impact
+      description: Did the issue affect local settings, profiles, history, statistics, or backup/import behavior?
+      options:
+        - No known local-data impact
+        - Settings
+        - Profiles
+        - History/statistics
+        - Backup/import/reset
+        - Unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Sanitized diagnostics
+      description: Optional non-sensitive logs/build output. Remove personal data, paths you do not want public, credentials, backup content, and tokens.
+      render: shell
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Confirmations
+      options:
+        - label: I searched existing issues for the same problem.
+          required: true
+        - label: I removed secrets, personal data, signing material, and backup contents from this report.
+          required: true
+        - label: This is not an undisclosed security vulnerability; if it is, I will follow SECURITY.md instead.
+          required: true
