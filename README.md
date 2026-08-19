@@ -205,7 +205,7 @@ RPS Arena is offline-first. Local storage contains preferences, aggregate statis
 
 ## Release
 
-Version 1.1.0 is configured for Android and desktop. Tagged releases can build unsigned/public Android, Linux desktop, and Rust package artifacts with SHA-256 checksums after repeating the fast source/security/privacy/version preflight. Store signing/notarization requires private credentials supplied outside the repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
+Version 2.5.8 is configured for Android and desktop. Android uses `versionCode = 20508`; tagged releases can build unsigned/public Android, Linux desktop, and Rust package artifacts with SHA-256 checksums after repeating the fast source/security/privacy/version preflight. Store signing/notarization requires private credentials supplied outside the repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Roadmap
 
