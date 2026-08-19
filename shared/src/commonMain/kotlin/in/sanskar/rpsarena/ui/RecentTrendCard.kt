@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,7 +18,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import `in`.sanskar.rpsarena.model.HistoryTrendParser
-import `in`.sanskar.rpsarena.model.TrendResult
 
 @Composable
 internal fun RecentTrendCard(history: List<String>) {
@@ -37,18 +36,19 @@ internal fun RecentTrendCard(history: List<String>) {
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     trend.results.forEachIndexed { index, result ->
-                        val fullLabel = when (result) {
-                            TrendResult.WIN -> "Win"
-                            TrendResult.LOSS -> "Loss"
-                            TrendResult.DRAW -> "Draw"
-                        }
-                        SuggestionChip(
-                            onClick = {},
-                            label = { Text(result.shortLabel) },
+                        Surface(
+                            shape = MaterialTheme.shapes.small,
+                            tonalElevation = 2.dp,
                             modifier = Modifier.semantics {
-                                contentDescription = "Recent result ${index + 1}: $fullLabel"
+                                contentDescription = Strings.recentResultAccessibility(index + 1, result)
                             },
-                        )
+                        ) {
+                            Text(
+                                result.shortLabel,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
                     }
                 }
                 Text(Strings.recentTrendLegend, style = MaterialTheme.typography.bodySmall)
