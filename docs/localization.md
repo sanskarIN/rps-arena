@@ -356,7 +356,7 @@ If a language is removed from a future version, old backups containing that lang
 Application version is deliberately stored in:
 
 ```kotlin
-const val APP_VERSION = "1.1.0"
+const val APP_VERSION = "2.5.8"
 ```
 
 About renders:
@@ -365,7 +365,7 @@ About renders:
 Text("${strings.version}: $APP_VERSION")
 ```
 
-This prevents `scripts/check_version.py` from depending on the English literal `Version:`. The script checks shared metadata separately and verifies that About references `$APP_VERSION`.
+This prevents `scripts/check_version.py` from depending on the English literal `Version:`. The script checks shared metadata separately, verifies that About references `$APP_VERSION`, and validates the Android semantic `versionCode` mapping.
 
 Do not reintroduce a hard-coded localized version number into each catalog.
 
