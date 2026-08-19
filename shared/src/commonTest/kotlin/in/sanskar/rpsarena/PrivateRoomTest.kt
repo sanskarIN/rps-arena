@@ -77,7 +77,7 @@ class PrivateRoomTest {
     @Test
     fun closingSessionBroadcastsLifecycleEventOnce() {
         val gateway = InMemoryPrivateRoomGateway()
-        val code = RoomCode.require("CLOSE2")
+        val code = RoomCode.require("CLSE23")
         val host = gateway.host(code, "Host")
         val guest = gateway.join(code, "Guest")
         assertNotNull(guest)
