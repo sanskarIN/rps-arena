@@ -46,7 +46,7 @@ class PrivateRoomTest {
     @Test
     fun privateRoomAllowsOnlyTwoParticipants() {
         val gateway = InMemoryPrivateRoomGateway()
-        val code = RoomCode.require("ROOM23")
+        val code = RoomCode.require("RM2345")
         gateway.host(code, "Host")
         assertNotNull(gateway.join(code, "Guest"))
         assertNull(gateway.join(code, "Third"))
