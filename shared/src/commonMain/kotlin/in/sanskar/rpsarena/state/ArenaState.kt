@@ -1,12 +1,12 @@
-package in.sanskar.rpsarena.state
+package `in`.sanskar.rpsarena.state
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import in.sanskar.rpsarena.data.ArenaRepository
-import in.sanskar.rpsarena.engine.CpuStrategy
-import in.sanskar.rpsarena.engine.RulesEngine
-import in.sanskar.rpsarena.model.*
+import `in`.sanskar.rpsarena.data.ArenaRepository
+import `in`.sanskar.rpsarena.engine.CpuStrategy
+import `in`.sanskar.rpsarena.engine.RulesEngine
+import `in`.sanskar.rpsarena.model.*
 
 enum class ArenaScreen { HOME, PLAY, HISTORY, STATS, ACHIEVEMENTS, SETTINGS, ABOUT }
 
