@@ -2,6 +2,7 @@ package `in`.sanskar.rpsarena.data
 
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
+import `in`.sanskar.rpsarena.model.BackupPreview
 import `in`.sanskar.rpsarena.model.Difficulty
 import `in`.sanskar.rpsarena.model.GameVariant
 import `in`.sanskar.rpsarena.model.LocalProfile
@@ -94,8 +95,21 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         .toList()
 
     fun addHistory(line: String) {
-        val updated = (listOf(line.replace('\n', ' ')) + loadHistory()).take(MAX_HISTORY)
+        val sanitized = line.replace('\n', ' ').replace('\r', ' ').trim().take(MAX_HISTORY_LINE_LENGTH)
+        if (sanitized.isEmpty()) return
+        val updated = (listOf(sanitized) + loadHistory()).take(MAX_HISTORY)
         store.putString(KEY_HISTORY, updated.joinToString("\n"))
+    }
+
+    fun replaceHistory(lines: List<String>): Boolean {
+        if (lines.size > MAX_HISTORY) return false
+        if (lines.any { line ->
+                line.isBlank() ||
+                    line.length > MAX_HISTORY_LINE_LENGTH ||
+                    line.any { it == '\n' || it == '\r' || it.code < 0x20 && it != '\t' }
+            }) return false
+        store.putString(KEY_HISTORY, lines.joinToString("\n"))
+        return true
     }
 
     fun clearHistory() {
@@ -126,39 +140,25 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         }
     }
 
+    fun previewBackup(raw: String): BackupPreview? {
+        val decoded = decodeBackup(raw) ?: return null
+        return BackupPreview(
+            formatVersion = decoded.formatVersion,
+            profileNames = decoded.profilesState.profiles.map { it.displayName },
+            activeProfileName = decoded.profilesState.activeProfile.displayName,
+            stats = decoded.stats,
+            config = decoded.config,
+            historyEntries = decoded.history.size,
+        )
+    }
+
     fun importBackup(raw: String): Boolean {
-        val lines = raw.replace("\r\n", "\n").trim().split('\n')
-        val header = lines.firstOrNull() ?: return false
-        if (header != BACKUP_HEADER_V1 && header != BACKUP_HEADER_V2) return false
-
-        val values = lines.drop(1).mapNotNull { line ->
-            val separator = line.indexOf('=')
-            if (separator <= 0) null else line.substring(0, separator) to line.substring(separator + 1)
-        }.toMap()
-
-        val settings = decodeSettingsOrNull(values["settings"].orEmpty()) ?: return false
-        val stats = decodeStatsOrNull(values["stats"].orEmpty()) ?: return false
-        val config = decodeConfigOrNull(values["config"].orEmpty()) ?: return false
-        val historyRaw = values["history"] ?: return false
-        val history = if (historyRaw.isBlank()) {
-            emptyList()
-        } else {
-            historyRaw.split('\t').map { unescapeHistory(it) ?: return false }
-        }
-        if (history.size > MAX_HISTORY || history.any { it.length > MAX_HISTORY_LINE_LENGTH }) return false
-
-        val profilesState = if (header == BACKUP_HEADER_V2) {
-            decodeBackupProfiles(values) ?: return false
-        } else {
-            LocalProfilesState.default()
-        }
-
-        saveSettings(settings)
-        saveStats(stats)
-        saveConfig(config)
-        saveProfilesState(profilesState)
-        store.putString(KEY_HISTORY, history.joinToString("\n"))
-        return true
+        val decoded = decodeBackup(raw) ?: return false
+        saveSettings(decoded.settings)
+        saveStats(decoded.stats)
+        saveConfig(decoded.config)
+        saveProfilesState(decoded.profilesState)
+        return replaceHistory(decoded.history)
     }
 
     internal fun encodeSettings(value: ArenaSettings): String = listOf(
@@ -240,6 +240,40 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
                 roundTimerSeconds = timer,
             )
         }.getOrNull()
+    }
+
+    private fun decodeBackup(raw: String): DecodedBackup? {
+        if (raw.length > MAX_BACKUP_LENGTH) return null
+        val lines = raw.replace("\r\n", "\n").trim().split('\n')
+        val header = lines.firstOrNull() ?: return null
+        val formatVersion = when (header) {
+            BACKUP_HEADER_V1 -> 1
+            BACKUP_HEADER_V2 -> 2
+            else -> return null
+        }
+
+        val values = lines.drop(1).mapNotNull { line ->
+            val separator = line.indexOf('=')
+            if (separator <= 0) null else line.substring(0, separator) to line.substring(separator + 1)
+        }.toMap()
+
+        val settings = decodeSettingsOrNull(values["settings"].orEmpty()) ?: return null
+        val stats = decodeStatsOrNull(values["stats"].orEmpty()) ?: return null
+        val config = decodeConfigOrNull(values["config"].orEmpty()) ?: return null
+        val historyRaw = values["history"] ?: return null
+        val history = if (historyRaw.isBlank()) {
+            emptyList()
+        } else {
+            historyRaw.split('\t').map { unescapeHistory(it) ?: return null }
+        }
+        if (history.size > MAX_HISTORY || history.any { it.length > MAX_HISTORY_LINE_LENGTH }) return null
+
+        val profilesState = if (formatVersion == 2) {
+            decodeBackupProfiles(values) ?: return null
+        } else {
+            LocalProfilesState.default()
+        }
+        return DecodedBackup(formatVersion, settings, stats, config, profilesState, history)
     }
 
     private fun saveProfilesState(value: LocalProfilesState) {
@@ -361,6 +395,7 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         const val MAX_PROFILE_NAME_LENGTH = 24
         private const val MAX_PROFILE_ID_SUFFIX = 9_999
         private const val MAX_HISTORY_LINE_LENGTH = 240
+        private const val MAX_BACKUP_LENGTH = 32_768
         private const val BACKUP_HEADER_V1 = "RPS_ARENA_BACKUP_V1"
         private const val BACKUP_HEADER_V2 = "RPS_ARENA_BACKUP_V2"
         private const val KEY_SETTINGS = "settings_v1"
@@ -373,3 +408,12 @@ class ArenaRepository(private val store: KeyValueStore = DefaultKeyValueStore) {
         private val PROFILE_ID_PATTERN = Regex("profile-[1-9][0-9]{0,4}")
     }
 }
+
+private data class DecodedBackup(
+    val formatVersion: Int,
+    val settings: ArenaSettings,
+    val stats: ArenaStats,
+    val config: MatchConfig,
+    val profilesState: LocalProfilesState,
+    val history: List<String>,
+)
