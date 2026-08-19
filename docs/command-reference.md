@@ -32,8 +32,8 @@ Meaning:
 
 - `bash` runs the Bash interpreter.
 - `scripts/verify.sh` is the repository verification script.
-- `set -euo pipefail` inside the script causes failures, undefined variables, and failed pipeline commands to stop the verification instead of silently continuing.
-- The script runs formatting, version consistency, shared tests, Android lint/build, desktop compilation, and Rust tests when Cargo exists.
+- `set -euo pipefail` inside the script causes failures, undefined variables, and failed pipeline commands to stop verification instead of silently continuing.
+- The script runs formatting, exhaustive tracked-file documentation coverage, version consistency, shared tests, Android lint/build, desktop compilation, and Rust tests when Cargo exists.
 
 ### Full PowerShell verification
 
@@ -46,6 +46,7 @@ Meaning:
 - `powershell` starts Windows PowerShell.
 - `-ExecutionPolicy Bypass` applies only to this process and allows the repository script to run when the machine policy otherwise blocks local scripts. It does not permanently change the system execution policy.
 - `-File scripts/verify.ps1` tells PowerShell which script to execute.
+- The PowerShell script runs the same formatting, documentation-coverage, version, Kotlin/Android/desktop, and optional Rust gates as the shell script.
 
 If you are already inside PowerShell and local scripts are allowed:
 
@@ -75,6 +76,26 @@ Meaning:
 - Exit code `0` means success; a non-zero exit code makes CI fail.
 
 This command does **not** rewrite files. It is a validator, not an auto-formatter.
+
+## Documentation coverage verification
+
+```bash
+python3 scripts/check_docs_coverage.py
+```
+
+Meaning:
+
+- runs `git ls-files -z` to obtain the authoritative list of Git-tracked files;
+- reads `docs/repository-file-reference.md`;
+- requires every tracked path to appear in that reference exactly inside backticks;
+- prints any missing paths and exits non-zero when coverage is incomplete;
+- does not edit documentation or source files.
+
+This is the enforceable repository rule behind the requirement to document every tracked file. It checks **path coverage**, while human review still checks whether each explanation is correct and sufficiently detailed.
+
+Because it uses `git ls-files`, run it inside a real Git checkout rather than from a copied source directory with `.git` metadata removed.
+
+When adding, renaming, or deleting a tracked file, update `docs/repository-file-reference.md` in the same change.
 
 ## Version consistency verification
 
@@ -128,7 +149,7 @@ Meaning:
 
 - Compiles the shared Kotlin Multiplatform test source sets.
 - Runs test tasks available for configured targets.
-- Includes the shared business-rule/persistence tests and the configured desktop test target.
+- Includes shared business-rule, persistence, protocol, localization, and configured desktop test coverage.
 - Does not install an Android APK on a device.
 
 For desktop UI tests specifically:
@@ -361,6 +382,22 @@ git push -u origin docs/example-change
 - `origin` is the conventional name for the cloned remote.
 - `-u` stores upstream tracking so later `git push`/`git pull` can omit branch names.
 
+## Listing tracked files
+
+The documentation coverage checker relies on:
+
+```bash
+git ls-files -z
+```
+
+Meaning:
+
+- `git ls-files` lists files tracked in Git's index;
+- `-z` separates paths with NUL bytes instead of newlines, so unusual path characters cannot be confused with separators;
+- the Python checker decodes this list and compares it with the exhaustive file reference.
+
+You normally do not need to run this command directly unless debugging documentation coverage.
+
 ## GitHub release tag commands
 
 Create an annotated tag after the exact `main` commit is validated:
@@ -399,6 +436,15 @@ gradle :androidApp:assembleDebug --scan
 
 Prefer `--stacktrace` first because it is local and usually sufficient.
 
+## Exit codes and CI
+
+The repository Python validators and build/test commands use process exit status:
+
+- `0` generally means the command completed successfully;
+- non-zero means failure and causes a normal shell/CI step to fail.
+
+`verify.sh` uses `set -e`, and `verify.ps1` sets `$ErrorActionPreference = "Stop"`, so failed commands stop the full verification rather than allowing later checks to create a misleading success impression.
+
 ## Command safety rules
 
 - Read an error before deleting caches or SDKs.
@@ -406,3 +452,4 @@ Prefer `--stacktrace` first because it is local and usually sufficient.
 - Do not run release/tag commands unless the intended commit is validated.
 - Prefer repository-scoped Git identity/configuration when you do not intend to change every local repository.
 - Generated `build/`, `.gradle/`, and `rust-engine/target/` content can be recreated; source files and signing credentials cannot.
+- Do not remove a failing documentation/build/security check merely to make CI green; determine whether the source or the check is wrong and document the correction.
