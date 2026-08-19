@@ -27,6 +27,7 @@ data class MatchConfig(
     val difficulty: Difficulty = Difficulty.NORMAL,
     val matchMode: MatchMode = MatchMode.BEST_OF_3,
     val seed: Int = 20260819,
+    val roundTimerSeconds: Int = 0,
 ) {
     val roundsToWin: Int? get() = when (matchMode) {
         MatchMode.BEST_OF_3 -> 2
