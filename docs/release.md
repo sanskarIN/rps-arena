@@ -4,13 +4,18 @@ RPS Arena should not be tagged as complete until a clean checkout passes the req
 
 ## Versioning
 
-Use semantic versioning. Keep these aligned for a release:
+Use semantic versioning. The authoritative application version lives in `gradle/libs.versions.toml`:
 
-- Android `versionName`/`versionCode`;
-- desktop `packageVersion`;
+- `appVersion` feeds Android `versionName` and desktop `packageVersion`;
+- `appVersionCode` feeds Android `versionCode`.
+
+For every release, update those catalog values once and keep the following aligned with them:
+
 - `CHANGELOG.md`;
 - release notes;
 - Git tag.
+
+Do not reintroduce independent hard-coded Android or desktop release versions.
 
 ## Release-candidate verification
 
