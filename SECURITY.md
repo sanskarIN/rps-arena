@@ -31,6 +31,7 @@ RPS Arena intentionally keeps the primary attack surface small:
 
 - no account or authentication service;
 - no Android internet permission in the primary app;
+- Android automatic backup disabled and SharedPreferences excluded from cloud/device-transfer backup policy;
 - no analytics, advertising, telemetry, or cloud-model SDK;
 - bounded recent history;
 - bounded, versioned backup input with strict validation before writes;
@@ -44,17 +45,27 @@ Treat backup text as untrusted input. The importer must keep size and record-cou
 
 Do not expand the backup format with file paths, executable content, scripts, remote URLs, credentials, or arbitrary serialized objects.
 
+Android automatic backup is not used as an alternate backup channel. The explicit app backup format is the supported user-controlled portability mechanism.
+
 ## Optional networking security
 
 Any future LAN implementation must stay behind `PrivateRoomGateway`, require explicit user opt-in, validate room/message input, stop network activity when a room closes, and keep primary offline play functional without network permission.
 
 Room codes are convenience rendezvous identifiers for game moves, not a substitute for high-assurance authentication. Do not use the room channel for sensitive personal information.
 
+## Logging security
+
+`SafeLogger` is sink-neutral and uses a no-op sink by default, so the current app does not emit telemetry. Before an optional sink receives an event, values whose keys resemble password, secret, token, authorization, cookie, email, backup, content, or payload data are replaced with `[REDACTED]`; non-sensitive values are length-bounded.
+
+Do not treat redaction as permission to log arbitrary personal data. Any future sink must remain local/explicit unless the privacy policy and product architecture are deliberately changed and reviewed.
+
 ## Dependencies and CI
 
-Dependabot and CodeQL are configured in the repository. CI also runs shared tests, Android lint/build, desktop compilation, Rust tests, formatting, and version-consistency checks.
+Dependabot and CodeQL are configured in the repository. Primary CI also runs shared tests, Android lint/build, desktop compilation, Rust tests, formatting, relative documentation-link validation, exhaustive tracked-file documentation coverage, committed-secret pattern checks, Android privacy-contract validation, and version consistency.
 
-A green CI run is evidence for known checks, not proof that no future vulnerability exists.
+The focused `Security checks` workflow independently re-runs the committed-secret and Android privacy checks and performs pull-request dependency review with high-severity findings configured to fail.
+
+A green CI/security run is evidence for known checks, not proof that no future vulnerability exists.
 
 ## Secrets
 
@@ -67,7 +78,11 @@ Never commit:
 - private user backups or gameplay data collected from another person;
 - generated credentials in examples.
 
-Use placeholders in documentation and authorized secret stores for release credentials.
+Use placeholders in documentation and authorized secret stores for release credentials. `scripts/check_for_secrets.py` provides an additional fail-closed check for several high-confidence credential formats, but it does not replace human review or platform secret scanning.
+
+## Ownership and review
+
+`.github/CODEOWNERS` routes default review ownership to `@sanskarIN` and explicitly covers automation/security, shared core code, Rust, and platform packaging paths. Repository rulesets can require code-owner review when desired.
 
 ## Disclosure handling
 
