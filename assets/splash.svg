@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">RPS Arena splash</title>
+  <desc id="desc">RPS Arena title and gesture symbols centered on a purple field.</desc>
+  <rect width="1600" height="900" fill="#6750A4"/>
+  <circle cx="800" cy="345" r="170" fill="#FFFFFF"/>
+  <text x="800" y="375" text-anchor="middle" font-size="96" font-family="sans-serif">🪨 📄 ✂️</text>
+  <text x="800" y="620" text-anchor="middle" fill="#FFFFFF" font-size="92" font-weight="700" font-family="sans-serif">RPS Arena</text>
+  <text x="800" y="690" text-anchor="middle" fill="#FFFFFF" font-size="34" font-family="sans-serif">Made by the Sanskar</text>
+</svg>
