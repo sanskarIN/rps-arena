@@ -9,7 +9,7 @@ shared/src/commonTest/   platform-independent business/data/protocol tests
 shared/src/desktopTest/  Compose desktop UI smoke tests
 ```
 
-There is currently no tracked `androidInstrumentedTest`/device-test source set. Android device/TalkBack checks remain manual release validation.
+There is currently no tracked `androidInstrumentedTest`/device-test source set. Android device/TalkBack checks remain manual release validation. Android privacy source invariants are separately checked by `scripts/check_android_privacy.py`.
 
 ## `RulesEngineTest.kt`
 
@@ -303,6 +303,25 @@ Assertions:
 
 Why it matters: adding an achievement without translation should be caught by catalog maintenance/tests.
 
+## `SafeLoggerTest.kt`
+
+Path:
+
+```text
+shared/src/commonTest/kotlin/in/sanskar/rpsarena/SafeLoggerTest.kt
+```
+
+Protects `SafeLogger`, whose default sink is intentionally no-op.
+
+Assertions:
+
+- ordinary fields reach an explicitly supplied test sink unchanged;
+- keys containing email/backup/token-sensitive fragments are replaced with `[REDACTED]` before the sink receives the event;
+- non-sensitive values are truncated to the 160-character maximum;
+- invalid non-lowercase-snake-case event names are rejected.
+
+Why it matters: if a future local/platform diagnostic sink is introduced, redaction and bounded output must happen before data reaches that sink. This is not telemetry enablement; the production default remains no-op.
+
 ## `RpsArenaUiTest.kt`
 
 Path:
@@ -374,17 +393,17 @@ It also makes destructive/non-destructive import assertions easy to inspect.
 
 ## Test gaps that remain intentional/known
 
-The current suite does not yet provide hosted Android emulator instrumentation for:
+The current Kotlin/Compose suite does not yet provide hosted Android emulator instrumentation for:
 
 - real Activity lifecycle;
 - Android SharedPreferences persistence across process restart;
 - TalkBack;
 - Android system text scaling;
 - adaptive icon/system bars;
-- Android platform backup behavior;
+- actual OS backup transport execution;
 - future network permissions.
 
-These are documented manual/future checks rather than falsely claimed automated coverage.
+The source-level Android privacy checker nevertheless verifies that the manifest disables automatic backup, the backup-policy XML excludes SharedPreferences, and the primary manifest has no internet permission. Manual/device testing still covers runtime platform behavior that a static parser cannot prove.
 
 The optional Rust tests also cover only representative rule pairs, while Kotlin remains the primary broader application rule suite.
 
@@ -417,7 +436,8 @@ Review:
 - `ArenaRepositoryBackupTest`;
 - `ArenaRepositoryValidationTest`;
 - `ArenaStateTest`;
-- UI backup journey.
+- UI backup journey;
+- `scripts/check_android_privacy.py` and platform policy docs if Android storage/backup behavior changes.
 
 ### Language/achievement
 
@@ -427,6 +447,10 @@ Review:
 - `AchievementStringsTest`;
 - `RpsArenaUiTest`;
 - backup/migration test if `AppLanguage` persistence changes.
+
+### Logging/diagnostics
+
+Review `SafeLoggerTest` whenever redaction keys, event naming, value bounds, or a diagnostic sink contract changes.
 
 ### Private-room protocol
 
@@ -474,6 +498,17 @@ Optional Rust:
 
 ```bash
 cargo test --manifest-path rust-engine/Cargo.toml --all-targets
+```
+
+Fast source/security/privacy checks:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
+python3 scripts/check_version.py
 ```
 
 Android lint/build checks are quality/build gates, not Kotlin unit test files:
