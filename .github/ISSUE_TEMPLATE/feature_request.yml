@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest a focused improvement for RPS Arena
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What user need would this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior, not only the implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Relevant platform
+      options: [All, Android, Desktop, Documentation]
+    validations:
+      required: true
+  - type: textarea
+    id: accessibility
+    attributes:
+      label: Accessibility and privacy considerations
+      description: Note any impact on keyboard, screen readers, motion, local data, or permissions.
