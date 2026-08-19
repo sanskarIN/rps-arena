@@ -1,6 +1,6 @@
 # Android Platform Reference
 
-This guide documents every tracked file under `androidApp/` plus the Android-specific shared storage adapter. It explains application identity, SDK levels, manifest behavior, launcher activity, adaptive icon resources, platform theme shell, offline permission posture, local storage initialization, build tasks, packaging, and signing boundaries.
+This guide documents every tracked file under `androidApp/` plus the Android-specific shared storage adapter. It explains application identity, SDK levels, manifest behavior, launcher activity, adaptive icon resources, platform theme shell, offline permission posture, automatic-backup exclusions, local storage initialization, build tasks, packaging, and signing boundaries.
 
 ## Android file inventory
 
@@ -15,6 +15,8 @@ androidApp/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 androidApp/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
 androidApp/src/main/res/values/colors.xml
 androidApp/src/main/res/values/themes.xml
+androidApp/src/main/res/xml/backup_rules.xml
+androidApp/src/main/res/xml/data_extraction_rules.xml
 ```
 
 Related shared Android adapter:
@@ -23,7 +25,7 @@ Related shared Android adapter:
 shared/src/androidMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.android.kt
 ```
 
-No Android source file outside this list is currently tracked in the repository.
+No Android application/source/resource file outside this list is currently tracked in the repository.
 
 ## `androidApp/build.gradle.kts`
 
@@ -153,15 +155,52 @@ This supports the offline-first claim.
 
 If a future LAN feature requires permissions, manifest changes must be explicit and privacy/security docs must be updated before release.
 
-## Application attributes
+## Application privacy/backup attributes
 
-### `android:allowBackup="true"`
+### `android:allowBackup="false"`
 
-Allows Android's platform backup behavior according to OS/device policy.
+Android automatic application backup is deliberately disabled. RPS Arena does not rely on platform cloud backup/device-transfer as a hidden transport for local SharedPreferences.
 
-This is separate from the app's explicit `RPS_ARENA_BACKUP|1` text export/import.
+This is separate from the app's explicit, user-controlled `RPS_ARENA_BACKUP|1` text export/import.
 
-Privacy review should consider both mechanisms.
+### `android:fullBackupContent="@xml/backup_rules"`
+
+Points legacy Android backup behavior at `androidApp/src/main/res/xml/backup_rules.xml`.
+
+That rule excludes the entire `sharedpref` domain:
+
+```xml
+<exclude domain="sharedpref" path="." />
+```
+
+### `android:dataExtractionRules="@xml/data_extraction_rules"`
+
+Points Android 12+ backup/data-transfer policy at `androidApp/src/main/res/xml/data_extraction_rules.xml`.
+
+The file excludes `sharedpref` from both:
+
+- cloud backup;
+- device-to-device transfer.
+
+The explicit rules provide defense in depth with `allowBackup=false` and make the intended local-data boundary reviewable in source.
+
+### Enforced privacy contract
+
+Run:
+
+```bash
+python3 scripts/check_android_privacy.py
+```
+
+The checker fails when:
+
+- `allowBackup` is not `false`;
+- manifest references to the two backup-rule files change incorrectly;
+- either XML file is missing or malformed;
+- the legacy/cloud/device-transfer SharedPreferences exclusions disappear;
+- `android.permission.INTERNET` appears in the primary manifest.
+
+This source gate runs in normal CI, the focused security workflow, tagged/manual release preflight, and both local verification scripts.
 
 ### `android:icon` / `android:roundIcon`
 
@@ -259,6 +298,8 @@ Mode:
 Context.MODE_PRIVATE
 ```
 
+The Android backup policy excludes the complete SharedPreferences domain, so this store is not automatically copied through Android cloud backup or device transfer.
+
 ### Read
 
 `getString` returns stored value or requested default.
@@ -274,6 +315,36 @@ edit().putString(key, value).apply()
 ```
 
 This is appropriate for the tiny local preference/stat/history strings currently stored.
+
+## Backup policy resources
+
+### Legacy full-backup rules
+
+File:
+
+```text
+androidApp/src/main/res/xml/backup_rules.xml
+```
+
+Structure:
+
+```xml
+<full-backup-content>
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>
+```
+
+This covers legacy Android full-backup APIs.
+
+### Android 12+ data-extraction rules
+
+File:
+
+```text
+androidApp/src/main/res/xml/data_extraction_rules.xml
+```
+
+Both `cloud-backup` and `device-transfer` contain the same root SharedPreferences exclusion. If a future storage backend is introduced, reassess these rules rather than assuming SharedPreferences coverage protects unrelated files/databases.
 
 ## Launcher color resource
 
@@ -506,14 +577,17 @@ Manual release checks should include:
 - configuration-chip wrapping on narrow width;
 - app restart/persistence.
 
-## Offline-first verification
+## Offline-first/privacy verification
 
 Before release, confirm:
 
 - no unexpected `<uses-permission android:name="android.permission.INTERNET">`;
+- `android:allowBackup="false"` remains present;
+- both backup rule resources still exclude the root SharedPreferences domain;
+- `python3 scripts/check_android_privacy.py` passes;
 - no analytics/ads/network SDK introduced through dependencies;
 - CPU/local gameplay works with airplane mode/no network;
-- backup feature remains local text only;
+- explicit backup remains local text only;
 - optional room architecture remains no-network unless a separately approved LAN adapter ships.
 
 Dependency changes deserve review because a manifest can be merged from libraries; Android Lint/build output and merged-manifest inspection may be used when relevant.
@@ -536,12 +610,13 @@ Keep game rules/state ownership in shared code when possible.
 
 When editing Android build/manifest/resources/platform storage:
 
-1. run formatting/version checks as relevant;
+1. run formatting/docs/privacy/version source checks as relevant;
 2. run shared tests if shared behavior changed;
 3. run `lintDebug`;
 4. run `assembleDebug`;
-5. inspect manifest/permissions for privacy impact;
-6. run desktop build too if shared code changed;
-7. update screenshots/docs if visual branding changed;
-8. update privacy/security docs when permissions/data behavior changes;
-9. update version/release docs when distribution behavior changes.
+5. inspect manifest/merged manifest for permission/privacy impact;
+6. verify backup/data-transfer exclusions if persistence behavior changed;
+7. run desktop build too if shared code changed;
+8. update screenshots/docs if visual branding changed;
+9. update privacy/security docs when permissions/data behavior changes;
+10. update version/release docs when distribution behavior changes.
