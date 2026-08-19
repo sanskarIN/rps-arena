@@ -1,16 +1,21 @@
 # Testing Guide
 
-## Repository text/documentation gates
+## Repository source/documentation/security gates
 
-Before compilation, the primary CI job verifies repository source/documentation integrity:
+Before compilation, the primary CI job verifies repository source/documentation/privacy integrity:
 
 ```bash
 python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 ```
 
-These respectively verify text formatting, every tracked file's presence in the exhaustive file reference, and synchronized application version metadata.
+These respectively verify text formatting, repository-relative Markdown links, every tracked file's presence in the exhaustive file reference, high-confidence committed-secret patterns, Android offline/automatic-backup privacy invariants, and synchronized application version metadata.
+
+The focused `Security checks` workflow independently repeats the secret/privacy checks and reviews pull-request dependency changes for high-severity findings.
 
 ## Required shared suite
 
@@ -35,7 +40,8 @@ Coverage includes:
 - CPU and local-two-player timeout scoring;
 - backup restore refreshing in-memory state;
 - English/Hindi gesture, difficulty, match-mode, version metadata, and achievement-copy catalogs;
-- private-room code validation, two-participant limits, sender validation, positive-round validation, lifecycle-event authority, event exchange, and idempotent close behavior.
+- private-room code validation, two-participant limits, sender validation, positive-round validation, lifecycle-event authority, event exchange, and idempotent close behavior;
+- no-op structured logger sensitive-field redaction, output bounds, and event-name validation.
 
 See `docs/test-catalog.md` for a file-by-file description of every automated test.
 
@@ -58,6 +64,18 @@ gradle :shared:desktopTest --stacktrace
 ```
 
 They are also included in the shared test gate for the supported desktop target.
+
+## Android privacy verification
+
+Run:
+
+```bash
+python3 scripts/check_android_privacy.py
+```
+
+The source-level checker parses the Android manifest and both backup-policy XML files. It fails if the primary manifest gains internet permission, automatic backup becomes enabled, backup resource references drift, or SharedPreferences cease to be excluded from legacy/cloud/device-transfer backup.
+
+This test is intentionally separate from Android Lint because the repository treats those privacy choices as product invariants, not merely platform syntax.
 
 ## Android quality/build verification
 
@@ -107,10 +125,11 @@ Before release, verify:
 11. backup export can restore settings, stats, and history after a reset;
 12. malformed backup text is rejected without overwriting valid local data;
 13. reduced-motion mode removes result transition animation;
-14. keyboard and TalkBack/accessible navigation checks from `docs/accessibility.md` pass.
+14. Android automatic backup remains disabled and explicit text export remains functional;
+15. keyboard and TalkBack/accessible navigation checks from `docs/accessibility.md` pass.
 
 ## CI gate
 
-`.github/workflows/ci.yml` runs formatting, tracked-file documentation coverage, version consistency, shared tests (including desktop UI smoke tests), Android lint/debug assembly, desktop classes, and Rust tests. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
+`.github/workflows/ci.yml` runs formatting, relative docs links, tracked-file documentation coverage, secret patterns, Android privacy, version consistency, shared tests (including desktop UI smoke tests), Android lint/debug assembly, desktop classes, and Rust tests. `.github/workflows/security.yml` repeats focused security/privacy checks and dependency review. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
 
-A release candidate should not be merged while any required check is failing or still pending.
+A release candidate should not be merged while any required check is failing or still pending on the exact candidate SHA.
