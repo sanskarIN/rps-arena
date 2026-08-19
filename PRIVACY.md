@@ -9,6 +9,7 @@ The app stores only local gameplay preferences and progress needed for its featu
 - theme and accessibility settings;
 - local player display name;
 - selected interface language;
+- the last selected ruleset, opponent, difficulty, match mode, deterministic seed, and round timer;
 - aggregate rounds, wins, losses, draws, and streaks;
 - up to 30 recent round summaries, including timeout outcomes;
 - onboarding completion state.
@@ -19,7 +20,7 @@ The current application does not collect passwords, payment data, contacts, prec
 
 Android automatic app backup is explicitly disabled with `android:allowBackup="false"`.
 
-The app also supplies legacy and Android 12+ backup/data-extraction rules that exclude the complete SharedPreferences domain from cloud backup and device-to-device transfer. This prevents RPS Arena's local settings, statistics, history, and profile preferences from being copied by Android's automatic backup mechanisms.
+The app also supplies legacy and Android 12+ backup/data-extraction rules that exclude the complete SharedPreferences domain from cloud backup and device-to-device transfer. This prevents RPS Arena's local settings, saved match setup, statistics, history, and profile preferences from being copied by Android's automatic backup mechanisms.
 
 The repository enforces this privacy boundary with `scripts/check_android_privacy.py`, which fails CI/release validation if automatic backup is re-enabled, the exclusion rules disappear, or `android.permission.INTERNET` is introduced into the offline-first v1 manifest.
 
@@ -28,6 +29,8 @@ The repository enforces this privacy boundary with `scripts/check_android_privac
 The Settings screen can prepare a versioned plain-text backup containing local settings, aggregate statistics, and recent history. The app does not upload this backup. Copying, storing, or sharing exported backup text is controlled by the user and by the destination application chosen outside RPS Arena.
 
 A backup can include the local player display name and recent match summaries. Treat it as personal local data if those details are sensitive to you.
+
+The current `RPS_ARENA_BACKUP|1` format intentionally does **not** include the separate `match_config_v1` convenience record. Importing a v1 backup therefore leaves the receiving device's current match setup unchanged. Adding portable match configuration requires a future explicitly versioned backup schema rather than silently changing v1 compatibility.
 
 The in-app plain-text backup is deliberately separate from Android automatic backup. Disabling Android automatic backup does not remove the user's explicit export/import controls.
 
@@ -41,11 +44,11 @@ The repository contains transport-neutral private-room interfaces and an in-memo
 
 ## Retention
 
-Recent history is intentionally bounded to 30 entries. Aggregate statistics remain until the user resets local data, application/platform storage is cleared, or the app is uninstalled according to platform behavior.
+Recent history is intentionally bounded to 30 entries. Aggregate statistics, preferences, and saved match setup remain until the user resets local data, application/platform storage is cleared, or the app is uninstalled according to platform behavior.
 
 ## Deleting data
 
-The Settings screen provides a confirmed **Reset local data** action that clears local statistics, history, player preferences, and backup text while keeping onboarding completed for convenience.
+The Settings screen provides a confirmed **Reset local data** action that clears local statistics, history, player preferences, saved match setup, and backup text while keeping onboarding completed for convenience.
 
 Uninstalling the Android app removes application-local data according to Android/platform behavior. Desktop storage uses the Java preferences mechanism and is subject to the operating system/runtime's local storage behavior.
 
