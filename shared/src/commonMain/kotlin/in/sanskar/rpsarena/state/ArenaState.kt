@@ -23,12 +23,17 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         private set
     var pendingPlayerOne by mutableStateOf<Gesture?>(null)
         private set
-    var localTurnMessage by mutableStateOf("Player 1: choose secretly")
+    var backupText by mutableStateOf("")
+        private set
+    var dataMessage by mutableStateOf<String?>(null)
+        private set
+    var lastAnnouncement by mutableStateOf<String?>(null)
         private set
 
     private var cpu = CpuStrategy(config.seed)
 
     val history: List<String> get() = repository.loadHistory()
+    val recentTrend: ArenaTrend get() = repository.loadRecentTrend()
     val achievements: List<Achievement> get() = listOf(
         Achievement("first_win", "First Victory", "Win your first round", stats.wins >= 1),
         Achievement("ten_rounds", "Arena Regular", "Play 10 rounds", stats.roundsPlayed >= 10),
@@ -37,15 +42,18 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         Achievement("century", "Century", "Play 100 rounds", stats.roundsPlayed >= 100),
     )
 
-    fun navigate(to: ArenaScreen) { screen = to }
+    fun navigate(to: ArenaScreen) {
+        screen = to
+        dataMessage = null
+    }
 
     fun completeOnboarding() {
         updateSettings(settings.copy(onboardingComplete = true))
     }
 
     fun updateSettings(value: ArenaSettings) {
-        settings = value
         repository.saveSettings(value)
+        settings = repository.loadSettings()
     }
 
     fun updateConfig(value: MatchConfig) {
@@ -57,7 +65,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         cpu = CpuStrategy(config.seed)
         match = MatchSnapshot(config)
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
+        lastAnnouncement = null
     }
 
     fun play(gesture: Gesture) {
@@ -68,32 +76,106 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         }
     }
 
+    fun expireCurrentTurn() {
+        if (config.roundTimerSeconds == 0) return
+        if (match.finished && config.matchMode !in setOf(MatchMode.ENDLESS, MatchMode.STREAK)) return
+
+        when (config.opponentMode) {
+            OpponentMode.CPU -> recordResolvedRound(
+                playerOne = null,
+                playerTwo = null,
+                outcome = RoundOutcome.PLAYER_TWO_WIN,
+                reason = RoundEndReason.PLAYER_ONE_TIMEOUT,
+            )
+            OpponentMode.LOCAL_TWO_PLAYER -> {
+                val first = pendingPlayerOne
+                if (first == null) {
+                    recordResolvedRound(
+                        playerOne = null,
+                        playerTwo = null,
+                        outcome = RoundOutcome.PLAYER_TWO_WIN,
+                        reason = RoundEndReason.PLAYER_ONE_TIMEOUT,
+                    )
+                } else {
+                    recordResolvedRound(
+                        playerOne = first,
+                        playerTwo = null,
+                        outcome = RoundOutcome.PLAYER_ONE_WIN,
+                        reason = RoundEndReason.PLAYER_TWO_TIMEOUT,
+                    )
+                }
+                pendingPlayerOne = null
+            }
+        }
+    }
+
+    fun updateBackupText(value: String) {
+        backupText = value.take(MAX_BACKUP_INPUT_CHARS)
+        dataMessage = null
+    }
+
+    fun prepareBackup() {
+        backupText = repository.exportBackup()
+        dataMessage = "Backup text is ready to copy and save securely."
+    }
+
+    fun importBackup() {
+        val result = repository.importBackup(backupText)
+        dataMessage = result.message
+        if (result.imported) {
+            settings = repository.loadSettings()
+            stats = repository.loadStats()
+            resetMatch()
+        }
+    }
+
+    fun clearUserData() {
+        repository.clearUserData(preserveOnboarding = true)
+        settings = repository.loadSettings()
+        stats = repository.loadStats()
+        backupText = ""
+        resetMatch()
+        dataMessage = "Local statistics, history, and preferences were reset."
+    }
+
     private fun playAgainstCpu(player: Gesture) {
-        val priorPlayerMoves = match.rounds.map { it.playerOne }
+        val priorPlayerMoves = match.rounds.mapNotNull { it.playerOne }
         val opponent = cpu.choose(config.difficulty, config.variant, priorPlayerMoves)
-        recordRound(player, opponent)
+        recordPlayedRound(player, opponent)
     }
 
     private fun playLocalTwoPlayer(gesture: Gesture) {
         val first = pendingPlayerOne
         if (first == null) {
             pendingPlayerOne = gesture
-            localTurnMessage = "Player 2: choose now — Player 1 move is hidden"
+            lastAnnouncement = "Player 1 move locked. Pass the device to Player 2."
             return
         }
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
-        recordRound(first, gesture)
+        recordPlayedRound(first, gesture)
     }
 
-    private fun recordRound(playerOne: Gesture, playerTwo: Gesture) {
-        val outcome = RulesEngine.resolve(playerOne, playerTwo)
+    private fun recordPlayedRound(playerOne: Gesture, playerTwo: Gesture) {
+        recordResolvedRound(
+            playerOne = playerOne,
+            playerTwo = playerTwo,
+            outcome = RulesEngine.resolve(playerOne, playerTwo),
+            reason = RoundEndReason.PLAYED,
+        )
+    }
+
+    private fun recordResolvedRound(
+        playerOne: Gesture?,
+        playerTwo: Gesture?,
+        outcome: RoundOutcome,
+        reason: RoundEndReason,
+    ) {
         val p1 = match.playerOneScore + if (outcome == RoundOutcome.PLAYER_ONE_WIN) 1 else 0
         val p2 = match.playerTwoScore + if (outcome == RoundOutcome.PLAYER_TWO_WIN) 1 else 0
         val draws = match.draws + if (outcome == RoundOutcome.DRAW) 1 else 0
         val target = config.roundsToWin
         val finished = target != null && (p1 >= target || p2 >= target)
-        val round = RoundRecord(playerOne, playerTwo, outcome)
+        val round = RoundRecord(playerOne, playerTwo, outcome, reason)
         match = match.copy(
             rounds = match.rounds + round,
             playerOneScore = p1,
@@ -102,7 +184,9 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
             finished = finished,
         )
         updateStats(outcome)
-        repository.addHistory(historyLine(round))
+        val historyLine = historyLine(round)
+        repository.addHistory(historyLine)
+        lastAnnouncement = historyLine
     }
 
     private fun updateStats(outcome: RoundOutcome) {
@@ -120,10 +204,21 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         repository.saveStats(stats)
     }
 
-    private fun historyLine(round: RoundRecord): String =
-        "${round.playerOne.label} vs ${round.playerTwo.label} — ${when (round.outcome) {
-            RoundOutcome.PLAYER_ONE_WIN -> "Player 1 won"
-            RoundOutcome.PLAYER_TWO_WIN -> "Player 2 won"
-            RoundOutcome.DRAW -> "Draw"
-        }}"
+    private fun historyLine(round: RoundRecord): String = when (round.endReason) {
+        RoundEndReason.PLAYER_ONE_TIMEOUT -> "Player 1 timed out — Player 2 won"
+        RoundEndReason.PLAYER_TWO_TIMEOUT -> "Player 2 timed out — Player 1 won"
+        RoundEndReason.PLAYED -> {
+            val first = requireNotNull(round.playerOne)
+            val second = requireNotNull(round.playerTwo)
+            "${first.label} vs ${second.label} — ${when (round.outcome) {
+                RoundOutcome.PLAYER_ONE_WIN -> "Player 1 won"
+                RoundOutcome.PLAYER_TWO_WIN -> "Player 2 won"
+                RoundOutcome.DRAW -> "Draw"
+            }}"
+        }
+    }
+
+    companion object {
+        private const val MAX_BACKUP_INPUT_CHARS = 128 * 1024
+    }
 }
