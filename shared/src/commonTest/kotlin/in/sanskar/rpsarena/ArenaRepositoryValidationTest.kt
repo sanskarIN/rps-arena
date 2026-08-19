@@ -3,6 +3,7 @@ package `in`.sanskar.rpsarena
 import `in`.sanskar.rpsarena.data.ArenaRepository
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
+import `in`.sanskar.rpsarena.model.MatchConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,6 +17,16 @@ class ArenaRepositoryValidationTest {
         assertEquals(ArenaStats(), repository.decodeStats("2|1|0|1|2|0"))
         assertEquals(ArenaStats(), repository.decodeStats("2|1|0|1|1|2"))
         assertEquals(ArenaStats(), repository.decodeStats("-1|0|0|0|0|0"))
+    }
+
+    @Test
+    fun invalidMatchConfigFallsBackToDefaults() {
+        val repository = repository(mutableMapOf())
+
+        assertEquals(MatchConfig(), repository.decodeMatchConfig("UNKNOWN|CPU|NORMAL|BEST_OF_3|1|5"))
+        assertEquals(MatchConfig(), repository.decodeMatchConfig("CLASSIC|CPU|NORMAL|BEST_OF_3|not-a-seed|5"))
+        assertEquals(MatchConfig(), repository.decodeMatchConfig("CLASSIC|CPU|NORMAL|BEST_OF_3|1|15"))
+        assertEquals(MatchConfig(), repository.decodeMatchConfig("CLASSIC|CPU|NORMAL|BEST_OF_3|1"))
     }
 
     @Test
