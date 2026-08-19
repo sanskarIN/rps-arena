@@ -21,12 +21,16 @@ try {
         $PythonArgsPrefix = @("-3")
     }
     else {
-        throw "Python 3 is required for documentation and committed-secret checks."
+        throw "Python 3 is required for documentation, privacy, and committed-secret checks."
     }
 
     Write-Host "== Documentation verification =="
     & $PythonCommand @PythonArgsPrefix scripts/check_docs_links.py
     if ($LASTEXITCODE -ne 0) { throw "Documentation verification failed." }
+
+    Write-Host "== Android privacy verification =="
+    & $PythonCommand @PythonArgsPrefix scripts/check_android_privacy.py
+    if ($LASTEXITCODE -ne 0) { throw "Android privacy verification failed." }
 
     Write-Host "== Committed-secret verification =="
     & $PythonCommand @PythonArgsPrefix scripts/check_for_secrets.py
