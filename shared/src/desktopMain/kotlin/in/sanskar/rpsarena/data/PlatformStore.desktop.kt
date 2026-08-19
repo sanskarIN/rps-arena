@@ -15,4 +15,8 @@ actual object PlatformStore {
     actual fun putString(key: String, value: String) {
         preferences.put(key, value)
     }
+
+    actual fun remove(key: String) {
+        preferences.remove(key)
+    }
 }
