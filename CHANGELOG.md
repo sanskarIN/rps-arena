@@ -70,6 +70,7 @@ All notable changes to RPS Arena are documented here.
 ### Security and privacy
 
 - Core gameplay requires no account, cloud service, analytics SDK, advertising SDK, or Android internet permission.
+- Android manifest backup participation is disabled, with explicit legacy and Android 12+ extraction rules excluding shared-preference data from configured backup and device-transfer paths.
 - Local profile display names are device-local, included only in user-generated backups, and intentionally excluded from structured logs.
 - The copy-result action writes only the user-selected round summary to the platform clipboard after an explicit user action.
 - Backup preview and import use the same defensive decoder; malformed, oversized, or internally inconsistent data is rejected.
