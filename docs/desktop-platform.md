@@ -100,7 +100,7 @@ RPS Arena
 Package version:
 
 ```text
-1.1.0
+2.5.8
 ```
 
 Description:
