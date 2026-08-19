@@ -1,8 +1,8 @@
-package in.sanskar.rpsarena
+package `in`.sanskar.rpsarena
 
-import in.sanskar.rpsarena.data.ArenaRepository
-import in.sanskar.rpsarena.model.ArenaSettings
-import in.sanskar.rpsarena.model.ArenaStats
+import `in`.sanskar.rpsarena.data.ArenaRepository
+import `in`.sanskar.rpsarena.model.ArenaSettings
+import `in`.sanskar.rpsarena.model.ArenaStats
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
