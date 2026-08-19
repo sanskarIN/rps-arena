@@ -58,7 +58,7 @@ crate-type = ["rlib"]
 
 `rps-arena-engine` is the Cargo crate/package name.
 
-It is independent of the Kotlin app version. The crate is currently `0.1.0` while the app release candidate is `1.1.0`.
+It is independent of the Kotlin app version. The crate is currently `0.1.0` while the app release candidate is `2.5.8`.
 
 Do not assume app and optional crate versions must match unless a future release policy explicitly couples them.
 
