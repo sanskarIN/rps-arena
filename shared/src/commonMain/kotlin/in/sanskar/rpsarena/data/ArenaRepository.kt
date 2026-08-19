@@ -80,27 +80,34 @@ class ArenaRepository(private val store: KeyValueStore = PlatformStore) {
         value.darkTheme,
         value.followSystemTheme,
         value.reducedMotion,
-        value.soundEnabled,
-        value.hapticsEnabled,
-        value.extendedVariant,
         value.onboardingComplete,
     ).joinToString("|")
 
     internal fun decodeSettings(raw: String): ArenaSettings = decodeSettingsOrNull(raw) ?: ArenaSettings()
 
     private fun decodeSettingsOrNull(raw: String): ArenaSettings? {
-        val p = raw.split('|')
-        if (p.size != 7) return null
-        val values = p.map { it.toBooleanStrictOrNull() ?: return null }
-        return ArenaSettings(
-            darkTheme = values[0],
-            followSystemTheme = values[1],
-            reducedMotion = values[2],
-            soundEnabled = values[3],
-            hapticsEnabled = values[4],
-            extendedVariant = values[5],
-            onboardingComplete = values[6],
-        )
+        val parts = raw.split('|')
+        return when (parts.size) {
+            4 -> {
+                val values = parts.map { it.toBooleanStrictOrNull() ?: return null }
+                ArenaSettings(
+                    darkTheme = values[0],
+                    followSystemTheme = values[1],
+                    reducedMotion = values[2],
+                    onboardingComplete = values[3],
+                )
+            }
+            7 -> {
+                val legacy = parts.map { it.toBooleanStrictOrNull() ?: return null }
+                ArenaSettings(
+                    darkTheme = legacy[0],
+                    followSystemTheme = legacy[1],
+                    reducedMotion = legacy[2],
+                    onboardingComplete = legacy[6],
+                )
+            }
+            else -> null
+        }
     }
 
     internal fun encodeStats(value: ArenaStats): String = listOf(
