@@ -85,7 +85,7 @@ The committed `.github/release.yml` uses several of these labels to categorize g
 
 Create milestones only for concrete planned releases. Suggested current milestone naming:
 
-- `v1.1.0` — completion/release hardening;
+- `v2.5.8` — completion/release hardening;
 - later milestones should follow semantic versioning and the canonical `ROADMAP.md`.
 
 Close a milestone only after its tagged release or explicit cancellation.
@@ -104,6 +104,6 @@ Website/funding navigation may point to `https://buymeacoffee.com/sanskarIN` whe
 
 ## Release settings
 
-Create releases only from validated version tags such as `v1.1.0`. Public CI artifacts are unsigned unless authorized release credentials have been configured outside Git.
+Create releases only from validated version tags such as `v2.5.8`. Public CI artifacts are unsigned unless authorized release credentials have been configured outside Git.
 
 Never paste signing credentials, access tokens, recovery codes, or private certificates into issue bodies, workflow files, release notes, or repository variables intended to be public.
