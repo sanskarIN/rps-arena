@@ -5,6 +5,7 @@ Describe the focused change and the user-visible or engineering reason for it.
 ## Validation
 
 - [ ] `python3 scripts/check_format.py`
+- [ ] `python3 scripts/check_docs_coverage.py`
 - [ ] `python3 scripts/check_version.py` when release/versioned UI files are affected
 - [ ] `gradle :shared:allTests --stacktrace`
 - [ ] `gradle :shared:desktopTest --stacktrace` when shared Compose UI is affected
@@ -13,6 +14,7 @@ Describe the focused change and the user-visible or engineering reason for it.
 - [ ] `gradle :desktopApp:classes --stacktrace` when desktop/shared code is affected
 - [ ] `cargo test --manifest-path rust-engine/Cargo.toml --all-targets` when Rust is affected
 - [ ] Manual accessibility checks completed when controls, animation, timers, focus, or copy changed
+- [ ] Every new/renamed tracked file is documented in `docs/repository-file-reference.md`
 - [ ] Documentation, `CHANGELOG.md`, `ROADMAP.md`, and `what_changed.md` updated when appropriate
 
 ## Data compatibility
