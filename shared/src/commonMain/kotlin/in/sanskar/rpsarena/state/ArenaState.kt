@@ -23,6 +23,8 @@ class ArenaState(
         private set
     var config by mutableStateOf(repository.loadConfig())
         private set
+    var profilesState by mutableStateOf(repository.loadProfilesState())
+        private set
     var match by mutableStateOf(MatchSnapshot(config))
         private set
     var history by mutableStateOf(repository.loadHistory())
@@ -33,6 +35,8 @@ class ArenaState(
         private set
 
     private var cpu = CpuStrategy(config.seed)
+
+    val activeProfile: LocalProfile get() = profilesState.activeProfile
 
     val achievements: List<Achievement> get() = listOf(
         Achievement("first_win", "First Victory", "Win your first round", stats.wins >= 1),
@@ -62,6 +66,37 @@ class ArenaState(
                 "reduced_motion" to value.reducedMotion,
             ),
         )
+    }
+
+    fun createProfile(displayName: String): Boolean {
+        val updated = repository.createProfile(displayName) ?: return false
+        profilesState = updated
+        resetMatch()
+        logger.info("local_profile_created", mapOf("profile_count" to updated.profiles.size))
+        return true
+    }
+
+    fun renameActiveProfile(displayName: String): Boolean {
+        val updated = repository.renameProfile(activeProfile.id, displayName) ?: return false
+        profilesState = updated
+        logger.info("local_profile_renamed")
+        return true
+    }
+
+    fun activateProfile(profileId: String): Boolean {
+        val updated = repository.activateProfile(profileId) ?: return false
+        profilesState = updated
+        resetMatch()
+        logger.info("local_profile_activated")
+        return true
+    }
+
+    fun deleteProfile(profileId: String): Boolean {
+        val updated = repository.deleteProfile(profileId) ?: return false
+        profilesState = updated
+        resetMatch()
+        logger.info("local_profile_deleted", mapOf("profile_count" to updated.profiles.size))
+        return true
     }
 
     fun updateConfig(value: MatchConfig) {
@@ -108,10 +143,17 @@ class ArenaState(
         settings = repository.loadSettings()
         stats = repository.loadStats()
         config = repository.loadConfig()
+        profilesState = repository.loadProfilesState()
         history = repository.loadHistory()
         resetMatch()
         screen = ArenaScreen.HOME
-        logger.info("backup_import_accepted", mapOf("history_entries" to history.size))
+        logger.info(
+            "backup_import_accepted",
+            mapOf(
+                "history_entries" to history.size,
+                "profile_count" to profilesState.profiles.size,
+            ),
+        )
         return true
     }
 
@@ -120,6 +162,7 @@ class ArenaState(
         settings = repository.loadSettings()
         stats = repository.loadStats()
         config = repository.loadConfig()
+        profilesState = repository.loadProfilesState()
         history = emptyList()
         resetMatch()
         screen = ArenaScreen.HOME
@@ -207,8 +250,8 @@ class ArenaState(
 
     private fun historyLine(round: RoundRecord): String =
         "${round.playerOne.label} vs ${round.playerTwo.label} — ${when (round.outcome) {
-            RoundOutcome.PLAYER_ONE_WIN -> "Player 1 won"
-            RoundOutcome.PLAYER_TWO_WIN -> "Player 2 won"
+            RoundOutcome.PLAYER_ONE_WIN -> "${activeProfile.displayName} won"
+            RoundOutcome.PLAYER_TWO_WIN -> if (config.opponentMode == OpponentMode.CPU) "CPU won" else "Player 2 won"
             RoundOutcome.DRAW -> "Draw"
         }}"
 }
