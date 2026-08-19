@@ -5,7 +5,7 @@ RPS Arena is a small modular monolith built with Kotlin and Compose Multiplatfor
 ## Modules
 
 - `shared/` — game models, rule resolution, CPU strategies, application state, persistence contract/codecs, local profile state, recent-trend derivation, private-room protocol boundary, shared Compose UI, and common tests.
-- `androidApp/` — Android application entry point, Android resources, manifest, and packaging.
+- `androidApp/` — Android application entry point, Android resources, manifest, backup/extraction rules, and packaging.
 - `desktopApp/` — desktop JVM entry point and native packaging configuration.
 - `rust-engine/` — optional standalone rules mirror used for independent experimentation and contract verification.
 
@@ -51,7 +51,7 @@ Changing match configuration persists the new configuration and restarts only th
 
 ## Game engine
 
-`RulesEngine` is the canonical winner resolver for classic and Lizard–Spock gestures. `CpuStrategy` receives the same active variant and may only select gestures valid for that variant.
+`RulesEngine` is the canonical winner resolver for classic and Lizard–Spock gestures. `CpuStrategy` receives the same active variant and may only select gestures valid for that variant. `ArenaState.play` independently validates the supplied gesture against the active ruleset so callers cannot bypass variant constraints by invoking state directly instead of using the current UI.
 
 CPU behavior is deterministic when given the same seed and the same ordered player inputs. This enables reproducible challenges and regression tests without a remote service.
 
@@ -68,6 +68,16 @@ Small local state is stored through platform-native preferences rather than a da
 - up to 30 recent history lines.
 
 Stored values are decoded defensively. Malformed values fall back to safe defaults. The settings codec accepts the previous seven-field representation so unused legacy flags can be removed without discarding valid preferences.
+
+### Android platform-backup boundary
+
+Android persistence uses a private `SharedPreferences` file named `rps_arena`. RPS Arena does not rely on operating-system backup as an application feature:
+
+- the application manifest sets `android:allowBackup="false"`;
+- `res/xml/backup_rules.xml` excludes shared preferences for legacy full-backup rules;
+- `res/xml/data_extraction_rules.xml` excludes shared preferences from configured cloud-backup and device-transfer rules on current Android versions.
+
+The explicit RPS Arena text export/import described below is the application-controlled portability path. It is separate from Android OS backup behavior and only occurs after user action.
 
 ### Backup format
 
@@ -99,7 +109,7 @@ Any production transport must preserve local rule authority, validate all peer i
 
 Compose Multiplatform provides the shared screens. Material 3 controls supply keyboard/touch semantics and platform-consistent focus behavior. Game gesture controls include explicit accessibility descriptions and large targets. Status is communicated with text in addition to symbols.
 
-User-facing application, settings, achievement, turn-state, profile, backup, and trend copy is centralized in `Strings.kt` so a future resource-backed locale layer does not require changing domain/state behavior. Gesture labels remain a small known domain-model localization debt and are tracked rather than silently presented as fully localized.
+User-facing application, settings, achievement, turn-state, profile, backup, trend, and copy-result text is centralized in `Strings.kt` so a future resource-backed locale layer does not require changing domain/state behavior. Gesture labels remain a small known domain-model localization debt and are tracked rather than silently presented as fully localized.
 
 The reduced-motion preference bypasses `AnimatedContent` for round-result transitions. With reduced motion disabled, the result card uses the shared Compose animation; with it enabled, the result is rendered directly.
 
@@ -115,6 +125,7 @@ The main content column is centered with a maximum width on larger windows while
 - CodeQL performs independent Java/Kotlin static analysis.
 - `security.yml` runs a deterministic high-confidence committed-secret scan and GitHub dependency review for pull requests.
 - Dependabot tracks Gradle, Cargo, and GitHub Actions dependency updates.
+- Pull-request validation runs on `pull_request`; post-merge validation runs on `push` to `main`, avoiding duplicate branch/PR executions.
 - Tagged/manual release automation creates an unsigned Android release APK and per-OS desktop distributables. Signing secrets are intentionally outside this repository.
 
 See `docs/adr/`, `docs/repository-settings.md`, and `docs/release.md` for stable decisions and repository-side release controls.
