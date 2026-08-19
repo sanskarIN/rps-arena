@@ -17,7 +17,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         private set
     var stats by mutableStateOf(repository.loadStats())
         private set
-    var config by mutableStateOf(MatchConfig())
+    var config by mutableStateOf(repository.loadConfig())
         private set
     var match by mutableStateOf(MatchSnapshot(config))
         private set
@@ -37,7 +37,9 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         Achievement("century", "Century", "Play 100 rounds", stats.roundsPlayed >= 100),
     )
 
-    fun navigate(to: ArenaScreen) { screen = to }
+    fun navigate(to: ArenaScreen) {
+        screen = to
+    }
 
     fun completeOnboarding() {
         updateSettings(settings.copy(onboardingComplete = true))
@@ -49,7 +51,9 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
     }
 
     fun updateConfig(value: MatchConfig) {
-        config = value
+        val sanitized = value.copy(roundTimerSeconds = value.roundTimerSeconds.coerceIn(0, 60))
+        config = sanitized
+        repository.saveConfig(sanitized)
         resetMatch()
     }
 
@@ -58,6 +62,40 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         match = MatchSnapshot(config)
         pendingPlayerOne = null
         localTurnMessage = "Player 1: choose secretly"
+    }
+
+    fun clearHistory() {
+        repository.clearHistory()
+    }
+
+    fun exportBackup(): String = repository.exportBackup()
+
+    fun importBackup(raw: String): Boolean {
+        if (!repository.importBackup(raw)) return false
+        settings = repository.loadSettings()
+        stats = repository.loadStats()
+        config = repository.loadConfig()
+        resetMatch()
+        screen = ArenaScreen.HOME
+        return true
+    }
+
+    fun resetAllData() {
+        repository.resetAll()
+        settings = repository.loadSettings()
+        stats = repository.loadStats()
+        config = repository.loadConfig()
+        resetMatch()
+        screen = ArenaScreen.HOME
+    }
+
+    fun playTimeoutMove() {
+        if (config.roundTimerSeconds <= 0) return
+        if (match.finished && config.matchMode !in setOf(MatchMode.ENDLESS, MatchMode.STREAK)) return
+        val gestures = Gesture.availableFor(config.variant)
+        val turnOffset = if (pendingPlayerOne == null) 0 else 1
+        val deterministicIndex = ((config.seed.toLong() + match.rounds.size + turnOffset) and 0x7fff_ffffL) % gestures.size
+        play(gestures[deterministicIndex.toInt()])
     }
 
     fun play(gesture: Gesture) {
