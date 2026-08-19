@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that user-visible package versions stay synchronized."""
+"""Verify that cross-platform package and shared UI versions stay synchronized."""
 
 from __future__ import annotations
 
@@ -11,7 +11,26 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_FILES = {
     "android": ROOT / "androidApp" / "build.gradle.kts",
     "desktop": ROOT / "desktopApp" / "build.gradle.kts",
-    "about": ROOT / "shared" / "src" / "commonMain" / "kotlin" / "in" / "sanskar" / "rpsarena" / "ui" / "App.kt",
+    "metadata": ROOT
+    / "shared"
+    / "src"
+    / "commonMain"
+    / "kotlin"
+    / "in"
+    / "sanskar"
+    / "rpsarena"
+    / "ui"
+    / "AppMetadata.kt",
+    "app": ROOT
+    / "shared"
+    / "src"
+    / "commonMain"
+    / "kotlin"
+    / "in"
+    / "sanskar"
+    / "rpsarena"
+    / "ui"
+    / "App.kt",
 }
 
 
@@ -34,19 +53,22 @@ def main() -> int:
             EXPECTED_FILES["desktop"].read_text(encoding="utf-8"),
             "desktopApp/build.gradle.kts",
         )
-        about = extract(
-            r'Text\("Version:\s*([0-9]+\.[0-9]+\.[0-9]+)"\)',
-            EXPECTED_FILES["about"].read_text(encoding="utf-8"),
-            "shared/.../ui/App.kt",
+        shared = extract(
+            r'APP_VERSION\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"',
+            EXPECTED_FILES["metadata"].read_text(encoding="utf-8"),
+            "shared/.../ui/AppMetadata.kt",
         )
+        app_text = EXPECTED_FILES["app"].read_text(encoding="utf-8")
+        if 'Text("${strings.version}: $APP_VERSION")' not in app_text:
+            raise ValueError("About UI is not rendering the shared APP_VERSION constant")
     except ValueError as error:
         print(error, file=sys.stderr)
         return 1
 
-    versions = {android, desktop, about}
+    versions = {android, desktop, shared}
     if len(versions) != 1:
         print(
-            f"Version mismatch: android={android}, desktop={desktop}, about={about}",
+            f"Version mismatch: android={android}, desktop={desktop}, shared={shared}",
             file=sys.stderr,
         )
         return 1
