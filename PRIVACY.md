@@ -23,6 +23,12 @@ Treat exported backup text according to your own privacy needs because it may co
 
 A backup is fully validated before import. The preview operation is non-mutating and lets the user inspect a summary before replacing local data.
 
+## Clipboard
+
+The completed-round `Copy result` action writes only the displayed round summary to the operating system clipboard after an explicit user action. RPS Arena does not read clipboard contents and does not upload copied result text.
+
+Clipboard contents may remain available to the operating system or other applications according to platform behavior, so copied text should be treated as user-controlled shared data after the copy action.
+
 ## Logging
 
 Runtime logging is local and deliberately structured around technical events. Profile display names, backup contents, history text, credentials, and other free-form user data are not intentionally written to logs. The logging helper also redacts sensitive field names before formatting structured metadata.
