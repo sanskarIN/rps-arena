@@ -6,8 +6,11 @@ A release candidate is eligible only when:
 
 - `main` CI is green;
 - CodeQL is green;
+- repository formatting passes;
+- exhaustive tracked-file documentation coverage passes;
+- cross-platform version consistency passes;
 - shared tests pass;
-- Android debug/release compilation passes as configured;
+- Android debug/release lint and compilation pass as configured;
 - desktop classes/package tasks pass on the relevant host;
 - Rust tests pass;
 - changelog, roadmap, privacy notes, and `what_changed.md` match the shipped behavior;
@@ -19,7 +22,8 @@ For v1.1.0 the public version is declared in:
 
 - `androidApp/build.gradle.kts` (`versionCode = 2`, `versionName = "1.1.0"`);
 - `desktopApp/build.gradle.kts` (`packageVersion = "1.1.0"`);
-- About UI;
+- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/AppMetadata.kt` (`APP_VERSION = "1.1.0"`);
+- About UI, which renders the shared version constant;
 - `CHANGELOG.md`.
 
 Keep these values synchronized when preparing later versions.
@@ -27,7 +31,11 @@ Keep these values synchronized when preparing later versions.
 ## Local verification
 
 ```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
+gradle :androidApp:lintDebug --stacktrace
 gradle :androidApp:assembleDebug --stacktrace
 gradle :desktopApp:classes --stacktrace
 cargo test --manifest-path rust-engine/Cargo.toml --all-targets
@@ -37,7 +45,7 @@ Run the manual checks in `docs/testing.md` and `docs/accessibility.md` before ta
 
 ## GitHub release artifacts
 
-The tag workflow is designed to build reproducible unsigned/public artifacts without repository secrets. Store signing remains a separate controlled step.
+The tag workflow is designed to build reproducible unsigned/public artifacts without repository secrets. It re-runs formatting, exhaustive documentation coverage, and version consistency before the release build/test/package steps. Store signing remains a separate controlled step.
 
 Recommended release tag format:
 
@@ -45,7 +53,7 @@ Recommended release tag format:
 v1.1.0
 ```
 
-Tag only the audited `main` commit.
+Tag only the audited `main` commit. The tag workflow is an additional release gate and does not replace green pull-request CI and CodeQL evidence on that exact source.
 
 ## Android signing
 
