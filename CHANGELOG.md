@@ -26,7 +26,7 @@ No unreleased user-visible changes are currently queued.
 - Compose desktop UI smoke tests covering onboarding, primary play navigation, English/Hindi switching, Hindi gameplay/achievement copy, backup controls, and destructive reset confirmation.
 - Repository formatting and cross-platform version consistency verification scripts.
 - `scripts/check_docs_coverage.py`, which compares `git ls-files` with the exhaustive repository file reference so every tracked path must be documented.
-- Documentation coverage enforcement in the primary CI workflow, Unix/PowerShell verification scripts, PR template, testing guide, validation contract, and contributor workflow.
+- Documentation coverage enforcement in primary CI, tagged/manual release automation, Unix/PowerShell verification scripts, PR template, testing guide, validation contract, and contributor workflow.
 - Android lint as a required CI gate.
 - Tagged release workflow for unsigned Android, Linux desktop, and Rust package artifacts with SHA-256 checksums.
 - GitHub repository-settings guidance for rulesets, security features, labels, milestones, Discussions, and release settings.
@@ -56,7 +56,7 @@ No unreleased user-visible changes are currently queued.
 - Private-room client sessions cannot forge gateway-owned join/leave lifecycle events and reject gesture events with non-positive round numbers.
 - Closing a room session broadcasts its leave lifecycle event only once.
 - Primary gameplay remains offline-first and does not add an Android internet permission.
-- The exhaustive documentation gate prevents new tracked source/config/resource/workflow/test/documentation paths from being silently omitted from the repository file reference.
+- The exhaustive documentation gate prevents new tracked source/config/resource/workflow/test/documentation paths from being silently omitted from the repository file reference and is rechecked before release packaging.
 
 ## [1.0.0] - 2026-08-19
 
