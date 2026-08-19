@@ -11,7 +11,7 @@ The `CI` workflow requires:
 - exhaustive tracked-file documentation-reference coverage check;
 - high-confidence committed-secret pattern check;
 - Android offline/automatic-backup privacy-contract check;
-- Android/desktop/shared/About version consistency check;
+- Android/desktop/shared/About semantic-version consistency plus Android numeric `versionCode` mapping;
 - shared Kotlin test suite, including logger/privacy-adjacent business tests and desktop UI tests;
 - Android lint;
 - Android debug assembly;
@@ -54,6 +54,10 @@ The check proves path coverage, not that every explanation is perfect. Human rev
 ### Android privacy contract
 
 `scripts/check_android_privacy.py` parses the primary Android manifest plus legacy/Android 12+ backup rules. It fails if automatic backup is re-enabled, SharedPreferences backup/device-transfer exclusions disappear, XML becomes invalid, or the primary manifest gains `android.permission.INTERNET`.
+
+### Version consistency
+
+`scripts/check_version.py` requires Android `versionName`, desktop `packageVersion`, and shared `APP_VERSION` to match; verifies About renders the shared constant; and checks Android `versionCode` against `major * 10000 + minor * 100 + patch`. For v2.5.8, the required Android code is `20508`.
 
 ## Release validation
 
@@ -103,6 +107,6 @@ Do not merge while the current candidate's required jobs are queued, in progress
 
 ## Validation history
 
-The v1.0.0 build audit established the Kotlin/Android/Desktop/Rust/CodeQL baseline. Version 1.1.0 extends that gate with formatting, synchronized-version, Android lint, persistence migration/backup, timeout, trend, localization/UI, private-room protocol regression coverage, exhaustive tracked-file documentation coverage, relative-link validation, committed-secret detection, fail-closed Android backup/privacy checks, dependency review, and redacting logger regression coverage. The release workflow independently repeats all fast source gates before release packaging.
+The v1.0.0 build audit established the Kotlin/Android/Desktop/Rust/CodeQL baseline. Version 2.5.8 extends that gate with formatting, synchronized semantic versions and Android numeric version-code validation, Android lint, persistence migration/backup, timeout, trend, localization/UI, private-room protocol regression coverage, exhaustive tracked-file documentation coverage, relative-link validation, committed-secret detection, fail-closed Android backup/privacy checks, dependency review, and redacting logger regression coverage. The release workflow independently repeats all fast source gates before release packaging.
 
 `what_changed.md` is the handoff source for the exact current validation result and most recent meaningful commits.
