@@ -1,10 +1,11 @@
-# CI, CodeQL, Dependabot, and Release Automation
+# CI, Security, CodeQL, Dependabot, and Release Automation
 
-RPS Arena uses GitHub Actions for validation/security/release packaging and GitHub configuration files for dependency updates, issue intake, release-note categorization, and funding links. This guide documents every tracked file under `.github/`, including triggers, permissions, jobs, failure meaning, artifact paths, documentation coverage, and maintenance rules.
+RPS Arena uses GitHub Actions for validation/security/release packaging and GitHub configuration files for ownership, dependency updates, issue intake, release-note categorization, and funding links. This guide documents every tracked file under `.github/`, including triggers, permissions, jobs, failure meaning, artifact paths, documentation/privacy/security coverage, and maintenance rules.
 
 ## `.github/` file inventory
 
 ```text
+.github/CODEOWNERS
 .github/FUNDING.yml
 .github/dependabot.yml
 .github/pull_request_template.md
@@ -14,10 +15,36 @@ RPS Arena uses GitHub Actions for validation/security/release packaging and GitH
 .github/ISSUE_TEMPLATE/feature_request.yml
 .github/workflows/ci.yml
 .github/workflows/codeql.yml
+.github/workflows/security.yml
 .github/workflows/release.yml
 ```
 
 These files are repository automation/governance source, not generated build output.
+
+## CODEOWNERS
+
+File:
+
+```text
+.github/CODEOWNERS
+```
+
+The default ownership rule is:
+
+```text
+* @sanskarIN
+```
+
+Additional explicit entries cover:
+
+- `.github/` automation/governance;
+- `SECURITY.md`;
+- secret/privacy source checkers;
+- shared gameplay/persistence code;
+- the optional Rust engine;
+- Android/Desktop packaging and release entry points.
+
+CODEOWNERS does not itself force approval. Repository rulesets/branch protection must require code-owner review if mandatory ownership approval is desired.
 
 ## CI workflow
 
@@ -95,7 +122,15 @@ python3 scripts/check_format.py
 
 Checks UTF-8, final newlines, and trailing whitespace policy.
 
-### 3. Documentation file coverage
+### 3. Documentation links
+
+```bash
+python3 scripts/check_docs_links.py
+```
+
+Scans Markdown relative links, rejects repository-escaping targets, and fails for missing local targets. External HTTP/mail/data links are not fetched by this offline source check.
+
+### 4. Documentation file coverage
 
 ```bash
 python3 scripts/check_docs_coverage.py
@@ -112,7 +147,33 @@ The script:
 
 This catches newly added source/config/resource/workflow/test/doc files that were not added to the exhaustive reference. It does not judge prose quality; human review still checks whether each explanation is correct and deep enough.
 
-### 4. Version consistency
+### 5. Committed secret patterns
+
+```bash
+python3 scripts/check_for_secrets.py
+```
+
+Scans source-sized text files for high-confidence private-key and recognizable GitHub/AWS/Google/generic secret-token shapes. The detector skips generated/cache/IDE directories, large/binary files, and itself.
+
+This is defense in depth. It does not replace GitHub secret scanning, credential rotation, or human review.
+
+### 6. Android privacy contract
+
+```bash
+python3 scripts/check_android_privacy.py
+```
+
+Parses the primary Android manifest plus legacy/Android 12+ backup rules and requires:
+
+- `android:allowBackup="false"`;
+- correct `fullBackupContent`/`dataExtractionRules` references;
+- SharedPreferences exclusion from legacy backup;
+- SharedPreferences exclusion from cloud backup and device transfer;
+- no `android.permission.INTERNET` in the offline-first v1 primary manifest.
+
+This makes the local-data/automatic-backup boundary executable rather than documentation-only.
+
+### 7. Version consistency
 
 ```bash
 python3 scripts/check_version.py
@@ -120,7 +181,7 @@ python3 scripts/check_version.py
 
 Checks Android/Desktop/shared app version agreement and verifies About renders the shared version constant.
 
-### 5. Java setup
+### 8. Java setup
 
 ```yaml
 uses: actions/setup-java@v5
@@ -136,7 +197,7 @@ cache: gradle
 
 Provides JDK 17 and supported Gradle dependency caching integration.
 
-### 6. Android SDK setup
+### 9. Android SDK setup
 
 ```yaml
 uses: android-actions/setup-android@v4
@@ -152,7 +213,7 @@ build-tools;36.0.0
 
 This makes the hosted Android environment match the project baseline.
 
-### 7. Gradle setup
+### 10. Gradle setup
 
 ```yaml
 uses: gradle/actions/setup-gradle@v4
@@ -166,15 +227,15 @@ Pinned Gradle:
 
 This is especially important because the repository currently tracks no Gradle Wrapper.
 
-### 8. Shared tests
+### 11. Shared tests
 
 ```bash
 gradle :shared:allTests --stacktrace
 ```
 
-Validates common business/data/protocol/localization tests and the configured shared/desktop test target.
+Validates common business/data/protocol/localization/logging tests and the configured shared/desktop UI test target.
 
-### 9. Android lint
+### 12. Android lint
 
 ```bash
 gradle :androidApp:lintDebug --stacktrace
@@ -182,7 +243,7 @@ gradle :androidApp:lintDebug --stacktrace
 
 Checks Android resources, manifest/configuration/API usage, and other Android correctness rules.
 
-### 10. Android debug assembly
+### 13. Android debug assembly
 
 ```bash
 gradle :androidApp:assembleDebug --stacktrace
@@ -190,7 +251,7 @@ gradle :androidApp:assembleDebug --stacktrace
 
 Proves Android app/shared Android compilation and APK packaging succeed.
 
-### 11. Desktop classes
+### 14. Desktop classes
 
 ```bash
 gradle :desktopApp:classes --stacktrace
@@ -220,7 +281,75 @@ cargo test --all-targets
 
 This validates the optional Rust rule mirror independently from Kotlin.
 
-## Interpreting CI result
+## Focused security workflow
+
+File:
+
+```text
+.github/workflows/security.yml
+```
+
+Workflow name:
+
+```text
+Security checks
+```
+
+### Triggers and permissions
+
+Runs on pushes to `main` and pull requests targeting `main` with repository-level `contents: read` permission.
+
+Concurrency uses a security-specific workflow/ref group with `cancel-in-progress: true`, so the same exact-head rule applies as CI.
+
+### Secret/privacy job
+
+Runner:
+
+```text
+ubuntu-latest
+```
+
+Timeout:
+
+```text
+10 minutes
+```
+
+Steps:
+
+1. checkout v6;
+2. set up Python 3.13 with `actions/setup-python@v6`;
+3. run `scripts/check_for_secrets.py`;
+4. run `scripts/check_android_privacy.py`.
+
+These checks intentionally overlap CI. The separate workflow gives security/privacy failures their own visible status and keeps the controls independently reviewable.
+
+### Dependency review job
+
+Runs only for pull requests.
+
+Permissions:
+
+```yaml
+contents: read
+pull-requests: read
+```
+
+Action:
+
+```yaml
+uses: actions/dependency-review-action@v4
+```
+
+Policy:
+
+```text
+fail-on-severity: high
+```
+
+The job reviews dependency changes visible to GitHub and fails on high-severity dependency findings. It supplements Dependabot and normal dependency/version review; it is not a guarantee that every transitive risk is known.
+
+## Interpreting CI/security result
 
 A PR is not fully green unless all required jobs/checks for the exact candidate succeed.
 
@@ -356,33 +485,41 @@ permissions:
 
 Write access is needed for GitHub Release creation. Changes to this workflow therefore deserve extra review.
 
-## Documentation coverage and release workflow
+## Release source preflight
 
-Both the main CI workflow and the release workflow enforce:
+The Android release job repeats all fast source gates before Java/Android/Gradle setup:
 
 ```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
 python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
+python3 scripts/check_version.py
 ```
 
-In the release workflow the check runs in the Android release job immediately after checkout/formatting and before version/build work. Because a tagged `publish` job depends on the successful Android job, incomplete tracked-file documentation blocks release publication.
+Because tagged publication depends on the Android job succeeding, incomplete docs, broken links, recognized committed secrets, Android backup/privacy drift, formatting errors, or version drift block publication.
 
-Release policy still requires creating version tags from validated `main`. Repeating the gate in release automation provides defense in depth; it does not replace exact-head PR CI and CodeQL validation.
+Release policy still requires creating version tags from validated `main`. Repeating the gates in release automation provides defense in depth; it does not replace exact-head PR CI, Security checks, and CodeQL validation.
 
 ## Release Android job
 
 Runs on Ubuntu and performs:
 
 1. checkout;
-2. format check;
-3. exhaustive documentation coverage check;
-4. version consistency check;
-5. JDK 17 setup;
-6. Android SDK setup;
-7. Gradle 9.5.1 setup;
-8. shared tests;
-9. `lintRelease`;
-10. `assembleRelease`;
-11. upload APK artifacts.
+2. formatting check;
+3. docs-link check;
+4. exhaustive documentation coverage check;
+5. committed-secret check;
+6. Android privacy-contract check;
+7. version consistency check;
+8. JDK 17 setup;
+9. Android SDK setup;
+10. Gradle 9.5.1 setup;
+11. shared tests;
+12. `lintRelease`;
+13. `assembleRelease`;
+14. upload APK artifacts.
 
 Artifact name:
 
@@ -539,7 +676,7 @@ directory: /
 open PR limit: 5
 ```
 
-Dependabot PRs are proposals; compatibility still requires review and CI.
+Dependabot PRs are proposals; compatibility still requires review, dependency review, and CI.
 
 ## Pull-request template
 
@@ -549,14 +686,7 @@ File:
 .github/pull_request_template.md
 ```
 
-The template now explicitly asks authors to run:
-
-```bash
-python3 scripts/check_format.py
-python3 scripts/check_docs_coverage.py
-```
-
-and to ensure every new/renamed tracked file is documented in `docs/repository-file-reference.md`.
+The template requires source/documentation/security checks and asks contributors to ensure every new/renamed tracked file is documented in `docs/repository-file-reference.md`.
 
 It also covers version consistency, shared/UI/platform/Rust checks, accessibility, migrations, backup compatibility, security/privacy/networking, and release impact.
 
@@ -615,9 +745,11 @@ Funding remains optional and separate from product access/license.
 
 Some repository settings live on GitHub rather than in files. See `docs/github-settings.md`.
 
-Operational merge rule:
+Recommended operational merge rule:
 
-> Require CI + CodeQL (and other configured required checks) on the exact current PR head.
+> Require CI + Security checks + CodeQL (and other configured required checks) on the exact current PR head.
+
+If code-owner reviews are required through repository rules, `.github/CODEOWNERS` routes those requests to the maintainer.
 
 Do not merge because a previous commit in the same PR was green.
 
@@ -636,13 +768,17 @@ Repeated pushes can cancel prior runs through concurrency. Freeze the intended c
 Identify the first meaningful failing step:
 
 - Formatting -> text policy;
+- Documentation links -> missing/escaping local Markdown target;
 - Documentation file coverage -> new/renamed path missing from file reference;
+- Secret patterns -> recognized credential/private-key material in source;
+- Android privacy -> automatic backup/backup XML/offline manifest invariant drift;
 - Version consistency -> Android/Desktop/shared metadata drift;
-- Shared tests -> business/data/protocol/localization/UI regression;
+- Shared tests -> business/data/protocol/localization/logging/UI regression;
 - Android lint -> Android quality/config/API issue;
 - Android build -> compile/resource/package issue;
 - Desktop classes -> JVM/shared desktop issue;
 - Rust -> crate/test issue;
+- Dependency review -> high-severity dependency change finding;
 - CodeQL -> analysis/build/security finding;
 - release upload -> expected artifact path produced no file.
 
@@ -650,7 +786,7 @@ Fix the cause in a focused commit; do not simply remove a gate to obtain green s
 
 ## Secrets policy
 
-Normal CI requires no private repository secrets.
+Normal CI/security checks require no private repository secrets.
 
 The release workflow uses GitHub's scoped token for release creation.
 
@@ -662,22 +798,25 @@ When editing workflows:
 
 1. minimize permissions;
 2. review action major versions;
-3. keep intended JDK/Gradle/Android environment pins synchronized;
+3. keep intended JDK/Gradle/Android/Python environment pins synchronized;
 4. verify artifact/task paths;
 5. protect fork PRs from secrets;
 6. keep required artifact uploads fail-closed;
-7. preserve diagnostic stack traces;
-8. update `docs/validation.md`, `docs/release.md`, this file, and file reference;
-9. run the workflow through a PR before trusting a release tag;
-10. never commit raw credentials.
+7. preserve useful diagnostics without exposing sensitive values;
+8. preserve Android privacy and committed-secret gates unless an explicitly reviewed policy change replaces them;
+9. update `docs/validation.md`, `docs/release.md`, this file, and file reference;
+10. run the workflow through a PR before trusting a release tag;
+11. never commit raw credentials.
 
 ## Automation ownership summary
 
 | File | Primary purpose |
 |---|---|
-| `.github/workflows/ci.yml` | format/docs/version/build/test/lint validation |
+| `.github/CODEOWNERS` | maintainer review ownership routing |
+| `.github/workflows/ci.yml` | format/docs/security/privacy/version/build/test/lint validation |
+| `.github/workflows/security.yml` | focused secret/privacy checks + PR dependency review |
 | `.github/workflows/codeql.yml` | scheduled/PR/push Kotlin/Java static security analysis |
-| `.github/workflows/release.yml` | format/docs/version validation plus package/upload/tag release artifacts |
+| `.github/workflows/release.yml` | source/security/privacy validation plus package/upload/tag release artifacts |
 | `.github/dependabot.yml` | weekly dependency/action update proposals |
 | `.github/release.yml` | generated release-note categories |
 | `.github/pull_request_template.md` | review/compatibility/documentation checklist |
