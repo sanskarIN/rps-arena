@@ -88,6 +88,20 @@ class ArenaRepositoryCodecTest {
     }
 
     @Test
+    fun deletingProfileRemovesPersistedDisplayNameKey() {
+        val store = MemoryStore()
+        val source = ArenaRepository(store)
+        val created = assertNotNull(source.createProfile("Private Alias"))
+        val profileId = created.activeProfileId
+        val profileNameKey = "profile_name_v1:$profileId"
+        assertTrue(store.containsKey(profileNameKey))
+
+        assertNotNull(source.deleteProfile(profileId))
+
+        assertFalse(store.containsKey(profileNameKey))
+    }
+
+    @Test
     fun invalidOrExcessiveProfilesAreRejected() {
         val source = ArenaRepository(MemoryStore())
         assertEquals(null, source.createProfile("   "))
@@ -289,4 +303,10 @@ private class MemoryStore : KeyValueStore {
     override fun putString(key: String, value: String) {
         values[key] = value
     }
+
+    override fun remove(key: String) {
+        values.remove(key)
+    }
+
+    fun containsKey(key: String): Boolean = key in values
 }
