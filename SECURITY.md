@@ -30,6 +30,7 @@ Do not include real credentials, signing material, personal data, or third-party
 ## Security boundaries in v1
 
 - Core gameplay requires no account, backend, analytics SDK, advertising SDK, or Android internet permission.
+- Android application backup is disabled and shared-preference data is excluded from the configured legacy/current backup and device-transfer rule sets.
 - Local profiles are display-name-only device-local identities, not authentication accounts.
 - Backup files/text are readable user-controlled exports, not encrypted secret storage.
 - Backup decoding is versioned, size-bounded, validated before mutation, and regression tested.
@@ -44,9 +45,12 @@ Repository automation includes:
 
 - CodeQL analysis for Java/Kotlin;
 - high-confidence committed-secret scanning with `scripts/check_for_secrets.py`;
+- Android privacy-contract validation with `scripts/check_android_privacy.py`, including no INTERNET permission, disabled application backup, and required shared-preference exclusions;
 - pull-request dependency review when supported by GitHub;
 - Dependabot coverage for Gradle, Cargo, and GitHub Actions;
 - normal build/test/lint verification before release.
+
+The Android privacy validator is also invoked by both local verification entry points so manifest or extraction-rule changes are checked before a contributor relies on hosted CI.
 
 GitHub-native secret scanning, push protection, dependency alerts, private vulnerability reporting, and branch rules should also be enabled when available. See `docs/repository-settings.md`.
 
