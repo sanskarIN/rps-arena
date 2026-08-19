@@ -33,7 +33,10 @@ class ArenaState(
         private set
     var localTurnPhase by mutableStateOf(LocalTurnPhase.PLAYER_ONE_CHOOSE)
         private set
+    var canUndoHistoryClear by mutableStateOf(false)
+        private set
 
+    private var clearedHistorySnapshot: List<String>? = null
     private var cpu = CpuStrategy(config.seed)
 
     val activeProfile: LocalProfile get() = profilesState.activeProfile
@@ -125,10 +128,25 @@ class ArenaState(
     }
 
     fun clearHistory() {
+        if (history.isEmpty()) return
+        clearedHistorySnapshot = history
         repository.clearHistory()
         history = emptyList()
+        canUndoHistoryClear = true
         logger.info("history_cleared")
     }
+
+    fun undoHistoryClear(): Boolean {
+        val snapshot = clearedHistorySnapshot ?: return false
+        if (!repository.replaceHistory(snapshot)) return false
+        history = repository.loadHistory()
+        clearedHistorySnapshot = null
+        canUndoHistoryClear = false
+        logger.info("history_clear_undone", mapOf("history_entries" to history.size))
+        return true
+    }
+
+    fun previewBackup(raw: String): BackupPreview? = repository.previewBackup(raw)
 
     fun exportBackup(): String {
         logger.info("backup_exported", mapOf("history_entries" to history.size))
@@ -145,6 +163,7 @@ class ArenaState(
         config = repository.loadConfig()
         profilesState = repository.loadProfilesState()
         history = repository.loadHistory()
+        invalidateHistoryUndo()
         resetMatch()
         screen = ArenaScreen.HOME
         logger.info(
@@ -164,6 +183,7 @@ class ArenaState(
         config = repository.loadConfig()
         profilesState = repository.loadProfilesState()
         history = emptyList()
+        invalidateHistoryUndo()
         resetMatch()
         screen = ArenaScreen.HOME
         logger.info("local_data_reset")
@@ -223,6 +243,7 @@ class ArenaState(
         updateStats(outcome)
         repository.addHistory(historyLine(round))
         history = repository.loadHistory()
+        invalidateHistoryUndo()
         logger.debug(
             "round_completed",
             mapOf(
@@ -246,6 +267,11 @@ class ArenaState(
             bestStreak = maxOf(stats.bestStreak, newStreak),
         )
         repository.saveStats(stats)
+    }
+
+    private fun invalidateHistoryUndo() {
+        clearedHistorySnapshot = null
+        canUndoHistoryClear = false
     }
 
     private fun historyLine(round: RoundRecord): String =
