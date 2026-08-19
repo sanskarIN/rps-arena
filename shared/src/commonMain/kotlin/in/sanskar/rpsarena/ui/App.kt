@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -81,7 +82,9 @@ private fun OnboardingScreen(onDone: () -> Unit) {
         Spacer(Modifier.height(10.dp))
         Text(Strings.welcomeBody)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onDone) { Text(Strings.enterArena) }
+        Button(onClick = onDone, modifier = Modifier.testTag(UiTags.ONBOARDING_ENTER)) {
+            Text(Strings.enterArena)
+        }
     }
 }
 
@@ -94,7 +97,10 @@ private fun HomeScreen(state: ArenaState) {
         Text(Strings.chooseArena, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Text(Strings.homeSubtitle)
         Text("${Strings.activeProfile}: ${state.activeProfile.displayName}", style = MaterialTheme.typography.labelLarge)
-        Button(onClick = { state.navigate(ArenaScreen.PLAY) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.play) }
+        Button(
+            onClick = { state.navigate(ArenaScreen.PLAY) },
+            modifier = Modifier.fillMaxWidth().testTag(UiTags.HOME_PLAY),
+        ) { Text(Strings.play) }
         OutlinedButton(onClick = { state.navigate(ArenaScreen.STATS) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.stats) }
         OutlinedButton(onClick = { state.navigate(ArenaScreen.HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.history) }
         OutlinedButton(onClick = { state.navigate(ArenaScreen.ACHIEVEMENTS) }, modifier = Modifier.fillMaxWidth()) { Text(Strings.achievements) }
@@ -246,7 +252,7 @@ private fun PlayScreen(state: ArenaState) {
 
 @Composable
 private fun RoundResultCard(round: RoundRecord, cpuOpponent: Boolean) {
-    Card(Modifier.fillMaxWidth()) {
+    Card(Modifier.fillMaxWidth().testTag(UiTags.LAST_ROUND)) {
         Column(Modifier.padding(16.dp)) {
             Text(Strings.lastRound, fontWeight = FontWeight.Bold)
             Text("${round.playerOne.emoji} ${round.playerOne.label} vs ${round.playerTwo.emoji} ${round.playerTwo.label}")
@@ -277,6 +283,7 @@ private fun GestureButton(gesture: Gesture, modifier: Modifier, onClick: () -> U
     FilledTonalButton(
         onClick = onClick,
         modifier = modifier
+            .testTag(UiTags.gesture(gesture.name))
             .height(88.dp)
             .semantics { contentDescription = Strings.chooseGestureAccessibility(gesture.label) },
     ) {
