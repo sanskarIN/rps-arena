@@ -61,6 +61,8 @@ object Strings {
     const val playerOneRoundWin = "Player 1 wins the round"
     const val playerTwoRoundWin = "Player 2 wins the round"
     const val cpuRoundWin = "CPU wins the round"
+    const val copyResult = "Copy result"
+    const val resultCopied = "Result copied for sharing."
     const val newMatch = "New match"
     const val restartMatch = "Restart match"
     const val playerOneShort = "P1"
