@@ -587,12 +587,14 @@ private fun localizeDataMessage(raw: String, strings: ArenaStrings): String = wh
 private fun BackButton(strings: ArenaStrings, onClick: () -> Unit) =
     TextButton(onClick = onClick) { Text(strings.back) }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ConfigRow(label: String, content: @Composable RowScope.() -> Unit) {
+private fun ConfigRow(label: String, content: @Composable FlowRowScope.() -> Unit) {
     Text(label, style = MaterialTheme.typography.labelLarge)
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing),
+        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing),
         content = content,
     )
 }
