@@ -1,0 +1,10 @@
+[package]
+name = "rps-arena-engine"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Optional deterministic rules engine for RPS Arena"
+repository = "https://github.com/sanskarIN/rps-arena"
+
+[lib]
+crate-type = ["rlib"]
