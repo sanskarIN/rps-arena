@@ -6,11 +6,15 @@ import androidx.compose.runtime.setValue
 import `in`.sanskar.rpsarena.data.ArenaRepository
 import `in`.sanskar.rpsarena.engine.CpuStrategy
 import `in`.sanskar.rpsarena.engine.RulesEngine
+import `in`.sanskar.rpsarena.logging.SafeLogger
 import `in`.sanskar.rpsarena.model.*
 
 enum class ArenaScreen { HOME, PLAY, HISTORY, STATS, ACHIEVEMENTS, SETTINGS, ABOUT }
 
-class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
+class ArenaState(
+    private val repository: ArenaRepository = ArenaRepository(),
+    private val logger: SafeLogger = SafeLogger(),
+) {
     var screen by mutableStateOf(ArenaScreen.HOME)
         private set
     var settings by mutableStateOf(repository.loadSettings())
@@ -44,17 +48,36 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
 
     fun completeOnboarding() {
         updateSettings(settings.copy(onboardingComplete = true))
+        logger.info("onboarding_completed")
     }
 
     fun updateSettings(value: ArenaSettings) {
         settings = value
         repository.saveSettings(value)
+        logger.debug(
+            "settings_updated",
+            mapOf(
+                "follow_system_theme" to value.followSystemTheme,
+                "dark_theme" to value.darkTheme,
+                "reduced_motion" to value.reducedMotion,
+            ),
+        )
     }
 
     fun updateConfig(value: MatchConfig) {
         val sanitized = value.copy(roundTimerSeconds = value.roundTimerSeconds.coerceIn(0, 60))
         config = sanitized
         repository.saveConfig(sanitized)
+        logger.info(
+            "match_config_updated",
+            mapOf(
+                "variant" to sanitized.variant.name,
+                "opponent" to sanitized.opponentMode.name,
+                "difficulty" to sanitized.difficulty.name,
+                "mode" to sanitized.matchMode.name,
+                "round_timer_seconds" to sanitized.roundTimerSeconds,
+            ),
+        )
         resetMatch()
     }
 
@@ -63,23 +86,32 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         match = MatchSnapshot(config)
         pendingPlayerOne = null
         localTurnMessage = "Player 1: choose secretly"
+        logger.debug("match_reset")
     }
 
     fun clearHistory() {
         repository.clearHistory()
         history = emptyList()
+        logger.info("history_cleared")
     }
 
-    fun exportBackup(): String = repository.exportBackup()
+    fun exportBackup(): String {
+        logger.info("backup_exported", mapOf("history_entries" to history.size))
+        return repository.exportBackup()
+    }
 
     fun importBackup(raw: String): Boolean {
-        if (!repository.importBackup(raw)) return false
+        if (!repository.importBackup(raw)) {
+            logger.warn("backup_import_rejected")
+            return false
+        }
         settings = repository.loadSettings()
         stats = repository.loadStats()
         config = repository.loadConfig()
         history = repository.loadHistory()
         resetMatch()
         screen = ArenaScreen.HOME
+        logger.info("backup_import_accepted", mapOf("history_entries" to history.size))
         return true
     }
 
@@ -91,6 +123,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         history = emptyList()
         resetMatch()
         screen = ArenaScreen.HOME
+        logger.info("local_data_reset")
     }
 
     fun playTimeoutMove() {
@@ -99,6 +132,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         val gestures = Gesture.availableFor(config.variant)
         val turnOffset = if (pendingPlayerOne == null) 0 else 1
         val deterministicIndex = ((config.seed.toLong() + match.rounds.size + turnOffset) and 0x7fff_ffffL) % gestures.size
+        logger.debug("round_timeout_move", mapOf("round" to match.rounds.size + 1))
         play(gestures[deterministicIndex.toInt()])
     }
 
@@ -146,6 +180,14 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         updateStats(outcome)
         repository.addHistory(historyLine(round))
         history = repository.loadHistory()
+        logger.debug(
+            "round_completed",
+            mapOf(
+                "round" to match.rounds.size,
+                "outcome" to outcome.name,
+                "match_finished" to finished,
+            ),
+        )
     }
 
     private fun updateStats(outcome: RoundOutcome) {
