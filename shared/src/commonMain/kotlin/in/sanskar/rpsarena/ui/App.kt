@@ -1,5 +1,6 @@
 package `in`.sanskar.rpsarena.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -219,19 +220,31 @@ private fun PlayScreen(state: ArenaState) {
                 }
             }
         }
-        state.match.rounds.lastOrNull()?.let { round ->
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(Strings.lastRound, fontWeight = FontWeight.Bold)
-                    Text("${round.playerOne.emoji} ${round.playerOne.label} vs ${round.playerTwo.emoji} ${round.playerTwo.label}")
-                    Text(Strings.outcomeLabel(round.outcome, config.opponentMode == OpponentMode.CPU))
-                }
+
+        val lastRound = state.match.rounds.lastOrNull()
+        if (state.settings.reducedMotion) {
+            lastRound?.let { RoundResultCard(it, config.opponentMode == OpponentMode.CPU) }
+        } else {
+            AnimatedContent(targetState = lastRound, label = "round-result") { round ->
+                round?.let { RoundResultCard(it, config.opponentMode == OpponentMode.CPU) }
             }
         }
+
         if (state.match.finished) {
             Button(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text(Strings.newMatch) }
         } else if (state.match.rounds.isNotEmpty()) {
             OutlinedButton(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text(Strings.restartMatch) }
+        }
+    }
+}
+
+@Composable
+private fun RoundResultCard(round: RoundRecord, cpuOpponent: Boolean) {
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(16.dp)) {
+            Text(Strings.lastRound, fontWeight = FontWeight.Bold)
+            Text("${round.playerOne.emoji} ${round.playerOne.label} vs ${round.playerTwo.emoji} ${round.playerTwo.label}")
+            Text(Strings.outcomeLabel(round.outcome, cpuOpponent))
         }
     }
 }
