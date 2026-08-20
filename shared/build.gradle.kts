@@ -37,10 +37,16 @@ kotlin {
         }
     }
 
+    js {
+        browser()
+    }
+
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
     }
+
+    applyDefaultHierarchyTemplate()
 
     sourceSets {
         commonMain.dependencies {
@@ -58,7 +64,7 @@ kotlin {
             implementation(compose.uiTest)
             implementation(compose.desktop.currentOs)
         }
-        wasmJsMain.dependencies {
+        webMain.dependencies {
             implementation(libs.kotlinx.browser)
         }
     }
