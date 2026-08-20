@@ -9,7 +9,7 @@ shared/src/commonTest/   platform-independent business/data/protocol tests
 shared/src/desktopTest/  Compose desktop UI smoke tests
 ```
 
-There is currently no tracked `androidInstrumentedTest`/device-test source set. Android device/TalkBack checks remain manual release validation. Android privacy source invariants are separately checked by `scripts/check_android_privacy.py`.
+The Android KMP target opts into host-side testing with `withHostTest {}`, so shared/common tests are compiled and exercised through the Android host target as part of the supported test graph. There is currently no tracked `androidDeviceTest` test file or emulator/device-test source set. Android device/TalkBack checks remain manual release validation. Android privacy source invariants are separately checked by `scripts/check_android_privacy.py`.
 
 ## `RulesEngineTest.kt`
 
@@ -261,6 +261,14 @@ Assertions:
 - ambiguous `I` rejected;
 - wrong-length code rejected.
 
+### Independently parsed room-code value semantics
+
+- a room is hosted using one parsed `RoomCode` instance;
+- a guest joins using a separately parsed, lowercase/space-padded representation of the same code;
+- lookup succeeds and the normalized stored code remains `RPS234`.
+
+This regression protects map-key equality after making `RoomCode` fully multiplatform instead of relying on a JVM-specific inline annotation.
+
 ### Host/guest event exchange
 
 - guest join creates `ParticipantJoined` event for host;
@@ -282,7 +290,7 @@ Closing guest twice produces exactly one `ParticipantLeft` event for host.
 
 Third join returns null.
 
-Why it matters: future transport work must preserve sender/lifecycle/participant boundaries.
+Why it matters: future transport work must preserve room-code identity, sender/lifecycle/participant boundaries, and deterministic no-network reference behavior.
 
 ## `ArenaStringsTest.kt`
 
@@ -358,7 +366,7 @@ Path:
 shared/src/desktopTest/kotlin/in/sanskar/rpsarena/RpsArenaUiTest.kt
 ```
 
-Uses Compose `runComposeUiTest` and an in-memory `ArenaRepository`.
+Uses Compose Multiplatform's v2 `androidx.compose.ui.test.v2.runComposeUiTest` runner and an in-memory `ArenaRepository`.
 
 ### Onboarding -> gameplay smoke journey
 
@@ -409,19 +417,13 @@ ArenaRepository(
 )
 ```
 
-This avoids:
-
-- Android `Context`;
-- desktop OS preference state;
-- cross-test pollution;
-- filesystem cleanup;
-- mocking framework dependency.
+This avoids Android `Context`, desktop OS preference state, cross-test pollution, filesystem cleanup, and a mocking-framework dependency.
 
 It also makes destructive/non-destructive import assertions easy to inspect and lets state tests simulate restart persistence over one shared storage map.
 
 ## Test gaps that remain intentional/known
 
-The current Kotlin/Compose suite does not yet provide hosted Android emulator instrumentation for:
+The Kotlin/Compose suite does not yet provide hosted Android emulator instrumentation for:
 
 - real Activity lifecycle;
 - Android SharedPreferences persistence across an actual process restart;
@@ -431,52 +433,27 @@ The current Kotlin/Compose suite does not yet provide hosted Android emulator in
 - actual OS backup transport execution;
 - future network permissions.
 
-The state-level in-memory test verifies match-config reconstruction semantics without claiming to be an Android process-lifecycle test. The source-level Android privacy checker verifies that the manifest disables automatic backup, the backup-policy XML excludes SharedPreferences, and the primary manifest has no internet permission. Manual/device testing still covers runtime platform behavior that static/common tests cannot prove.
+Android host-side testing is now enabled, but host tests are not a substitute for a real device/emulator. The state-level in-memory test verifies match-config reconstruction semantics without claiming to be an Android process-lifecycle test. The source-level Android privacy checker verifies that the manifest disables automatic backup, the backup-policy XML excludes SharedPreferences, and the primary manifest has no internet permission. Manual/device testing still covers runtime platform behavior that static/common tests cannot prove.
 
-The optional Rust tests also cover only representative rule pairs, while Kotlin remains the primary broader application rule suite.
+The optional Rust tests cover representative rule pairs, while Kotlin remains the primary broader application rule suite.
 
 ## Which tests to update for common changes
 
 ### Rules/gestures
 
-Review:
-
-- `RulesEngineTest`;
-- `CpuStrategyTest`;
-- `ArenaStringsTest`;
-- Rust tests if parity intended;
-- UI test if visible controls change.
+Review `RulesEngineTest`, `CpuStrategyTest`, `ArenaStringsTest`, Rust tests when parity is intended, and the UI test if visible controls change.
 
 ### Match mode/timer/config persistence
 
-Review:
-
-- `MatchConfigTest`;
-- `ArenaRepositoryCodecTest`;
-- `ArenaRepositoryValidationTest`;
-- `ArenaStateTest`;
-- UI tests when controls change;
-- `docs/storage-and-backup.md` when the persisted record changes.
+Review `MatchConfigTest`, `ArenaRepositoryCodecTest`, `ArenaRepositoryValidationTest`, `ArenaStateTest`, UI tests when controls change, and `docs/storage-and-backup.md` when the persisted record changes.
 
 ### Persistence/backup
 
-Review:
-
-- `ArenaRepositoryCodecTest`;
-- `ArenaRepositoryBackupTest`;
-- `ArenaRepositoryValidationTest`;
-- `ArenaStateTest`;
-- UI backup journey;
-- `scripts/check_android_privacy.py` and platform policy docs if Android storage/backup behavior changes.
+Review `ArenaRepositoryCodecTest`, `ArenaRepositoryBackupTest`, `ArenaRepositoryValidationTest`, `ArenaStateTest`, the UI backup journey, and `scripts/check_android_privacy.py`/platform policy docs when Android storage or backup behavior changes.
 
 ### Language/achievement
 
-Review:
-
-- `ArenaStringsTest`;
-- `AchievementStringsTest`;
-- `RpsArenaUiTest`;
-- backup/migration test if `AppLanguage` persistence changes.
+Review `ArenaStringsTest`, `AchievementStringsTest`, `RpsArenaUiTest`, and backup/migration tests if `AppLanguage` persistence changes.
 
 ### Logging/diagnostics
 
@@ -494,6 +471,7 @@ Test names should describe behavior/outcome, for example:
 malformedBackupDoesNotOverwriteExistingData
 localSecondPlayerTimeoutAwardsRoundToPlayerOne
 matchConfigurationPersistsAcrossStateInstances
+independentlyParsedRoomCodesIdentifyTheSameRoom
 sessionRejectsInvalidRoundAndLifecycleEvents
 ```
 
@@ -506,8 +484,8 @@ When fixing a reproducible defect:
 1. write/add a test that fails for the defect when feasible;
 2. implement the smallest correction;
 3. verify the new test passes;
-4. run nearby suite;
-5. run full repository gate for cross-cutting changes.
+4. run the nearby suite;
+5. run the full repository gate for cross-cutting changes.
 
 If a bug cannot be automated (for example a platform-only accessibility issue), document exact manual reproduction and validation instead of pretending unit coverage exists.
 
@@ -517,6 +495,12 @@ All shared target tests:
 
 ```bash
 gradle :shared:allTests --stacktrace
+```
+
+Android host tests specifically:
+
+```bash
+gradle :shared:testAndroidHostTest --stacktrace
 ```
 
 Desktop UI specifically:
