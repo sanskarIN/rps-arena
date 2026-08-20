@@ -1,178 +1,40 @@
 # Command Reference
 
-This guide explains the commands used by RPS Arena, what each command means, what it changes, and when to use it. Run commands from the repository root unless a section says otherwise.
+This guide explains the commands used by RPS Arena, what each command does, and when to use it. Run commands from the repository root unless a section says otherwise.
 
-## Important: this repository has no Gradle Wrapper
+## Important: no Gradle Wrapper is currently tracked
 
-RPS Arena currently does **not** track `gradlew`, `gradlew.bat`, or `gradle/wrapper/*`. Commands therefore use the `gradle` executable installed on your machine or installed by GitHub Actions.
+The repository does **not** currently contain `gradlew`, `gradlew.bat`, or `gradle/wrapper/*`.
 
-Check it with:
+Use the installed/setup Gradle command:
 
 ```bash
 gradle --version
 ```
 
-Meaning:
+The validated CI baseline is Gradle 9.5.1 with JDK 17.
 
-- `gradle` starts the installed Gradle command-line program.
-- `--version` prints the Gradle version, JVM, operating system, and environment information without building the project.
-- The validated CI version is Gradle 9.5.1.
+The Xcode direct-integration script also uses `gradle`, so local macOS/iOS work requires Gradle to be available to the Xcode build environment.
 
-If `gradle` is not found, install/configure Gradle before using the build commands. See `docs/toolchain.md`.
+## Full repository verification
 
-## Repository verification
-
-### Full Unix-like verification
+Unix-like systems:
 
 ```bash
 bash scripts/verify.sh
 ```
 
-Meaning:
-
-- `bash` runs the Bash interpreter.
-- `scripts/verify.sh` is the repository verification script.
-- `set -euo pipefail` inside the script causes failures, undefined variables, and failed pipeline commands to stop verification instead of silently continuing.
-- The script runs formatting, relative documentation-link validation, exhaustive tracked-file documentation coverage, high-confidence committed-secret detection, Android privacy-contract validation, version consistency, shared tests, Android lint/build, desktop compilation, and Rust tests when Cargo exists.
-
-### Full PowerShell verification
+PowerShell:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/verify.ps1
 ```
 
-Meaning:
+These helpers run the portable source/build gates configured in the repository. Host-specific iOS/Xcode validation still requires macOS.
 
-- `powershell` starts Windows PowerShell.
-- `-ExecutionPolicy Bypass` applies only to this process and allows the repository script to run when the machine policy otherwise blocks local scripts. It does not permanently change the system execution policy.
-- `-File scripts/verify.ps1` tells PowerShell which script to execute.
-- The PowerShell script runs the same source/security/privacy/version, Kotlin/Android/desktop, and optional Rust gates as the shell script.
+## Fast source gates
 
-If you are already inside PowerShell and local scripts are allowed:
-
-```powershell
-./scripts/verify.ps1
-```
-
-## Formatting verification
-
-```bash
-python3 scripts/check_format.py
-```
-
-Windows environments where Python is exposed as `python` can use:
-
-```powershell
-python scripts/check_format.py
-```
-
-Meaning:
-
-- `python3`/`python` starts Python.
-- `scripts/check_format.py` recursively inspects repository text files.
-- It checks UTF-8 decoding, final newlines, and accidental trailing whitespace.
-- Standard Markdown two-space hard breaks are intentionally allowed.
-- It skips generated/cache directories such as `.git`, `.gradle`, `.idea`, `build`, `target`, and `node_modules`.
-- Exit code `0` means success; a non-zero exit code makes CI fail.
-
-This command does **not** rewrite files. It is a validator, not an auto-formatter.
-
-## Documentation link verification
-
-```bash
-python3 scripts/check_docs_links.py
-```
-
-Meaning:
-
-- scans repository Markdown files;
-- extracts local Markdown links/images;
-- ignores external HTTP/HTTPS, mail, telephone, data, and anchor-only targets;
-- resolves relative paths from the document containing each link;
-- rejects paths that escape repository root;
-- fails when a local target does not exist;
-- does not fetch the internet or modify documents.
-
-Use it after renaming/moving documentation or any path linked from Markdown. It complements, but does not replace, the every-file documentation coverage gate.
-
-## Documentation coverage verification
-
-```bash
-python3 scripts/check_docs_coverage.py
-```
-
-Meaning:
-
-- runs `git ls-files -z` to obtain the authoritative list of Git-tracked files;
-- reads `docs/repository-file-reference.md`;
-- requires every tracked path to appear in that reference exactly inside backticks;
-- prints any missing paths and exits non-zero when coverage is incomplete;
-- does not edit documentation or source files.
-
-This is the enforceable repository rule behind the requirement to document every tracked file. It checks **path coverage**, while human review still checks whether each explanation is correct and sufficiently detailed.
-
-Because it uses `git ls-files`, run it inside a real Git checkout rather than from a copied source directory with `.git` metadata removed.
-
-When adding, renaming, or deleting a tracked file, update `docs/repository-file-reference.md` in the same change.
-
-## Committed-secret pattern verification
-
-```bash
-python3 scripts/check_for_secrets.py
-```
-
-Meaning:
-
-- scans source-sized repository files for several high-confidence credential shapes;
-- detects private-key headers and recognizable GitHub/AWS/Google/generic secret-token forms;
-- skips generated/cache/IDE directories, oversized files, non-UTF-8/binary data, and the checker itself;
-- reports path/line/category without echoing the matched credential value;
-- exits non-zero when a pattern is found;
-- does not alter source files or rotate credentials.
-
-This checker is defense in depth. It cannot prove that the repository contains no secret and does not replace GitHub secret scanning, code review, `.gitignore`, or immediate credential rotation if a real secret is exposed.
-
-## Android privacy-contract verification
-
-```bash
-python3 scripts/check_android_privacy.py
-```
-
-Meaning:
-
-- parses `androidApp/src/main/AndroidManifest.xml`;
-- parses `androidApp/src/main/res/xml/backup_rules.xml`;
-- parses `androidApp/src/main/res/xml/data_extraction_rules.xml`;
-- requires `android:allowBackup="false"`;
-- requires the manifest to reference both backup-policy resources;
-- requires the complete SharedPreferences domain to be excluded from legacy backup, cloud backup, and device transfer;
-- fails if `android.permission.INTERNET` appears in the primary offline-first Android manifest;
-- does not run an emulator or modify files.
-
-This source-level contract protects the current local-data/privacy posture. A future deliberate networking/storage policy change must update the code, checker, tests/docs, and privacy/security review together rather than simply deleting the gate.
-
-## Version consistency verification
-
-```bash
-python3 scripts/check_version.py
-```
-
-Meaning:
-
-- Reads Android `versionName` and numeric `versionCode` from `androidApp/build.gradle.kts`.
-- Reads desktop `packageVersion` from `desktopApp/build.gradle.kts`.
-- Reads shared `APP_VERSION` from `AppMetadata.kt`.
-- Verifies that the About UI renders the shared version constant.
-- Requires Android `versionCode` to equal `major * 10000 + minor * 100 + patch` for the semantic `versionName`.
-- Fails if versions differ, the numeric mapping is wrong, or a required declaration cannot be found.
-
-For v2.5.8, the required Android code is `20508`.
-
-Use this after changing a release version.
-
-## Fast source gate sequence
-
-The CI/release/local preflight sequence is:
+Run before expensive compilation:
 
 ```bash
 python3 scripts/check_format.py
@@ -183,35 +45,101 @@ python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 ```
 
-These are deliberately fast/read-only checks and should run before Gradle/Cargo work.
+### Formatting
+
+```bash
+python3 scripts/check_format.py
+```
+
+Checks repository text for:
+
+- UTF-8 decoding;
+- final newline;
+- accidental trailing whitespace;
+- intentional Markdown two-space hard breaks without treating them as generic errors.
+
+The checker is read-only.
+
+### Documentation links
+
+```bash
+python3 scripts/check_docs_links.py
+```
+
+Validates repository-relative Markdown links and rejects paths that resolve outside the repository or point to missing local targets.
+
+External links are not fetched.
+
+### Documentation coverage
+
+```bash
+python3 scripts/check_docs_coverage.py
+```
+
+Runs `git ls-files -z` and requires every tracked path to appear exactly in backticks in:
+
+```text
+docs/repository-file-reference.md
+```
+
+Add/rename/delete a tracked file -> update the exhaustive reference in the same change.
+
+### Committed-secret patterns
+
+```bash
+python3 scripts/check_for_secrets.py
+```
+
+Checks several high-confidence private-key/credential patterns. It reports category/path/line without printing the matched secret value.
+
+It supplements, but does not replace, GitHub secret scanning and human review.
+
+### Android privacy contract
+
+```bash
+python3 scripts/check_android_privacy.py
+```
+
+Requires the primary Android app to preserve the documented offline/privacy boundary:
+
+- automatic backup disabled;
+- correct backup-rule references;
+- SharedPreferences excluded from legacy/cloud/device-transfer backup;
+- no primary Android Internet permission.
+
+### Cross-platform version consistency
+
+```bash
+python3 scripts/check_version.py
+```
+
+Checks:
+
+- Android `versionName`;
+- Android `versionCode`;
+- desktop `packageVersion`;
+- iOS `CFBundleShortVersionString`;
+- iOS `CFBundleVersion`;
+- Xcode `MARKETING_VERSION`;
+- Xcode `CURRENT_PROJECT_VERSION`;
+- shared `APP_VERSION`;
+- About rendering of shared `APP_VERSION`.
+
+Mobile build codes must equal:
+
+```text
+major * 10000 + minor * 100 + patch
+```
+
+For v2.5.8 the required numeric code is:
+
+```text
+20508
+```
 
 ## Gradle task syntax
 
-A command such as:
-
-```bash
-gradle :shared:allTests --stacktrace
-```
-
-has three important parts:
-
-- `gradle` — execute Gradle.
-- `:shared:allTests` — run task `allTests` in module `shared`. The leading colon starts from the root project; the second colon separates project path from task name.
-- `--stacktrace` — print a Java/Kotlin stack trace when a task fails. This is useful for diagnosing the real failure rather than only seeing a short error summary.
-
-You can inspect tasks with:
-
-```bash
-gradle tasks
-```
-
-For one module:
-
-```bash
-gradle :shared:tasks
-```
-
-## Shared Kotlin tests
+Example:
 
 ```bash
 gradle :shared:allTests --stacktrace
@@ -219,30 +147,39 @@ gradle :shared:allTests --stacktrace
 
 Meaning:
 
-- Compiles the shared Kotlin Multiplatform test source sets.
-- Runs test tasks available for configured targets.
-- Includes shared business-rule, persistence, protocol, localization, safe-logging, and configured desktop UI test coverage.
-- Does not install an Android APK on a device.
+- `gradle` runs installed Gradle;
+- `:shared:allTests` addresses the `allTests` task in module `shared`;
+- `--stacktrace` prints a Java/Kotlin stack trace when Gradle fails.
 
-For desktop UI tests specifically:
+Useful inspection commands:
+
+```bash
+gradle tasks
+gradle :shared:tasks
+gradle :webApp:tasks
+```
+
+## Shared tests
+
+```bash
+gradle :shared:allTests --stacktrace
+```
+
+Runs configured shared multiplatform tests, including common business/data/protocol/localization/logging coverage and configured desktop UI tests.
+
+Dedicated desktop UI tests:
 
 ```bash
 gradle :shared:desktopTest --stacktrace
 ```
 
-This runs the Compose desktop UI smoke tests from `shared/src/desktopTest`.
+## Android commands
 
-## Android lint
+### Lint
 
 ```bash
 gradle :androidApp:lintDebug --stacktrace
 ```
-
-Meaning:
-
-- Runs Android Lint against the debug variant.
-- Checks Android resources, manifest/configuration, API usage, and other Android-specific correctness rules.
-- Does not create a store-ready signed APK.
 
 Release lint:
 
@@ -250,279 +187,325 @@ Release lint:
 gradle :androidApp:lintRelease --stacktrace
 ```
 
-This applies lint to the release variant and is used by release automation.
-
-## Android APK builds
-
-Debug APK:
+### Debug APK
 
 ```bash
 gradle :androidApp:assembleDebug --stacktrace
 ```
 
-Meaning:
+Typical output is under:
 
-- `assembleDebug` compiles and packages the debug variant.
-- It resolves the `:shared` Android target automatically because `androidApp` depends on it.
-- The result is written under `androidApp/build/outputs/apk/debug/`.
-- Debug builds are for development/testing and are not equivalent to a signed Play Store release.
+```text
+androidApp/build/outputs/apk/debug/
+```
 
-Release APK:
+### Release APK
 
 ```bash
 gradle :androidApp:assembleRelease --stacktrace
 ```
 
-Meaning:
+The public repository contains no private store-signing credentials, so a public release build is not automatically a signed Play Store artifact.
 
-- Compiles/packages the release variant.
-- The public repository does not contain private signing credentials.
-- CI can therefore validate an unsigned/public release artifact, while store signing must happen in an authorized secret-bearing environment.
+## Windows/Linux/macOS desktop commands
 
-## Desktop development
-
-Compile desktop classes:
+### Compile
 
 ```bash
 gradle :desktopApp:classes --stacktrace
 ```
 
-Meaning:
-
-- Compiles desktop JVM code and the shared desktop target.
-- Does not start the app.
-- This is a fast CI build gate for desktop source compatibility.
-
-Run the app:
+### Run
 
 ```bash
 gradle :desktopApp:run
 ```
 
-Meaning:
-
-- Compiles what is needed and launches the Compose Desktop application.
-- The process stays attached to the terminal until the desktop app exits.
-
-Package for the current OS:
+### Package for current host
 
 ```bash
 gradle :desktopApp:packageDistributionForCurrentOS --stacktrace
 ```
 
-Meaning:
+Declared native formats include DMG, MSI, and DEB, but native packaging is host-dependent.
 
-- Uses Compose Desktop native-distribution tooling.
-- Chooses the package format supported by the current host operating system.
-- Native packages are generated in a build directory and are ignored by Git.
-
-Linux Debian package:
+### Linux DEB
 
 ```bash
 gradle :desktopApp:packageDeb --stacktrace
 ```
 
-Meaning:
+The tagged public release workflow currently exercises this Linux package path.
 
-- Builds the `.deb` format declared by `TargetFormat.Deb`.
-- GitHub release automation runs this on Ubuntu.
+## Web commands
 
-## Cleaning generated Gradle output
+RPS Arena has both Kotlin/Wasm and Kotlin/JS browser targets.
 
-```bash
-gradle clean
-```
-
-Meaning:
-
-- Deletes Gradle `build/` outputs owned by the project/modules.
-- It does not delete source code, Git history, Android SDKs, or your global Gradle installation.
-- It is useful when stale generated outputs cause confusing behavior, but it should not be the first response to every build error.
-
-Refresh dependencies only when necessary:
+### Run Wasm development target
 
 ```bash
-gradle :shared:allTests --refresh-dependencies --stacktrace
+gradle :webApp:wasmJsBrowserDevelopmentRun --stacktrace
 ```
 
-`--refresh-dependencies` asks Gradle to re-check dependency metadata/artifacts instead of relying only on normal cache behavior. It can be slower and requires network access for uncached dependencies.
+Gradle starts a local development server and prints the URL/port.
+
+### Run JavaScript development target
+
+```bash
+gradle :webApp:jsBrowserDevelopmentRun --stacktrace
+```
+
+Use this to test the JS path directly.
+
+### Build Wasm-only production distribution
+
+```bash
+gradle :webApp:wasmJsBrowserDistribution --stacktrace
+```
+
+### Build preferred JS+Wasm compatibility distribution
+
+```bash
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+```
+
+Expected output:
+
+```text
+webApp/build/dist/composeWebCompatibility/productionExecutable/
+```
+
+This is the Web build used by CI and release packaging.
+
+The tagged release workflow zips this directory into:
+
+```text
+rps-arena-web.zip
+```
+
+See `docs/web-platform.md` for deployment/runtime considerations.
+
+## iPhone/iPad commands
+
+These commands require macOS for Apple framework/Xcode validation.
+
+### Debug iOS simulator framework
+
+```bash
+gradle :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+```
+
+### Release iOS simulator framework
+
+```bash
+gradle :shared:linkReleaseFrameworkIosSimulatorArm64 --stacktrace
+```
+
+### Release physical-device framework
+
+```bash
+gradle :shared:linkReleaseFrameworkIosArm64 --stacktrace
+```
+
+Generated output is under:
+
+```text
+shared/build/bin/iosSimulatorArm64/<buildType>Framework/
+shared/build/bin/iosArm64/<buildType>Framework/
+```
+
+### Xcode simulator host build
+
+```bash
+xcodebuild \
+  -project iosApp/iosApp.xcodeproj \
+  -scheme "RPS Arena" \
+  -sdk iphonesimulator \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+This is suitable for public CI because it does not require signing credentials.
+
+### Open the iOS project
+
+```bash
+open iosApp/iosApp.xcodeproj
+```
+
+Then select the `RPS Arena` scheme and an iPhone/iPad simulator or authorized device.
+
+### Xcode direct KMP integration
+
+The Xcode project's Kotlin build phase invokes:
+
+```bash
+gradle :shared:embedAndSignAppleFrameworkForXcode
+```
+
+Do not replace this with an arbitrary downloaded binary/script. If the project later adopts a Gradle Wrapper, update the Xcode build phase and docs together.
+
+## Cross-platform CI parity
+
+Portable/common commands:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
+python3 scripts/check_version.py
+gradle :shared:allTests --stacktrace
+gradle :androidApp:lintDebug --stacktrace
+gradle :androidApp:assembleDebug --stacktrace
+gradle :desktopApp:classes --stacktrace
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+cargo test --manifest-path rust-engine/Cargo.toml --all-targets
+```
+
+macOS CI additionally runs the iOS simulator framework and Xcode host commands above.
 
 ## Rust commands
 
-Run from the repository root:
+From repository root:
 
 ```bash
 cargo test --manifest-path rust-engine/Cargo.toml --all-targets
 ```
 
-Meaning:
+Package without publishing:
 
-- `cargo` is Rust's package/build tool.
-- `test` compiles and runs tests.
-- `--manifest-path rust-engine/Cargo.toml` points Cargo to the optional Rust engine without changing directories.
-- `--all-targets` tests all crate target types configured by the package.
+```bash
+cargo package --manifest-path rust-engine/Cargo.toml
+```
 
-Equivalent from inside the Rust directory:
+Inside the crate:
 
 ```bash
 cd rust-engine
 cargo test --all-targets
 ```
 
-`cd rust-engine` changes the shell's current working directory.
-
-Package the crate:
-
-```bash
-cargo package --manifest-path rust-engine/Cargo.toml
-```
-
-Meaning:
-
-- Creates a distributable `.crate` archive after Cargo's package checks.
-- Does not publish it to crates.io.
-- Release CI uploads the package as a GitHub artifact.
-
-Check Rust toolchain:
+Inspect toolchain:
 
 ```bash
 rustc --version
 cargo --version
 ```
 
-## Git commands used for development
+## Cleaning generated output
+
+Gradle output:
+
+```bash
+gradle clean
+```
+
+This removes Gradle-owned project build output. It does not delete source code, Git history, SDK installations, Xcode, or signing credentials.
+
+Web caches such as `node_modules/`/`kotlin-js-store/`, Xcode `DerivedData/`, and Rust `target/` are generated and ignored. Remove them only when diagnosing a relevant generated-state problem, not as a default reaction to every build failure.
+
+## Git development commands
 
 Clone:
 
 ```bash
 git clone https://github.com/sanskarIN/rps-arena.git
-```
-
-- `git clone` downloads repository history and creates a working directory.
-
-Enter the project:
-
-```bash
 cd rps-arena
 ```
 
-Create a branch:
+Create branch:
 
 ```bash
-git switch -c docs/example-change
+git switch -c feature/example
 ```
 
-- `switch` changes branches.
-- `-c` creates a new branch before switching to it.
-
-Inspect changes:
+Inspect:
 
 ```bash
 git status
 git diff
 ```
 
-- `git status` shows changed/untracked/staged files and current branch.
-- `git diff` shows unstaged textual differences.
-
-Stage and commit:
-
-```bash
-git add docs/example.md
-git commit -m "docs: explain example"
-```
-
-- `git add` puts the selected content into Git's staging area.
-- `git commit` creates a local immutable commit from staged changes.
-- `-m` supplies the commit message directly.
-
-Owner identity used by the project:
+Owner repository identity:
 
 ```bash
 git config user.name "Sanskar"
 git config user.email "sanskarin@outlook.in"
 ```
 
-Without `--global`, these settings apply to the current repository only.
-
-Push a new branch:
+Stage/commit:
 
 ```bash
-git push -u origin docs/example-change
+git add <paths>
+git commit -m "type(scope): focused message"
 ```
 
-- `origin` is the conventional name for the cloned remote.
-- `-u` stores upstream tracking so later `git push`/`git pull` can omit branch names.
-
-## Listing tracked files
-
-The documentation coverage checker relies on:
+Push:
 
 ```bash
-git ls-files -z
+git push -u origin feature/example
 ```
 
-Meaning:
+## Release tag commands
 
-- `git ls-files` lists files tracked in Git's index;
-- `-z` separates paths with NUL bytes instead of newlines, so unusual path characters cannot be confused with separators;
-- the Python checker decodes this list and compares it with the exhaustive file reference.
-
-You normally do not need to run this command directly unless debugging documentation coverage.
-
-## GitHub release tag commands
-
-Create an annotated tag after the exact `main` commit is validated:
+Only after the exact `main` commit is fully validated:
 
 ```bash
 git tag -a v2.5.8 -m "RPS Arena v2.5.8"
-```
-
-- `tag -a` creates an annotated tag object.
-- `v2.5.8` is the current release tag and follows the repository's semantic-version release convention.
-- `-m` supplies the tag message.
-
-Push only that tag:
-
-```bash
 git push origin v2.5.8
 ```
 
-The release workflow listens for tags matching `v*` and can build/publish release artifacts.
+The release workflow listens for tags matching `v*`.
 
 Do not tag an unvalidated commit.
 
-## Diagnostic options
+## Diagnostics
 
-Useful Gradle flags:
+Useful Gradle verbosity options:
 
 ```bash
-gradle :androidApp:assembleDebug --info
-gradle :androidApp:assembleDebug --debug
-gradle :androidApp:assembleDebug --scan
+gradle <task> --stacktrace
+gradle <task> --info
+gradle <task> --debug
 ```
 
-- `--info` increases logging moderately.
-- `--debug` is much more verbose and may expose environment details; sanitize logs before sharing.
-- `--scan` requests a Gradle Build Scan and can involve an external service. Do not use it when you need a strictly local diagnostic workflow or when sharing build metadata is not appropriate.
+Start with `--stacktrace`. `--debug` can reveal environment details; sanitize logs before sharing.
 
-Prefer `--stacktrace` first because it is local and usually sufficient.
+`--scan` can send build metadata to an external Gradle service, so do not use it when a strictly local diagnostic workflow is required.
+
+Xcode diagnostics:
+
+```bash
+xcodebuild -version
+xcodebuild -list -project iosApp/iosApp.xcodeproj
+```
+
+Browser builds:
+
+```bash
+gradle :webApp:tasks --all
+```
 
 ## Exit codes and CI
 
-The repository Python validators and build/test commands use process exit status:
+Normal convention:
 
-- `0` generally means the command completed successfully;
-- non-zero means failure and causes a normal shell/CI step to fail.
+```text
+0 = success
+non-zero = failure
+```
 
-`verify.sh` uses `set -e`, and `verify.ps1` sets `$ErrorActionPreference = "Stop"`, so failed commands stop the full verification rather than allowing later checks to create a misleading success impression.
+Repository verification scripts stop on failing commands so later successful steps cannot hide an earlier failure.
 
 ## Command safety rules
 
-- Read an error before deleting caches or SDKs.
-- Never paste signing passwords, tokens, API keys, private certificates, or personal backup data into command history, issue reports, or CI logs.
-- If the committed-secret checker reports a real credential, remove it from the candidate source and rotate/revoke it; do not merely add a detector exception.
-- Do not run release/tag commands unless the intended commit is validated.
-- Prefer repository-scoped Git identity/configuration when you do not intend to change every local repository.
-- Generated `build/`, `.gradle/`, and `rust-engine/target/` content can be recreated; source files and signing credentials cannot.
-- Do not remove a failing documentation/build/security/privacy check merely to make CI green; determine whether the source or the check is wrong and document the correction.
+- Read the actual error before deleting caches/SDKs.
+- Never commit or paste signing passwords, private keys, provisioning credentials, tokens, API keys, or private backups into logs/issues.
+- If a committed-secret check finds a real secret, remove it from candidate source and rotate/revoke the credential; do not simply weaken the detector.
+- Do not add Android/Apple/Windows/macOS signing credentials to make public CI produce store artifacts.
+- Do not remove a failing privacy/security/documentation/build gate merely to make CI green; determine whether source or checker is wrong.
+- Do not infer that common-code tests prove every platform host builds; keep Android/Desktop/Web/iOS platform compilation gates active.
+- Do not tag or merge a candidate until required checks are green on the exact current head.
