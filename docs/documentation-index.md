@@ -16,7 +16,7 @@ Read in this order:
 ### I want to understand the architecture
 
 1. [`architecture.md`](architecture.md) — architecture overview;
-2. [`build-system.md`](build-system.md) — Gradle/modules/source sets;
+2. [`build-system.md`](build-system.md) — Gradle/modules/source sets/targets;
 3. [`domain-and-gameplay.md`](domain-and-gameplay.md) — game/state/CPU rules;
 4. [`storage-and-backup.md`](storage-and-backup.md) — persistence/migration/schema;
 5. [`localization.md`](localization.md) — bilingual UI architecture;
@@ -31,12 +31,28 @@ Read in this order:
 4. [`accessibility.md`](accessibility.md);
 5. [`privacy`](../PRIVACY.md) / [`security`](../SECURITY.md) when permissions/data change.
 
-### I want to work on desktop
+### I want to work on iPhone or iPad
+
+1. [`ios-platform.md`](ios-platform.md);
+2. [`build-system.md`](build-system.md);
+3. [`testing.md`](testing.md);
+4. [`accessibility.md`](accessibility.md);
+5. [`release.md`](release.md) for signing/framework boundaries.
+
+### I want to work on Windows, Linux, or macOS desktop
 
 1. [`desktop-platform.md`](desktop-platform.md);
 2. [`build-system.md`](build-system.md);
 3. [`testing.md`](testing.md);
 4. [`accessibility.md`](accessibility.md).
+
+### I want to work on the browser/Web app
+
+1. [`web-platform.md`](web-platform.md);
+2. [`build-system.md`](build-system.md);
+3. [`testing.md`](testing.md);
+4. [`accessibility.md`](accessibility.md);
+5. [`release.md`](release.md) for compatibility-distribution packaging.
 
 ### I want to work on the optional Rust engine
 
@@ -102,7 +118,7 @@ Do **not** begin by adding permissions. Read:
 2. [`toolchain.md`](toolchain.md);
 3. [`build-system.md`](build-system.md);
 4. [`ci-cd.md`](ci-cd.md);
-5. [`repository-file-reference.md`](repository-file-reference.md) after it is generated/maintained.
+5. [`repository-file-reference.md`](repository-file-reference.md).
 
 ## Core root documents
 
@@ -127,11 +143,11 @@ Concise prerequisites, clone/build/run flow, local data note, owner Git identity
 
 ### [`toolchain.md`](toolchain.md)
 
-Deep guide to JDK 17, local Gradle 9.5.1 baseline, Android SDK 36/Build Tools, IDEs, Python, Git, optional Rust, environment variables, and safe upgrade procedure when a tool becomes outdated/unsupported.
+Deep guide to JDK 17, local Gradle 9.5.1 baseline, Android SDK 36/Build Tools, macOS/Xcode for iOS, browser requirements for Web, IDEs, Python, Git, optional Rust, environment variables, and safe upgrade procedure when a tool becomes outdated/unsupported.
 
 ### [`command-reference.md`](command-reference.md)
 
-Explains Gradle task syntax/flags, validation scripts, Android/Desktop/Rust commands, Git/tag commands, diagnostics, and command safety.
+Explains Gradle task syntax/flags, validation scripts, Android/Desktop/iOS/Web/Rust commands, Git/tag commands, diagnostics, and command safety.
 
 ### [`development.md`](development.md)
 
@@ -139,7 +155,7 @@ Short architecture-aware contribution workflow and layer placement rules.
 
 ### [`maintenance.md`](maintenance.md)
 
-Long-term change playbook: versions, dependencies, schemas, languages, networking, docs, release, Git hygiene, incidents.
+Long-term change playbook: versions, dependencies, schemas, languages, networking, platform targets, docs, release, Git hygiene, incidents.
 
 ## Architecture and code behavior
 
@@ -149,7 +165,7 @@ High-level module/layer/persistence/offline/network boundaries.
 
 ### [`build-system.md`](build-system.md)
 
-Explains root Gradle files, version catalog, Gradle properties, `:shared`, `:androidApp`, `:desktopApp`, source sets, task dependency behavior, output directories, and absent Gradle Wrapper.
+Explains root Gradle files, version catalog, Gradle properties, `:shared`, `:androidApp`, `:desktopApp`, `:webApp`, Android/JVM/iOS/JS/Wasm targets, source sets, task dependency behavior, output directories, and absent Gradle Wrapper.
 
 ### [`domain-and-gameplay.md`](domain-and-gameplay.md)
 
@@ -157,7 +173,7 @@ Complete shared model/rules/CPU/match/state/timer/score/streak/achievement/histo
 
 ### [`storage-and-backup.md`](storage-and-backup.md)
 
-Exact storage keys, PlatformStore actuals, codecs, v1->v2 migration, stat invariants, history grammar, backup schema/escaping/limits/import/reset.
+Exact storage keys, PlatformStore actuals, v1->v2 migration, stat invariants, history grammar, backup schema/escaping/limits/import/reset.
 
 ### [`localization.md`](localization.md)
 
@@ -173,9 +189,17 @@ Room code/participant/events/gateway/session/in-memory lifecycle plus future LAN
 
 Every Android app/resource/storage file, manifest/permissions, SDK/versioning, launcher resources/theme, APK tasks, signing/offline checks.
 
+### [`ios-platform.md`](ios-platform.md)
+
+Complete iPhone/iPad path: Kotlin/Native targets, NSUserDefaults adapter, Compose UIViewController bridge, SwiftUI/Xcode host, direct framework integration, versioning, CI, framework release artifacts, signing/privacy boundaries.
+
 ### [`desktop-platform.md`](desktop-platform.md)
 
-Every desktop launcher/build/storage file, Java Preferences, run/package behavior, DEB/MSI/DMG boundaries, keyboard/responsive checks.
+Windows/Linux/macOS JVM desktop launcher/build/storage files, Java Preferences, run/package behavior, DEB/MSI/DMG boundaries, keyboard/responsive checks.
+
+### [`web-platform.md`](web-platform.md)
+
+Browser JS+Wasm compatibility targets, ComposeViewport host, localStorage persistence, development/distribution commands, CI/release packaging, browser limitations/testing.
 
 ### [`rust-engine.md`](rust-engine.md)
 
@@ -197,7 +221,7 @@ What constitutes executable release validation and current gate model.
 
 ### [`accessibility.md`](accessibility.md)
 
-Keyboard/TalkBack/text scaling/contrast/motion/timer/destructive-action review policy.
+Keyboard/TalkBack/VoiceOver/browser keyboard/text scaling/contrast/motion/timer/destructive-action review policy.
 
 ### [`performance.md`](performance.md)
 
@@ -207,11 +231,11 @@ Bounded data/performance budgets and evidence-first regression measurement.
 
 ### [`ci-cd.md`](ci-cd.md)
 
-Every `.github` file: CI, CodeQL, release workflow, Dependabot, issue forms, PR template, release categories, funding, permissions/concurrency/artifacts.
+Every `.github` file: CI, CodeQL, release workflow, Dependabot, issue forms, PR template, release categories, funding, permissions/concurrency, Android/Desktop/iOS/Web/Rust artifacts.
 
 ### [`release.md`](release.md)
 
-Release gate, version locations, local verification, signing/notarization boundaries, notes/rollback.
+Release gate, cross-platform version locations, Web/iOS artifacts, signing/notarization boundaries, notes/rollback.
 
 ### [`github-settings.md`](github-settings.md)
 
