@@ -1,913 +1,806 @@
 # What Changed
 
-## Current milestone — v2.5.8 product completion and release hardening
+## Current milestone — v2.5.8 full cross-platform product and release baseline
 
-Date: 2026-08-19
+Date: 2026-08-20
 Repository: `sanskarIN/rps-arena`
 Working PR: `#11` (`feature/phase-7-completion` -> `main`)
 License: MIT
-Primary product posture: offline-first; no account, analytics SDK, ads SDK, cloud model, or Android internet permission required for primary gameplay.
+Primary product posture: offline-first; no account, analytics SDK, ads SDK, cloud model, or mandatory gameplay backend.
 
-This file is the detailed repository handoff log. It intentionally contains implementation, migration, verification, limitation, documentation, and release information that would otherwise have been repeated in chat.
+This file is the detailed repository handoff. It records the current implementation, cross-platform architecture, data compatibility, build/release gates, documentation, limitations, and representative commit history so those details do not need to be repeated in chat.
 
-## Milestone scope
+## Current supported platform architecture
 
-Version 2.5.8 completes the remaining practical product requirements that can be implemented safely in the public repository without private signing credentials, mandatory network infrastructure, or a paid/cloud backend.
+RPS Arena v2.5.8 now has real project targets/entry points for:
 
-The milestone covers:
+- Android;
+- iPhone;
+- iPad;
+- Windows desktop;
+- Linux desktop;
+- macOS desktop;
+- Web through Kotlin/Wasm plus Kotlin/JS compatibility output.
 
-- timed and replayable matches;
-- stronger offline persistence and import/export;
-- local profile/settings improvements;
-- English/Hindi product localization;
-- responsive and reduced-motion UI behavior;
-- private-room multiplayer architecture and integrity boundaries;
-- broader unit/protocol/UI test coverage;
-- stricter CI/release automation;
-- complete setup/development/testing/security/privacy/release documentation;
-- exhaustive file-by-file repository documentation;
-- GitHub governance and release-maintenance guidance.
+The optional Rust rules engine remains an independently tested companion crate rather than a runtime requirement.
 
-## Deep documentation completion phase
+### Android
 
-The repository documentation was expanded beyond overview guides into a maintainable, file-complete reference set.
+- Application module: `androidApp`.
+- Minimum API: 26.
+- Compile/target SDK: 36.
+- Entry point: `MainActivity`.
+- Shared persistence adapter: Android `SharedPreferences`.
+- Automatic Android backup remains disabled.
+- SharedPreferences remain excluded from legacy/cloud/device-transfer backup rules.
+- Primary Android manifest still intentionally avoids `android.permission.INTERNET`.
 
-### Documentation coverage is now enforceable
+### iPhone and iPad
+
+Added Kotlin/Native targets in `shared/build.gradle.kts`:
+
+```text
+iosArm64
+iosSimulatorArm64
+```
+
+Both export a static framework:
+
+```text
+RpsArenaShared.framework
+```
+
+Added iOS platform persistence:
+
+```text
+shared/src/iosMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.ios.kt
+```
+
+It uses `NSUserDefaults.standardUserDefaults` while retaining all serialization, migration, validation, and backup logic in common `ArenaRepository` code.
+
+Added Compose/native bridge:
+
+```text
+shared/src/iosMain/kotlin/in/sanskar/rpsarena/ui/MainViewController.kt
+```
+
+It initializes platform storage and returns a `ComposeUIViewController` rendering the same `RpsArenaApp()` used by other targets.
+
+Added native SwiftUI/Xcode host:
+
+```text
+iosApp/iosApp/iOSApp.swift
+iosApp/iosApp/ContentView.swift
+iosApp/iosApp/Info.plist
+iosApp/iosApp.xcodeproj/project.pbxproj
+iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/RPS Arena.xcscheme
+```
+
+The SwiftUI host stays intentionally thin. It embeds the Kotlin Compose view controller instead of recreating gameplay, state, or storage logic in Swift.
+
+The Xcode project includes direct Kotlin framework integration through:
+
+```bash
+gradle :shared:embedAndSignAppleFrameworkForXcode
+```
+
+The public repository contains no Apple private signing credentials.
+
+### Windows, Linux, and macOS desktop
+
+The existing `desktopApp` remains the shared JVM desktop entry point for all three supported desktop operating systems.
+
+It uses:
+
+- JVM 17;
+- Compose Desktop;
+- shared `RpsArenaApp()`;
+- Java Preferences for local persistence;
+- DMG/MSI/DEB native-distribution configuration.
+
+The public tagged workflow currently packages Linux `.deb`; Windows/macOS signing/notarization remain host/credential-dependent release tasks rather than source-support gaps.
+
+### Web
+
+Added first-class module:
+
+```text
+webApp
+```
+
+`settings.gradle.kts` now includes:
+
+```text
+:shared
+:androidApp
+:desktopApp
+:webApp
+```
+
+The Web application has both:
+
+```text
+Kotlin/Wasm browser executable
+Kotlin/JS browser executable
+```
+
+Both share the same `webMain` entry point and browser storage adapter.
 
 Added:
 
 ```text
-scripts/check_docs_coverage.py
+webApp/build.gradle.kts
+webApp/src/webMain/kotlin/in/sanskar/rpsarena/web/Main.kt
+webApp/src/webMain/resources/index.html
+shared/src/webMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.web.kt
 ```
 
-The script:
+Browser startup:
 
-1. executes `git ls-files -z` to obtain the authoritative list of Git-tracked paths;
-2. reads `docs/repository-file-reference.md`;
-3. requires every tracked path to appear exactly in backticks in that file;
-4. prints every missing path and exits non-zero when coverage is incomplete.
+1. initialize `PlatformStore`;
+2. attach a Compose viewport to `#webApp`;
+3. render `RpsArenaApp()`.
 
-This means a future source/config/resource/test/workflow/documentation file cannot be silently added without also being represented in the exhaustive repository file reference.
+Browser persistence uses:
 
-The checker validates path coverage. Human review still evaluates whether each explanation is accurate, useful, and sufficiently deep.
-
-### Coverage gate integration
-
-Documentation coverage is now included in:
-
-- `.github/workflows/ci.yml`;
-- `.github/workflows/release.yml`;
-- `scripts/verify.sh`;
-- `scripts/verify.ps1`;
-- `.github/pull_request_template.md`;
-- `CONTRIBUTING.md`;
-- `docs/testing.md`;
-- `docs/validation.md`;
-- `docs/setup.md`;
-- `README.md`;
-- `docs/ci-cd.md`;
-- `docs/command-reference.md`.
-
-A change that adds/renames a tracked file without updating the exhaustive reference should fail normal CI, and the tagged/manual release preflight independently rechecks the same coverage before release packaging.
-
-### Release-workflow hardening
-
-The final audit removed the remaining release-workflow documentation-coverage gap and expanded the fast release preflight.
-
-`.github/workflows/release.yml` now runs:
-
-```bash
-python3 scripts/check_format.py
-python3 scripts/check_docs_links.py
-python3 scripts/check_docs_coverage.py
-python3 scripts/check_for_secrets.py
-python3 scripts/check_android_privacy.py
-python3 scripts/check_version.py
+```text
+window.localStorage
 ```
 
-before the Android release build/test/package steps. A tagged release cannot reach publication when the Android release job fails these source, documentation, secret-pattern, privacy, or version gates.
+The deployable release build uses Compose compatibility distribution so modern Wasm output and the JavaScript compatibility path are generated together.
 
-Version tags must still be created from a validated `main` commit. The release-time checks are defense in depth and do not replace exact-head pull-request CI, Security checks, and CodeQL validation.
+## Shared-module target graph
 
-The synchronized release/validation behavior is documented in `docs/ci-cd.md`, `docs/validation.md`, `docs/release.md`, `CHANGELOG.md`, the pull-request description, and this handoff.
+The shared module now targets:
 
-### New deep documentation set
+```text
+Android
+JVM desktop
+iOS arm64
+iOS simulator arm64
+Kotlin/JS browser
+Kotlin/Wasm browser
+```
 
-Added:
+The default Kotlin hierarchy is applied so JS/Wasm can share `webMain` browser-specific code while product behavior remains in `commonMain`.
 
-- `docs/documentation-index.md` — role/goal-based navigation across the documentation set;
-- `docs/command-reference.md` — detailed meaning, prerequisites, side effects, diagnostics, and safety of repository Python/Gradle/Cargo/Git/tag commands;
-- `docs/toolchain.md` — JDK/Gradle/Android SDK/IDE/Python/Git/Rust installation, inspection, environment variables, and safe upgrade workflow;
-- `docs/build-system.md` — root Gradle/settings/properties/version catalog, modules, source sets, dependencies, tasks, outputs, packaging, and current no-Gradle-Wrapper architecture;
-- `docs/domain-and-gameplay.md` — gestures, rules, CPU probabilities, deterministic seed behavior, match modes, state transitions, timers, scores, streaks, achievements, history grammar, and invariants;
-- `docs/storage-and-backup.md` — PlatformStore implementations, exact keys/codecs, settings migration, stat invariants, history format, backup grammar/escaping/limits/import/reset/privacy compatibility;
-- `docs/localization.md` — English/Hindi catalogs, enum-keyed labels, canonical vs localized data, achievements, persisted language compatibility, RTL/additional-language guidance;
-- `docs/private-room-protocol.md` — room-code/session/event semantics, participant/lifecycle authority, current no-network adapter, and future LAN fairness/security/privacy/versioning/failure requirements;
-- `docs/android-platform.md` — every Android build/source/manifest/resource/storage file, SDK/versioning, adaptive icons/theme, APK behavior, signing and offline checks;
-- `docs/desktop-platform.md` — every desktop launcher/build/storage file, JVM behavior, Java Preferences, UI tests, and host-dependent DEB/MSI/DMG packaging/signing boundaries;
-- `docs/rust-engine.md` — every optional Rust crate file, rule parity, Cargo tests/package, lock/dependency policy, FFI/WASM/security boundaries;
-- `docs/test-catalog.md` — every tracked Kotlin/Compose automated test file and its exact regression responsibility/assertions;
-- `docs/ci-cd.md` — every `.github` automation/configuration file, triggers, permissions, jobs, failure meaning, artifact paths, documentation coverage, and maintenance rules;
-- `docs/maintenance.md` — long-term versions/dependencies/gameplay/storage/language/network/platform/test/docs/release/secret-incident maintenance playbook;
-- `docs/branding-assets.md` — root SVG, Android adaptive-icon, platform-theme/shared-theme ownership and rebranding/accessibility/export checklist;
-- `docs/glossary.md` — project/build/KMP/Android/Desktop/Rust/CI/security/release terminology and repository-specific identifiers;
-- `docs/repository-file-reference.md` — exhaustive file-by-file description of every Git-tracked repository file, including itself.
+Cross-platform ownership remains:
 
-### Existing documentation connected to the deep set
+```text
+Platform host
+  -> shared Compose UI
+    -> ArenaState
+      -> RulesEngine / CpuStrategy
+      -> ArenaRepository
+        -> expect/actual PlatformStore
+      -> optional PrivateRoomGateway
+```
 
-Expanded/relinked:
+No platform host owns an independent game engine.
 
-- `README.md` — now exposes the complete documentation set, documents the no-Gradle-Wrapper setup, adds documentation coverage to quick-start/quality gates, and distinguishes project baseline versions from global-latest claims;
-- `docs/setup.md` — adds Python/documentation/version prechecks, local Gradle explanation, deep documentation links, and generated/machine-specific file guidance;
-- `CONTRIBUTING.md` — requires documentation coverage and updating the exhaustive file reference for every tracked-file addition/rename/removal;
-- `.github/pull_request_template.md` — adds documentation-coverage command and every-file reference checklist;
-- `docs/testing.md` — makes format/docs/version source gates explicit before compilation and links the per-test catalog;
-- `docs/validation.md` — defines the every-file coverage gate, release-time recheck, and exact-head validation rule;
-- `docs/release.md` — defines the complete source/build/release checklist and shared version locations;
-- `CHANGELOG.md` — records the exhaustive documentation/coverage milestone and release-time recheck;
-- `docs/ci-cd.md` — reflects the actual CI and release documentation gates.
+## Cross-platform persistence
 
-### Every-file documentation policy
+The common abstraction remains:
 
-For every future tracked file addition, rename, or deletion:
+```text
+PlatformStore.initialize()
+PlatformStore.getString()
+PlatformStore.putString()
+```
 
-1. update `docs/repository-file-reference.md` in the same change;
-2. explain ownership/purpose/compatibility implications, not only the filename;
-3. run `python3 scripts/check_docs_coverage.py`;
-4. update `docs/documentation-index.md` when a new subject-area guide is added;
-5. update `what_changed.md` for milestone-level work.
+Current physical adapters:
 
-## Gameplay and match controls
+| Platform | Backend |
+|---|---|
+| Android | app-private SharedPreferences |
+| iOS/iPadOS | NSUserDefaults |
+| Windows/Linux/macOS desktop | java.util.prefs.Preferences |
+| Web JS/Wasm | browser localStorage |
 
-### Round timers
+`ArenaRepository` remains the schema/validation authority. Platform stores are intentionally simple string transports.
 
-- Added configurable round timers.
-- Supported values are `Off`, `5s`, `10s`, `20s`, `30s`, and `60s`.
-- `MatchConfig.ALLOWED_TIMER_SECONDS` is the single validated set used by the model and UI.
-- Unsupported timer values are rejected at model construction.
-- `0` means timer disabled.
-- The countdown is visible as text plus progress feedback.
-- Each local two-player turn receives a fresh countdown.
-- The timer does not run after a finite match has finished.
+## Existing gameplay/product completion retained
 
-### Timeout outcomes
+The cross-platform expansion preserves the v2.5.8 product-completion work already implemented on the branch.
 
-- Added typed `RoundEndReason` values so gesture-played and timed-out rounds are distinguishable.
-- CPU mode: Player 1 timeout awards the round to Player 2/CPU.
-- Same-device local mode:
-  - timeout before Player 1 selects awards the round to Player 2;
-  - timeout after Player 1 locks a move and while Player 2 is choosing awards the round to Player 1.
-- Timeout rounds update:
-  - match score;
-  - aggregate statistics;
-  - streak state;
-  - recent trend calculations;
-  - recent history.
-- Timeout history is explicit rather than pretending a gesture was selected.
+### Rules and game modes
 
-### Replayable deterministic challenge seed
-
-- The gameplay screen now exposes the CPU challenge seed.
-- Players can enter an integer seed and apply it before replaying a match.
-- Resetting/reconfiguring a match rebuilds `CpuStrategy` from the selected seed.
-- Given the same seed, ruleset, difficulty, and player move history, the CPU decision sequence remains replayable.
-- Added state-level regression coverage confirming two matches with the same seed and moves produce the same CPU gesture/outcome sequence.
-
-### Existing modes preserved
-
-The milestone keeps the existing supported modes intact:
-
-- Classic Rock–Paper–Scissors;
-- Rock–Paper–Scissors–Lizard–Spock;
-- CPU opponent;
-- same-device two-player pass-and-play;
-- Best of 3;
-- Best of 5;
-- Endless;
-- Streak;
+- Classic Rock–Paper–Scissors.
+- Rock–Paper–Scissors–Lizard–Spock.
+- CPU opponent.
+- Same-device two-player pass-and-play.
+- Best of 3.
+- Best of 5.
+- Endless.
+- Streak.
 - Tournament.
 
-## Local profile, settings, statistics, and history
+### CPU behavior
 
-### Local player profile
+- Easy random strategy.
+- Normal adaptive counter behavior after sufficient history.
+- Expert frequency-based prediction/counter behavior with retained randomness.
+- Deterministic seeded random sequence.
+- Editable replay/challenge seed in the gameplay UI.
 
-- Added a local Player 1 display-name preference.
-- Names are sanitized before persistence:
-  - CR/LF line breaks become spaces;
-  - surrounding whitespace is trimmed;
-  - maximum length is 32 characters;
-  - blank values safely fall back to `Player 1`.
-- The saved local name appears in the home/score experience.
+### Timers
 
-### Recent trend
-
-- Added `ArenaTrend`.
-- Statistics now include a recent 10-round W/L/D summary.
-- Trend calculation reads only bounded recent local history.
-
-### History hardening
-
-- History remains capped at 30 entries.
-- New history writes are newline-sanitized.
-- Individual history lines are length-bounded before persistence.
-- History remains local/offline.
-- Stored canonical round summaries remain language-neutral/English-compatible data while the visible UI can localize known gesture/result forms at render time.
-
-### Settings migration
-
-- New settings key: `settings_v2`.
-- Legacy key: `settings_v1`.
-- `settings_v2` adds:
-  - local player name;
-  - interface language.
-- If v2 is absent and a valid v1 record exists, the repository decodes the legacy record and immediately stores a v2 representation.
-- Invalid persisted settings fall back to safe defaults rather than propagating corrupt state.
-
-## Versioned backup/import
-
-### Backup schema
-
-Current header:
+Supported values:
 
 ```text
-RPS_ARENA_BACKUP|1
+Off
+5s
+10s
+20s
+30s
+60s
 ```
 
-The backup contains:
+Timeouts remain typed outcomes rather than fabricated gestures.
 
-- local settings;
-- aggregate statistics;
-- up to 30 recent history records.
+CPU mode:
 
-### Export behavior
+- player timeout awards the round to CPU.
 
-- Export is plain text so the user can copy/store it without cloud infrastructure.
-- Delimiter/newline-sensitive values are escaped before serialization.
-- The app does not upload the backup.
+Local two-player:
 
-### Import validation
+- timeout while Player 1 is choosing awards Player 2 the round;
+- timeout while Player 2 is choosing awards Player 1 the round.
 
-Import validates the complete payload before replacing validated state.
+Timeout rounds update score, lifetime statistics, recent trend, streak state, and history consistently.
 
-The importer rejects:
-
-- oversized backup text;
-- too many records;
-- missing/unsupported header;
-- malformed record structure;
-- duplicate settings record;
-- duplicate statistics record;
-- unknown record types;
-- invalid settings fields;
-- invalid language values;
-- invalid integer statistics;
-- negative statistics;
-- statistics where `roundsPlayed != wins + losses + draws`;
-- impossible streak relationships;
-- missing required settings/statistics records.
-
-History import remains bounded and sanitized.
-
-### Data-reset behavior
-
-- Added an explicit local-data reset control.
-- Reset requires a second confirmation action.
-- It clears local statistics, recent history, player preferences, and current backup text.
-- Onboarding completion is preserved for convenience.
-
-## English and Hindi localization
-
-The initial bilingual foundation has been expanded so Hindi is no longer limited to basic navigation.
-
-### Localized core areas
-
-- onboarding;
-- home navigation;
-- Play/Settings/Stats/History/Achievements/About headings;
-- opponent labels;
-- ruleset labels;
-- CPU difficulty labels;
-- match-mode labels;
-- timer labels;
-- seed explanation/apply action;
-- Rock/Paper/Scissors/Lizard/Spock gesture labels;
-- turn instructions;
-- timeout feedback;
-- round outcomes;
-- visible recent-history rendering for recognized round records;
-- statistics labels;
-- appearance/accessibility/data/privacy settings;
-- player-name controls;
-- backup/import/reset controls;
-- common backup validation/result messages;
-- About version/license labels;
-- achievement titles/descriptions.
-
-### Localization architecture
-
-- Core strings live in `ArenaStrings.kt`.
-- Achievement copy lives in `AchievementStrings.kt`.
-- Gesture/difficulty/match-mode copy is enum-keyed rather than recreated through display-name parsing.
-- Stored game rules and enum identities remain language-independent.
-- `APP_VERSION` and `APP_LICENSE` live in `AppMetadata.kt` so localization does not affect release metadata.
-
-## UI, design, responsiveness, and accessibility
-
-### Design foundation
-
-- Added branded Material 3 light and dark color schemes.
-- Added consistent rounded shape tokens.
-- Added reusable layout tokens in `ArenaDesign.kt`.
-- Primary content is constrained to a sensible desktop maximum width while remaining full-width on smaller devices.
-
-### Narrow-screen configuration controls
-
-- Match-mode and timer choices can exceed a phone-width row.
-- Configuration choices now use wrapping `FlowRow` layout.
-- This keeps all options reachable on narrow screens instead of clipping them off-screen.
-
-### Reduced motion
-
-- Result content uses a crossfade during normal motion mode.
-- Reduced-motion mode renders the result without that animated transition.
-- Timers can also be turned off completely.
-
-### Accessibility baseline
-
-- Important controls use visible text labels.
-- Gesture controls combine emoji with text instead of communicating by color alone.
-- Gesture controls retain large minimum touch targets.
-- Score/timer/result/timeout states have text representations.
-- Light/dark/system theme choices remain available.
-- Desktop uses standard Compose focus/keyboard behavior.
-- Manual TalkBack, text-scaling, contrast, timer, reduced-motion, and destructive-action checks are documented in `docs/accessibility.md`.
-
-## Private-room multiplayer architecture
-
-### Transport boundary
-
-Added shared transport-neutral interfaces:
-
-- `PrivateRoomGateway`;
-- `PrivateRoomSession`;
-- `RoomCode`;
-- `RoomParticipant` / `RoomRole`;
-- typed `RoomEvent` messages.
-
-The current concrete implementation is `InMemoryPrivateRoomGateway`.
-
-### Reference adapter behavior
-
-- No network I/O.
-- No Android network permission.
-- Deterministic/same-process behavior for tests and architecture development.
-- Maximum two participants.
-- Host/guest roles.
-- Six-character room-code validation.
-- Ambiguous room-code characters such as `I`, `O`, `0`, and `1` are rejected.
-- Participant display names are sanitized and bounded.
-
-### Protocol integrity hardening
-
-Client sessions may send only client-owned gameplay events.
-
-The reference transport now:
-
-- rejects forged participant IDs;
-- rejects gesture events whose round number is not positive;
-- rejects client attempts to send gateway-owned `ParticipantJoined` events;
-- rejects client attempts to send gateway-owned `ParticipantLeft` events;
-- broadcasts a leave lifecycle event when a real session closes;
-- makes repeated `close()` calls idempotent so leave is not broadcast twice;
-- rejects sends from closed/detached sessions.
-
-### Future LAN boundary
-
-A real LAN adapter remains optional and deliberately separate.
-
-Any future network adapter must:
-
-- remain behind `PrivateRoomGateway`;
-- require explicit user intent;
-- validate inputs/participants/messages;
-- stop network activity when the room closes;
-- avoid mandatory cloud infrastructure;
-- preserve fully offline primary gameplay;
-- receive a privacy/security review before release.
-
-## Test coverage added/expanded
-
-### Shared business and persistence tests
-
-Coverage includes:
-
-- timer allowed values;
-- invalid timer rejection;
-- finite match win targets;
-- CPU timeout scoring;
-- local Player 1 timeout scoring;
-- local Player 2 timeout scoring;
-- disabled-timer no-op behavior;
-- deterministic seeded CPU replay through `ArenaState`;
-- settings codec round trip;
-- statistics codec round trip;
-- legacy settings migration;
-- invalid statistics invariant rejection;
-- player-name sanitization;
-- player-name length bounds;
-- blank-name fallback;
-- bounded/sanitized history;
-- backup round trip;
-- malformed backup non-destructive rejection;
-- unknown backup record rejection;
-- recent trend calculation;
-- successful backup restore refreshing in-memory state.
-
-### Localization tests
-
-Coverage includes:
-
-- English canonical gesture labels;
-- Hindi gesture labels;
-- Hindi CPU difficulty labels;
-- Hindi match-mode labels;
-- shared semantic version shape;
-- localized achievement copy for every known achievement;
-- safe fallback achievement copy for future/unknown IDs.
-
-### Private-room tests
-
-Coverage includes:
-
-- valid room-code normalization;
-- ambiguous/malformed room-code rejection;
-- host/guest join event;
-- valid gesture event exchange;
-- forged participant rejection;
-- two-participant room limit;
-- invalid round rejection;
-- lifecycle-event authority rejection;
-- close-event delivery;
-- repeated close idempotency.
-
-### Compose desktop UI smoke tests
-
-The desktop UI test suite now covers:
-
-- onboarding -> Home;
-- Home -> Play;
-- visible classic gesture controls;
-- Settings English -> Hindi switch;
-- Hindi Settings rendering;
-- Hindi gameplay gesture labels;
-- Hindi Achievements title/description rendering;
-- backup/import controls;
-- destructive local-reset confirmation/cancel controls.
-
-## CI and repository verification
-
-### CI gates
-
-`.github/workflows/ci.yml` now validates:
-
-1. repository formatting;
-2. relative Markdown documentation links;
-3. exhaustive tracked-file documentation coverage;
-4. high-confidence committed-secret patterns;
-5. Android offline/automatic-backup privacy contract;
-6. cross-platform semantic version consistency plus Android numeric `versionCode` mapping;
-7. shared Kotlin tests, including desktop UI tests;
-8. Android lint;
-9. Android debug assembly;
-10. desktop JVM compilation;
-11. Rust tests.
-
-The focused `Security checks` workflow independently re-runs secret/privacy checks and performs pull-request dependency review. Separate CodeQL automation remains enabled for Kotlin/Java security analysis.
-
-### Formatting checker
-
-`scripts/check_format.py` checks repository text files for:
-
-- invalid UTF-8;
-- missing final newline;
-- accidental trailing spaces/tabs.
-
-The standard two-space Markdown hard-break syntax is explicitly allowed so valid Markdown formatting does not become a false CI failure.
-
-### Documentation coverage checker
-
-`scripts/check_docs_coverage.py` checks:
-
-- the current Git-tracked path list from `git ls-files -z`;
-- exact path presence inside `docs/repository-file-reference.md`.
-
-If one or more paths are missing, it prints the missing list and exits with failure. It does not mutate files.
-
-### Version checker
-
-`scripts/check_version.py` checks that:
-
-- Android `versionName`;
-- desktop `packageVersion`;
-- shared `APP_VERSION`
-
-all match.
-
-It also verifies that the About screen actually renders `$APP_VERSION` rather than duplicating a localized/hard-coded version string, and that Android `versionCode` equals `major * 10000 + minor * 100 + patch`. For 2.5.8, the required code is `20508`.
-
-### Local verification scripts
-
-Updated:
-
-- `scripts/verify.sh`;
-- `scripts/verify.ps1`.
-
-They now run formatting, documentation links/coverage, committed-secret patterns, Android privacy, version consistency, Kotlin/Android/Desktop validation, and optional Rust tests when Cargo is available.
-
-## Release engineering
-
-### Version
-
-- Android `versionCode = 20508`.
-- Android `versionName = "2.5.8"`.
-- Desktop `packageVersion = "2.5.8"`.
-- Shared `APP_VERSION = "2.5.8"`.
-- Shared `APP_LICENSE = "MIT"`.
-
-The Android numeric version convention is now deterministic: `major * 10000 + minor * 100 + patch`, with minor and patch limited to values no greater than 99. `scripts/check_version.py` enforces it.
-
-### Release workflow
-
-Added `.github/workflows/release.yml`.
-
-For manual/tag validation it can:
-
-- run repository formatting, documentation links/coverage, committed-secret patterns, Android privacy, and version consistency checks;
-- run shared tests;
-- run Android release lint;
-- build an unsigned Android release APK;
-- compile/package Linux desktop `.deb` output;
-- run/package the optional Rust crate;
-- upload build artifacts.
-
-For validated version tags it additionally:
-
-- downloads the generated artifacts;
-- generates SHA-256 checksums;
-- creates a GitHub Release with generated notes.
-
-The release workflow independently repeats the fast source gates before release packaging. Normal release policy still requires tagging a validated `main` commit whose PR CI, Security checks, and CodeQL passed on the exact source candidate.
-
-### Signing boundary
-
-The public repository does not contain:
-
-- Android keystores/passwords;
-- Windows signing certificates/private keys;
-- Apple signing/notarization credentials;
-- store tokens;
-- API secrets.
-
-Signed store/notarized automation remains a separate credential-dependent task after authorized secrets are provisioned outside Git.
-
-## Documentation completed/expanded
-
-### Root documentation
-
-- `README.md`
-- `ROADMAP.md`
-- `CHANGELOG.md`
-- `CONTRIBUTING.md`
-- `PRIVACY.md`
-- `SECURITY.md`
-- `SUPPORT.md`
-- `what_changed.md`
-
-### Deep development/product documentation
-
-- `docs/documentation-index.md`
-- `docs/setup.md`
-- `docs/toolchain.md`
-- `docs/command-reference.md`
-- `docs/build-system.md`
-- `docs/development.md`
-- `docs/architecture.md`
-- `docs/domain-and-gameplay.md`
-- `docs/storage-and-backup.md`
-- `docs/localization.md`
-- `docs/private-room-protocol.md`
-- `docs/android-platform.md`
-- `docs/desktop-platform.md`
-- `docs/rust-engine.md`
-- `docs/branding-assets.md`
-- `docs/testing.md`
-- `docs/test-catalog.md`
-- `docs/validation.md`
-- `docs/accessibility.md`
-- `docs/performance.md`
-- `docs/troubleshooting.md`
-- `docs/ci-cd.md`
-- `docs/release.md`
-- `docs/github-settings.md`
-- `docs/maintenance.md`
-- `docs/glossary.md`
-- `docs/repository-file-reference.md`
-- `docs/ROADMAP.md` pointer to canonical root roadmap.
-
-### Architecture decisions
-
-- `docs/adr/0001-offline-first-kmp.md`
-- `docs/adr/0002-private-room-boundary.md`
-
-Legacy uppercase duplicate architecture/testing/release/validation documents were removed in favor of lowercase canonical files.
-
-## GitHub governance and maintenance
-
-Added/expanded:
-
-- issue-template configuration;
-- pull-request quality and documentation-coverage checklist;
-- generated release-note category configuration;
-- Dependabot configuration remains active for Gradle, Cargo, and GitHub Actions;
-- CodeQL remains configured for Kotlin/Java;
-- documented branch/ruleset guidance;
-- documented recommended security settings;
-- documented Discussions categories;
-- documented recommended labels/milestones;
-- documented merge policy that preserves meaningful granular commits;
-- CI/release-enforced requirement that every tracked file be represented in the exhaustive file reference.
-
-Security-sensitive issue creation is directed to `SECURITY.md` rather than a public blank issue.
-
-## Key product/code paths changed
-
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/model/GameModels.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/data/ArenaRepository.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/data/BackupModels.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/state/ArenaState.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/network/PrivateRoom.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/App.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/AppMetadata.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/ArenaStrings.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/AchievementStrings.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/ArenaDesign.kt`
-- `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/ArenaTheme.kt`
-- `shared/build.gradle.kts`
-- `gradle/libs.versions.toml`
-- `androidApp/build.gradle.kts`
-- `desktopApp/build.gradle.kts`
-
-## Key tests changed/added
-
-- `shared/src/commonTest/kotlin/in/sanskar/rpsarena/ArenaRepositoryBackupTest.kt`
-- `shared/src/commonTest/kotlin/in/sanskar/rpsarena/ArenaRepositoryValidationTest.kt`
-- `shared/src/commonTest/kotlin/in/sanskar/rpsarena/ArenaStateTest.kt`
-- `shared/src/commonTest/kotlin/in/sanskar/rpsarena/MatchConfigTest.kt`
-- `shared/src/commonTest/kotlin/in/sanskar/rpsarena/PrivateRoomTest.kt`
-- `shared/src/commonTest/kotlin/in/sanskar/rpsarena/ArenaStringsTest.kt`
-- `shared/src/commonTest/kotlin/in/sanskar/rpsarena/AchievementStringsTest.kt`
-- `shared/src/desktopTest/kotlin/in/sanskar/rpsarena/RpsArenaUiTest.kt`
-
-## Key automation changed/added
-
-- `.github/workflows/ci.yml`
-- `.github/workflows/security.yml`
-- `.github/workflows/release.yml`
-- `.github/release.yml`
-- `.github/ISSUE_TEMPLATE/config.yml`
-- `.github/pull_request_template.md`
-- `scripts/check_format.py`
-- `scripts/check_docs_links.py`
-- `scripts/check_docs_coverage.py`
-- `scripts/check_for_secrets.py`
-- `scripts/check_android_privacy.py`
-- `scripts/check_version.py`
-- `scripts/verify.sh`
-- `scripts/verify.ps1`
-
-## Verification commands
-
-Repository verification target:
-
-```bash
-python3 scripts/check_format.py
-python3 scripts/check_docs_links.py
-python3 scripts/check_docs_coverage.py
-python3 scripts/check_for_secrets.py
-python3 scripts/check_android_privacy.py
-python3 scripts/check_version.py
-gradle :shared:allTests --stacktrace
-gradle :androidApp:lintDebug --stacktrace
-gradle :androidApp:assembleDebug --stacktrace
-gradle :desktopApp:classes --stacktrace
-cargo test --manifest-path rust-engine/Cargo.toml --all-targets
-```
-
-Dedicated desktop UI command:
-
-```bash
-gradle :shared:desktopTest --stacktrace
-```
-
-Release validation additionally repeats the formatting/documentation/secret/privacy/version source gates and exercises Android release lint/assembly, Linux desktop packaging, Rust packaging, artifact upload, and checksum generation.
-
-## Validation status
-
-### Established v1.0 baseline
-
-Previous validation PR `#9` passed before merge:
-
-- shared Kotlin tests: passed;
-- Android debug assembly: passed;
-- desktop JVM classes: passed;
-- optional Rust engine tests: passed;
-- CodeQL Kotlin/Java analysis: passed.
-
-Validated v1.0 PR head: `4c2e93330055986d6b87ab002a97b7929c5a2275`.
-Validation merge commit: `4b19247605ce7a94a8e6c819a63f6cd300d00d94`.
-
-### v2.5.8 candidate
-
-Pull request `#11` is the v2.5.8 validation gate.
-
-This handoff is intended to describe the final repository state for the current branch. Required CI, Security checks, and CodeQL must run on the exact post-handoff PR head before merge.
-
-Repeated implementation/documentation commits intentionally restart/cancel obsolete workflow runs through `cancel-in-progress: true`; earlier green or queued SHAs do not validate the final candidate.
-
-The final CI must prove `scripts/check_docs_coverage.py` passes, which mechanically confirms that every Git-tracked path is represented in `docs/repository-file-reference.md`. The release workflow repeats that same documentation check before release packaging.
-
-If a required job fails, fix only the actual failure in a focused commit, update this handoff when materially necessary, and revalidate the new exact head. Do not bypass the gate.
-
-## Migrations and compatibility
+## Persistence and compatibility
 
 ### Settings
 
-Old record:
-
-```text
-settings_v1
-```
-
-New record:
+Current key:
 
 ```text
 settings_v2
 ```
 
-Valid legacy settings migrate automatically when v2 is absent.
+Legacy key:
 
-### Statistics/history
+```text
+settings_v1
+```
 
-Existing keys remain compatible:
+Valid legacy data migrates automatically when v2 is absent.
+
+### Persisted match configuration
+
+Current key:
+
+```text
+match_config_v1
+```
+
+It persists validated match setup such as ruleset, opponent, difficulty, mode, seed, and timer selection.
+
+Invalid/corrupt persisted values fall back to safe defaults.
+
+### Statistics and history
+
+Existing keys remain:
 
 ```text
 stats_v1
 history_v1
 ```
 
-New code adds stricter decode invariants and bounded history sanitization without changing those keys.
+History is bounded and sanitized before persistence.
 
-### Backup
+### Explicit backup/import
 
-Current schema:
+Current schema header remains:
 
 ```text
 RPS_ARENA_BACKUP|1
 ```
 
-Future incompatible backup changes must use a new schema/header and migration documentation instead of silently changing v1 meaning.
+The backup contains settings, statistics, and bounded recent history.
 
-## Known limitations / intentional boundaries
+Import validates the entire payload before replacement and rejects, among other cases:
 
-- A real LAN socket/discovery adapter is not shipped in v2.5.8; the shared room contract plus no-network in-memory reference adapter are implemented and tested.
-- Android device/emulator instrumentation UI tests are not part of the current hosted CI baseline; desktop Compose UI smoke tests plus documented Android manual accessibility/device checks remain the current practical coverage.
-- Store signing/notarization is not automated with real credentials because authorized signing secrets are not stored in the repository.
-- Public release artifacts are intentionally unsigned/reproducible until a controlled signing environment is configured.
-- iOS packaging is not part of the current release gate.
-- Sound/haptics preferences are persisted product settings; platform-specific effect engines are not added solely to inflate dependency count or permissions.
-- The primary app remains fully offline and does not request Android internet permission.
-- The repository currently relies on an installed/setup Gradle and does not track the standard Gradle Wrapper; this is explicitly documented rather than hidden.
+- oversized payloads;
+- excessive record counts;
+- malformed records;
+- unsupported headers;
+- duplicate settings/stat records;
+- unknown record types;
+- invalid settings/language values;
+- invalid/non-numeric/negative statistics;
+- inconsistent rounds/wins/losses/draws invariants;
+- impossible streak relationships.
 
-## Open issues
+`match_config_v1` intentionally remains outside backup schema v1, so importing a v1 backup preserves the receiving device's own current match setup.
 
-No open repository issues were found during the start-of-milestone audit.
+## Localization
 
-Any CI/Security/CodeQL finding on PR `#11` takes priority over optional future roadmap work.
+English and Hindi shared catalogs remain implemented in common code.
 
-## Next optional tasks after a green v2.5.8 merge
+Localized areas include:
 
-1. Implement a real opt-in LAN adapter only after explicit product/security/privacy approval.
-2. Add Android emulator/device Compose instrumentation to CI when runner cost/stability is accepted.
-3. Configure signed Android/Desktop release automation only after authorized secrets are provisioned outside Git.
-4. Evaluate optional iOS packaging as a separate milestone.
-5. Expand localization to additional languages only when translations can be maintained and tested at the same quality level.
-6. Consider adding the official Gradle Wrapper in a dedicated integrity-reviewed build-system change so local Gradle selection can be pinned by the repository itself.
+- onboarding;
+- navigation;
+- Play/Settings/Stats/History/Achievements/About;
+- opponent/rules labels;
+- CPU difficulty;
+- match modes;
+- timer labels;
+- seed controls;
+- gesture labels;
+- turn instructions;
+- timeout/result copy;
+- visible recognized-history rendering;
+- statistics labels;
+- player profile controls;
+- backup/import/reset controls;
+- common data-operation feedback;
+- About metadata labels;
+- achievement titles/descriptions.
 
-## v2.5.8 release-notes draft
+The same catalog is consumed by Android, iOS/iPadOS, desktop, and Web.
 
-RPS Arena 2.5.8 expands the offline Android/Desktop arena with optional round timers, replayable CPU challenge seeds, local profile naming, recent W/L/D trends, versioned local backup/import, substantially broader Hindi localization, responsive configuration controls, reduced-motion result behavior, and a transport-neutral private-room architecture. Persistence/import validation is stricter, the private-room reference protocol enforces lifecycle authority and input integrity, shared/desktop UI regression coverage is broader, CI enforces formatting, relative documentation links, exhaustive tracked-file documentation, committed-secret patterns, Android privacy, synchronized semantic versions, Android numeric version-code mapping, Android lint/builds, desktop compilation, and Rust tests. Tagged/manual release validation independently repeats the fast source gates before generating unsigned Android/Linux/Rust artifacts with checksums. The repository includes a role-based deep documentation set covering commands, toolchain/upgrades, build architecture, game rules/state, storage/backup, localization, room protocol, Android, desktop, Rust, tests, GitHub automation, branding, maintenance, terminology, and every tracked file. Primary gameplay remains account-free, telemetry-free, ad-free, cloud-free, and offline-first.
+## UI and accessibility baseline
 
-## Representative milestone commits
+The shared UI retains:
 
-This milestone intentionally uses many small, cohesive commits rather than one large implementation commit. Representative implementation/quality messages include:
+- Material 3 light/dark themes;
+- system theme selection;
+- reusable layout tokens;
+- constrained desktop max width;
+- wrapping configuration chips;
+- large gesture targets;
+- text representations for timer/result/score state;
+- reduced-motion result behavior;
+- optional timers.
 
-- `feat: extend game model for timers profiles and localization`
-- `feat: add versioned backup migration and trend persistence`
-- `feat: add timeout backup and recent trend state flows`
-- `feat: add English and Hindi UI string catalog`
-- `feat: add timed rounds backups trends profiles and bilingual UI`
-- `feat: add private room multiplayer transport contract`
-- `test: cover backup migration and recent trend persistence`
-- `test: cover timeout and data restore state behavior`
-- `test: verify private room protocol and participant limits`
-- `test: harden persistence validation edge cases`
-- `test: cover match timer and win target invariants`
-- `test: verify replayable seeded CPU matches through state`
-- `ci: enforce formatting and Android lint gates`
-- `ci: verify synchronized release versions`
-- `ci: add reproducible tagged release artifact workflow`
-- `ci: enforce documentation coverage in release workflow`
-- `test: enable Compose desktop UI test runtime`
-- `test: add desktop UI smoke coverage for primary journeys`
-- `ui: add shared responsive layout design tokens`
-- `ui: define calm branded light and dark theme tokens`
-- `feat: complete Hindi gameplay and settings localization catalog`
-- `feat: localize gameplay results and data management feedback`
-- `refactor: centralize shared app metadata constants`
-- `refactor: render about metadata from shared constants`
-- `build: make version check localization-safe`
-- `test: cover localization labels and shared version metadata`
-- `feat: add bilingual achievement copy catalog`
-- `test: cover bilingual achievement copy fallbacks`
-- `ui: wire responsive layout tokens and localized achievements`
-- `test: extend desktop UI coverage across Hindi gameplay`
-- `fix: restrict private room lifecycle event authority`
-- `test: cover private room lifecycle authority and close behavior`
-- `fix: use valid code in room close regression test`
-- `refactor: simplify private room event validation branch`
-- `ui: wrap configuration chips on narrow screens`
-- `ci: allow intentional Markdown hard break spacing`.
+Platform review expectations now include:
 
-Representative v2.5.8 release-alignment messages include:
+- Android TalkBack;
+- iOS VoiceOver;
+- desktop keyboard/focus;
+- browser keyboard/pointer/touch;
+- text scaling/zoom;
+- portrait/landscape and responsive layouts.
 
-- `chore(android): bump release version to 2.5.8`
-- `chore(desktop): bump package version to 2.5.8`
-- `chore(shared): expose version 2.5.8 in app metadata`
-- `ci(version): enforce semantic Android version codes`
-- `docs(changelog): retarget completion release to 2.5.8`
-- `docs(roadmap): retarget completion milestone to v2.5.8`
-- `docs(security): mark 2.5.x as supported release line`
-- `docs(release): define v2.5.8 release metadata and tag`
-- `docs(readme): publish 2.5.8 release metadata`
-- `docs(build): document 2.5.8 semantic version mapping`
-- `docs(desktop): align package reference with 2.5.8`
-- `docs(github): align milestone and release tag with v2.5.8`
-- `docs(glossary): refresh 2.5.8 version and workflow terms`
-- `docs(protocol): align current candidate with v2.5.8`
-- `docs(localization): align shared version metadata with 2.5.8`
-- `docs(android): align platform versioning with 2.5.8`
-- `docs(rust): align app candidate reference with 2.5.8`
-- `docs(validation): align exact release gate with 2.5.8`.
+## Private-room architecture
 
-Representative deep-documentation/coverage messages include:
+The current implementation still ships no real network transport.
 
-- `docs: add exhaustive command reference`
-- `docs: add deep toolchain install and upgrade guide`
-- `docs: explain complete Gradle build architecture`
-- `docs: document complete game domain and state machine`
-- `docs: document storage migration and backup schema deeply`
-- `docs: document localization architecture and language expansion`
-- `docs: define private room protocol and LAN security boundary`
-- `docs: document every Android platform file and behavior`
-- `docs: document every desktop platform file and package path`
-- `docs: document optional Rust engine and parity policy`
-- `docs: document every GitHub automation and CI release gate`
-- `docs: catalog every tracked automated test file`
-- `docs: add complete repository maintenance playbook`
-- `docs: document branding assets and visual ownership`
-- `docs: add comprehensive project terminology glossary`
-- `docs: add role based documentation navigation index`
-- `ci: add every tracked file documentation coverage check`
-- `docs: add exhaustive every tracked file reference`
-- `build: enforce documentation coverage in shell verification`
-- `build: enforce documentation coverage in PowerShell verification`
-- `ci: require complete tracked file documentation coverage`
-- `chore: require tracked file documentation in pull requests`
-- `docs: document tracked file coverage as a required quality gate`
-- `docs: extend validation contract to exhaustive file coverage`
-- `docs: connect setup guide to complete repository documentation`
-- `docs: expose complete repository documentation from readme`
-- `docs: synchronize CI guide with documentation coverage gate`
-- `docs: explain documentation coverage and full verification commands`
-- `docs: enforce exhaustive documentation in contributor workflow`
-- `docs: record exhaustive repository documentation milestone`
-- `docs: synchronize validation with release documentation gate`
-- `docs: strengthen release verification checklist`
-- `docs: document release documentation coverage gate`
-- `docs: record release documentation gate hardening`.
+Shared contracts include:
+
+- `PrivateRoomGateway`;
+- `PrivateRoomSession`;
+- `RoomCode`;
+- `RoomParticipant`;
+- `RoomRole`;
+- typed `RoomEvent` values.
+
+Current implementation:
+
+```text
+InMemoryPrivateRoomGateway
+```
+
+It is no-network and used for deterministic protocol/reference testing.
+
+Current integrity controls include:
+
+- six-character validated room codes;
+- ambiguous-character rejection;
+- two-participant maximum;
+- bounded/sanitized display names;
+- sender identity validation;
+- positive gesture-round validation;
+- lifecycle-event authority restrictions;
+- idempotent session close;
+- rejection of sends from closed/detached sessions.
+
+A future LAN/Web networking adapter must remain optional and must not convert normal gameplay into a cloud/network dependency.
+
+## Version 2.5.8 synchronization
+
+Public semantic version:
+
+```text
+2.5.8
+```
+
+Deterministic mobile build number:
+
+```text
+20508
+```
+
+Version declarations currently checked:
+
+- Android `versionName = "2.5.8"`;
+- Android `versionCode = 20508`;
+- desktop `packageVersion = "2.5.8"`;
+- iOS `CFBundleShortVersionString = 2.5.8`;
+- iOS `CFBundleVersion = 20508`;
+- Xcode `MARKETING_VERSION = 2.5.8`;
+- Xcode `CURRENT_PROJECT_VERSION = 20508`;
+- shared `APP_VERSION = "2.5.8"`;
+- About renders shared `APP_VERSION`.
+
+`scripts/check_version.py` enforces:
+
+```text
+major * 10000 + minor * 100 + patch
+```
+
+for Android/iOS numeric build codes, with minor/patch limited to two digits by the current mapping.
+
+The Web app renders shared `APP_VERSION`; it does not maintain another independent version constant.
+
+## Repository source-quality gates
+
+Fast source gates remain:
+
+```bash
+python3 scripts/check_format.py
+python3 scripts/check_docs_links.py
+python3 scripts/check_docs_coverage.py
+python3 scripts/check_for_secrets.py
+python3 scripts/check_android_privacy.py
+python3 scripts/check_version.py
+```
+
+### Formatting
+
+Checks UTF-8, final newline, and trailing whitespace while permitting intentional Markdown two-space hard breaks.
+
+### Documentation links
+
+Validates repository-relative Markdown links and prevents missing/escaping local targets.
+
+### Documentation coverage
+
+`scripts/check_docs_coverage.py` uses:
+
+```text
+git ls-files -z
+```
+
+and requires every tracked path to be explicitly documented in:
+
+```text
+docs/repository-file-reference.md
+```
+
+All newly added iOS, Xcode, Web, and cross-platform documentation files are included in that exhaustive reference.
+
+### Secret patterns
+
+The source scanner checks several high-confidence credential/private-key forms without printing detected secret values.
+
+### Android privacy contract
+
+The checker enforces:
+
+- automatic app backup disabled;
+- valid backup-rule references;
+- SharedPreferences cloud/device-transfer exclusion;
+- absence of Android Internet permission in the primary offline-first manifest.
+
+### Version consistency
+
+Now validates Android, desktop, iOS plist/Xcode, shared metadata, About rendering, and mobile build-code mapping.
+
+## Cross-platform CI
+
+`.github/workflows/ci.yml` now has three primary platform groups.
+
+### Ubuntu Kotlin/Android/Desktop/Web
+
+Runs:
+
+```bash
+gradle :shared:allTests --stacktrace
+gradle :androidApp:lintDebug --stacktrace
+gradle :androidApp:assembleDebug --stacktrace
+gradle :desktopApp:classes --stacktrace
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+```
+
+### macOS iOS/iPadOS
+
+Runs:
+
+```bash
+gradle :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+```
+
+and:
+
+```bash
+xcodebuild \
+  -project iosApp/iosApp.xcodeproj \
+  -scheme "RPS Arena" \
+  -sdk iphonesimulator \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+### Rust
+
+Runs:
+
+```bash
+cargo test --all-targets
+```
+
+Focused Security checks and CodeQL remain separate required signals under the exact-head validation policy.
+
+## Release automation
+
+Tagged/manual release workflow now includes:
+
+### Android
+
+- shared tests;
+- release lint;
+- unsigned/public APK build.
+
+Artifact:
+
+```text
+rps-arena-android
+```
+
+### Linux desktop
+
+- desktop compile;
+- `.deb` package.
+
+Artifact:
+
+```text
+rps-arena-linux
+```
+
+### Web
+
+Builds:
+
+```bash
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+```
+
+Packages the generated compatibility distribution as:
+
+```text
+rps-arena-web.zip
+```
+
+### iOS/iPadOS
+
+Builds device and simulator Release frameworks and validates the Release SwiftUI host without signing.
+
+Packages:
+
+```text
+rps-arena-ios-device-framework.zip
+rps-arena-ios-simulator-framework.zip
+```
+
+These are framework/integration artifacts, not signed IPA/App Store files.
+
+### Rust
+
+Runs tests and `cargo package`.
+
+### Publish
+
+The tagged publish job depends on:
+
+```text
+android
+desktop-linux
+web
+ios
+rust
+```
+
+and generates SHA-256 checksums before GitHub Release publication.
+
+## Signing and credential boundaries
+
+Public source/CI intentionally does not include:
+
+- Android keystores/passwords;
+- Play credentials;
+- Apple private signing certificates;
+- provisioning/account secrets;
+- App Store Connect API keys;
+- Windows private signing certificates;
+- macOS notarization credentials;
+- private GitHub/store tokens.
+
+Therefore:
+
+- Android public artifacts remain unsigned validation artifacts unless an authorized signing workflow is supplied externally;
+- iOS CI produces simulator/framework validation, not signed TestFlight/App Store IPA distribution;
+- Windows/macOS desktop production signing/notarization remains external.
+
+This is an intentional security boundary, not missing source-platform support.
+
+## Web stability boundary
+
+The Web application is implemented and built in CI using both Kotlin/Wasm and Kotlin/JS compatibility output. Its platform maturity still follows upstream Compose Multiplatform Web stability. The repository therefore documents browser-specific limitations/tests instead of presenting Web behavior as identical to a mature native target in every browser environment.
+
+## New cross-platform documentation
+
+Added:
+
+```text
+docs/ios-platform.md
+docs/web-platform.md
+```
+
+Updated:
+
+```text
+README.md
+ROADMAP.md
+CHANGELOG.md
+docs/documentation-index.md
+docs/repository-file-reference.md
+docs/release.md
+docs/validation.md
+docs/ci-cd.md
+what_changed.md
+```
+
+The iOS guide covers:
+
+- target definitions;
+- NSUserDefaults;
+- Kotlin -> UIViewController bridge;
+- SwiftUI host;
+- Xcode direct integration;
+- versioning;
+- simulator/device framework tasks;
+- CI/release;
+- signing/privacy boundaries.
+
+The Web guide covers:
+
+- JS/Wasm hierarchy;
+- ComposeViewport;
+- localStorage;
+- development runs;
+- compatibility distribution;
+- deployment artifacts;
+- browser testing/limitations.
+
+## `.gitignore` cross-platform hygiene
+
+New generated-state exclusions include:
+
+```text
+.kotlin/
+node_modules/
+kotlin-js-store/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+```
+
+Existing Android keystore, build, desktop installer, IDE, and Rust target exclusions remain.
+
+## Testing already present on the milestone
+
+Shared/common tests continue covering:
+
+- game rules;
+- CPU determinism;
+- match timer/target invariants;
+- settings/stat codecs;
+- legacy migration;
+- backup validation/round trip;
+- persistence validation;
+- timeout behavior;
+- deterministic replay through state;
+- private-room protocol restrictions;
+- English/Hindi catalogs;
+- achievement copy;
+- safe logger redaction.
+
+Desktop Compose UI tests continue covering:
+
+- onboarding;
+- primary Play navigation;
+- classic gestures;
+- English/Hindi switching;
+- Hindi gameplay/achievement copy;
+- backup/import controls;
+- destructive-reset confirmation.
+
+Cross-platform CI now adds compile/package evidence for Web and iOS rather than assuming common-code tests alone imply those targets build.
+
+## Current intentional limitations
+
+- Production LAN/private-room socket transport is not shipped.
+- Android device/emulator instrumentation is not yet part of hosted CI.
+- Public CI does not contain private signing credentials.
+- Tagged workflow packages Linux desktop directly; Windows MSI/macOS DMG production packaging/signing remain host-specific distribution work.
+- iOS public release automation validates/packages frameworks rather than a signed IPA.
+- Web behavior is subject to browser/runtime compatibility and upstream Web platform maturity.
+- Sound/haptics settings exist but platform-specific effect engines are not added solely to increase dependency count.
+- The repository still does not track a Gradle Wrapper; documented commands use an installed/setup Gradle.
+
+## Next optional work after a green exact-head cross-platform merge
+
+1. Add a real opt-in LAN transport only after explicit security/privacy/product approval.
+2. Add Android device/emulator instrumentation and broaden platform UI automation where runner stability/cost is acceptable.
+3. Configure signed Android, Windows/macOS desktop, and App Store/TestFlight release jobs only after authorized secrets exist outside Git.
+4. Add hosted Web deployment automation only when a deployment provider/domain is intentionally selected.
+5. Add more languages only when translation/testing maintenance quality can be preserved.
+6. Consider an integrity-reviewed official Gradle Wrapper change for stronger local Gradle reproducibility.
+7. Evaluate additional platform families only when there is a real product use case and an appropriate testing/distribution path.
+
+## Representative cross-platform commits
+
+The cross-platform continuation intentionally used small cohesive commits. Representative messages include:
+
+- `build(web): add browser API dependency`
+- `build(shared): add iOS and Wasm targets`
+- `feat(ios): add persistent platform store`
+- `feat(ios): expose shared Compose view controller`
+- `feat(web): add browser application module`
+- `feat(web): launch shared UI in Compose viewport`
+- `feat(web): add responsive browser shell`
+- `build: register web application module`
+- `feat(ios): add SwiftUI application entry point`
+- `feat(ios): host shared Compose UI in SwiftUI`
+- `feat(ios): add application metadata and display settings`
+- `feat(ios): add Xcode host project with direct KMP integration`
+- `build(web): add JS fallback target for compatibility mode`
+- `build(web): enable JS and Wasm compatibility targets`
+- `refactor(web): share browser persistence across JS and Wasm`
+- `refactor(web): share browser entry point across JS and Wasm`
+- `refactor(web): share responsive host page across browser targets`
+- `refactor(web): remove redundant Wasm-only platform store`
+- `refactor(web): remove redundant Wasm-only entry point`
+- `refactor(web): remove redundant Wasm-only host page`
+- `build(ios): add shared Xcode scheme`
+- `ci: validate web compatibility and iOS simulator builds`
+- `ci(version): validate iOS release metadata`
+- `ci(release): package web and validate iOS artifacts`
+- `chore: ignore web and Xcode generated state`
+- `fix(ios): import UIKit explicitly in Swift bridge`
+- `docs(ios): add complete iPhone and iPad platform guide`
+- `docs(web): add complete browser compatibility platform guide`
+- `docs(reference): document all iOS and Web platform files`
+- `docs(index): add iOS and Web platform navigation`
+- `docs(readme): publish full cross-platform support matrix`
+- `docs(roadmap): mark iOS and Web cross-platform targets complete`
+- `docs(release): add iOS and Web release gates and artifacts`
+- `docs(validation): require iOS and Web cross-platform build evidence`
+- `docs(changelog): record complete cross-platform expansion`
+- `docs(ci): document Android iOS desktop Web and Rust automation`.
 
 ## Commit identity
 
-The project documents `sanskarin@outlook.in` as the canonical owner commit email in `.mailmap`, contributor/setup documentation, and prior commit metadata. Commits created through the authenticated GitHub integration use the repository owner's configured GitHub identity.
+The repository documents:
+
+```text
+Sanskar <sanskarin@outlook.in>
+```
+
+as the canonical owner identity through `.mailmap` and contributor/setup documentation. Commits produced through the authenticated GitHub integration use the repository owner's GitHub-authorized identity.
+
+## Final validation rule
+
+No older green workflow run is considered sufficient after these cross-platform commits.
+
+The branch is merge-ready only after CI, focused Security checks, and CodeQL complete successfully on the **exact final PR head** containing this handoff and all cross-platform documentation/code.
+
+Any new fix changes the head and therefore requires validation again.
 
 **Made by the Sanskar.**
