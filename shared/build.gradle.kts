@@ -63,7 +63,7 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(libs.compose.ui.test)
-                implementation(libs.compose.desktop)
+                implementation(compose.desktop.currentOs)
             }
         }
         webMain.dependencies {
