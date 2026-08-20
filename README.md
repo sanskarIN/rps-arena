@@ -4,7 +4,7 @@
   <img src="assets/logo.svg" alt="RPS Arena logo" width="160" />
 </p>
 
-<p align="center"><strong>Offline-first Rock Paper Scissors for Android and desktop — deterministic CPU challenges, local two-player play, timers, backups, and optional Lizard–Spock rules.</strong></p>
+<p align="center"><strong>Offline-first Rock Paper Scissors across Android, iPhone/iPad, Windows, Linux, macOS, and the Web — deterministic CPU challenges, local two-player play, timers, backups, and optional Lizard–Spock rules.</strong></p>
 
 <p align="center">
   <a href="https://github.com/sanskarIN/rps-arena/actions"><img alt="CI" src="https://github.com/sanskarIN/rps-arena/actions/workflows/ci.yml/badge.svg"></a>
@@ -33,12 +33,15 @@ Real device screenshots are release artifacts rather than fabricated mockups. Th
 - Local player-name preference and English/Hindi core UI catalogs.
 - Light/dark/system theme options and reduced-motion result behavior.
 - Transport-neutral private-room multiplayer architecture with a deterministic two-player in-memory reference adapter.
-- Android + desktop from a Kotlin Multiplatform/Compose Multiplatform codebase.
+- Shared Kotlin Multiplatform/Compose Multiplatform UI and business logic across Android, iOS/iPadOS, desktop, and Web.
+- JVM desktop application for Windows, Linux, and macOS.
+- Browser compatibility build using Kotlin/Wasm plus Kotlin/JS fallback output.
+- Platform-local persistence through SharedPreferences, NSUserDefaults, Java Preferences, or browser localStorage.
 - Optional standalone Rust rules engine for experimentation.
-- No account, analytics SDK, ads SDK, cloud model, or Android internet permission in the primary app.
+- No account, analytics SDK, ads SDK, cloud model, or mandatory gameplay backend.
 - Android automatic backup disabled; local SharedPreferences are excluded from cloud/device-transfer backup policy.
 - No-op-by-default structured logger with sensitive-field redaction for any future opt-in diagnostic sink.
-- CI-enforced formatting, docs links/file coverage, committed-secret patterns, Android privacy, versions, tests, lint/builds, and Rust checks.
+- CI-enforced formatting, docs links/file coverage, committed-secret patterns, Android privacy, cross-platform versions, shared tests, Android/Desktop/Web builds, iOS simulator validation, and Rust tests.
 - Separate dependency-review/security workflow plus CodeQL static analysis.
 - Exhaustive repository documentation with CI-enforced coverage for every Git-tracked file.
 
@@ -46,11 +49,14 @@ Real device screenshots are release artifacts rather than fabricated mockups. Th
 
 | Platform | Status | Minimum / runtime |
 |---|---|---|
-| Android | Primary | API 26+; compile/target SDK 36 |
-| Windows | Desktop | JVM 17 / Compose Desktop |
-| Linux | Desktop | JVM 17 / Compose Desktop |
-| macOS | Desktop | JVM 17 / Compose Desktop |
-| iOS | Architecture-compatible future evaluation | Not part of the current release gate |
+| Android | Supported / primary mobile | API 26+; compile/target SDK 36 |
+| iPhone / iPad | Supported | iOS/iPadOS 15+; Kotlin/Native + SwiftUI host |
+| Windows | Supported desktop | JVM 17 / Compose Desktop |
+| Linux | Supported desktop | JVM 17 / Compose Desktop |
+| macOS | Supported desktop | JVM 17 / Compose Desktop |
+| Web | Supported browser target | Kotlin/Wasm + Kotlin/JS compatibility distribution |
+
+The Web target follows Compose Multiplatform's upstream Web stability level. Browser/runtime limitations are documented in [`docs/web-platform.md`](docs/web-platform.md).
 
 ## Tech stack
 
@@ -60,6 +66,9 @@ Real device screenshots are release artifacts rather than fabricated mockups. Th
 - Android Gradle Plugin 9.3.0
 - Gradle 9.5.1
 - Android API 26+ / compile + target SDK 36
+- Kotlin/Native iOS device + Apple-silicon simulator frameworks
+- Kotlin/Wasm + Kotlin/JS browser targets
+- SwiftUI host for iPhone/iPad
 - Optional Rust 2024 edition rules engine
 
 These are the repository's validated project baselines, not a claim that each number is globally the newest available version.
@@ -68,8 +77,10 @@ These are the repository's validated project baselines, not a claim that each nu
 
 ```text
 androidApp/   Android entry point, manifest, adaptive icon, backup/privacy policy, packaging
-desktopApp/   Desktop entry point and native packaging
-shared/       Shared model, engine, state, persistence, logging, networking contracts, UI, tests
+iosApp/       SwiftUI/Xcode iPhone + iPad host for the shared Compose framework
+desktopApp/   Windows/Linux/macOS JVM desktop entry point and native packaging
+webApp/       Kotlin/Wasm + Kotlin/JS browser application and compatibility distribution
+shared/       Shared model, engine, state, persistence, logging, networking contracts, UI, tests, platform adapters
 rust-engine/  Optional standalone Rust rules mirror
 assets/       Editable logo and splash artwork
 docs/         Deep architecture/platform/build/testing/maintenance/file documentation
@@ -80,7 +91,7 @@ gradle/       Version catalog
 
 ## Quick start
 
-Requirements: JDK 17, a local Gradle compatible with the validated 9.5.1 baseline, Android SDK 36 for Android, Python 3 for repository checks, and a supported desktop OS.
+Base requirements: JDK 17, a local Gradle compatible with the validated 9.5.1 baseline, Python 3 for repository checks, and the tooling for the platform you intend to build. Android requires Android SDK 36; iOS/iPadOS requires macOS + Xcode; Web requires a supported modern browser for runtime testing.
 
 The current repository does **not** track a Gradle Wrapper, so commands use `gradle` rather than `./gradlew`.
 
@@ -94,7 +105,6 @@ python3 scripts/check_for_secrets.py
 python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 gradle :shared:allTests --stacktrace
-gradle :desktopApp:run
 ```
 
 Android debug build:
@@ -102,6 +112,32 @@ Android debug build:
 ```bash
 gradle :androidApp:assembleDebug --stacktrace
 ```
+
+Desktop run:
+
+```bash
+gradle :desktopApp:run
+```
+
+Web development run (Wasm):
+
+```bash
+gradle :webApp:wasmJsBrowserDevelopmentRun --stacktrace
+```
+
+Web production compatibility distribution:
+
+```bash
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+```
+
+iOS simulator framework on macOS:
+
+```bash
+gradle :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+```
+
+Then open `iosApp/iosApp.xcodeproj` in Xcode, or use the command-line flow documented in [`docs/ios-platform.md`](docs/ios-platform.md).
 
 Full setup: [`docs/setup.md`](docs/setup.md)
 
@@ -117,13 +153,15 @@ Start with the role-based [`docs/documentation-index.md`](docs/documentation-ind
 
 Deep references include:
 
-- [`docs/build-system.md`](docs/build-system.md) — Gradle modules, version catalog, source sets, tasks, no-wrapper setup;
+- [`docs/build-system.md`](docs/build-system.md) — Gradle modules, KMP targets, version catalog, source sets, tasks, no-wrapper setup;
 - [`docs/domain-and-gameplay.md`](docs/domain-and-gameplay.md) — models, rules, CPU probabilities, state machine, timers, scoring, invariants;
 - [`docs/storage-and-backup.md`](docs/storage-and-backup.md) — exact keys, codecs, migration, history grammar, explicit backup schema/escaping/limits;
 - [`docs/localization.md`](docs/localization.md) — English/Hindi catalogs, canonical vs localized data, adding languages;
 - [`docs/private-room-protocol.md`](docs/private-room-protocol.md) — current no-network room contracts and future LAN security/fairness requirements;
 - [`docs/android-platform.md`](docs/android-platform.md) — every Android app/resource/storage/backup-policy file;
-- [`docs/desktop-platform.md`](docs/desktop-platform.md) — every desktop launcher/build/storage file;
+- [`docs/ios-platform.md`](docs/ios-platform.md) — iPhone/iPad Kotlin/Native, SwiftUI/Xcode, persistence, CI, signing boundaries;
+- [`docs/desktop-platform.md`](docs/desktop-platform.md) — Windows/Linux/macOS launcher/build/storage/native packaging;
+- [`docs/web-platform.md`](docs/web-platform.md) — JS/Wasm compatibility targets, browser storage, run/build/deploy paths;
 - [`docs/rust-engine.md`](docs/rust-engine.md) — every optional Rust crate file and parity policy;
 - [`docs/test-catalog.md`](docs/test-catalog.md) — every tracked automated Kotlin/Compose test and its regression responsibility;
 - [`docs/ci-cd.md`](docs/ci-cd.md) — every `.github` ownership/automation/configuration file;
@@ -156,11 +194,11 @@ RPS_ARENA_BACKUP|1
 
 The importer validates size, record count, record types, duplicates, settings values, statistics invariants, and history bounds before replacing local state. Keep exported backup text private if a local player name or gameplay history is sensitive to you. Exact grammar is documented in [`docs/storage-and-backup.md`](docs/storage-and-backup.md).
 
-Android automatic backup is disabled and SharedPreferences are excluded from legacy/cloud/device-transfer policy. The in-app backup text is therefore the explicit, user-controlled portability path rather than a hidden platform backup channel.
+Platform-local stores differ, but the app-level backup schema is shared. Android automatic backup is disabled and SharedPreferences are excluded from legacy/cloud/device-transfer policy. The in-app backup text is the explicit, user-controlled portability path.
 
 ## Private-room architecture
 
-The shared module contains `PrivateRoomGateway`/`PrivateRoomSession` transport contracts plus an in-memory reference implementation for deterministic testing and development. This is deliberately not a hidden network feature: the current primary Android app still declares no internet permission. A future LAN adapter must remain explicit and optional.
+The shared module contains `PrivateRoomGateway`/`PrivateRoomSession` transport contracts plus an in-memory reference implementation for deterministic testing and development. This is deliberately not a hidden network feature: no production LAN adapter is shipped. A future LAN adapter must remain explicit and optional on every platform.
 
 The current room contract is **not** production LAN multiplayer. See [`docs/private-room-protocol.md`](docs/private-room-protocol.md) for that boundary and future wire-protocol/security requirements.
 
@@ -177,39 +215,42 @@ gradle :shared:allTests --stacktrace
 gradle :androidApp:lintDebug --stacktrace
 gradle :androidApp:assembleDebug --stacktrace
 gradle :desktopApp:classes --stacktrace
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
 cargo test --manifest-path rust-engine/Cargo.toml --all-targets
 ```
 
-Primary CI enforces the fast source/security/privacy/version gates plus shared tests, Android lint/build, desktop compilation, and Rust tests. The focused Security workflow independently rechecks secret/privacy contracts and performs pull-request dependency review. CodeQL separately performs Kotlin/Java security analysis. Tagged/manual release preflight repeats all fast source gates before packaging. See [`docs/testing.md`](docs/testing.md), [`docs/test-catalog.md`](docs/test-catalog.md), [`docs/validation.md`](docs/validation.md), and [`docs/ci-cd.md`](docs/ci-cd.md).
+On macOS, iOS validation additionally links the simulator framework and builds the Xcode host without code signing. Primary CI runs these platform gates on the appropriate Ubuntu/macOS runners. The focused Security workflow independently rechecks secret/privacy contracts and performs pull-request dependency review. CodeQL separately performs Kotlin/Java security analysis. Tagged/manual release preflight repeats the fast source gates before packaging. See [`docs/testing.md`](docs/testing.md), [`docs/test-catalog.md`](docs/test-catalog.md), [`docs/validation.md`](docs/validation.md), and [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Architecture
 
 The primary flow is:
 
 ```text
-Compose UI -> ArenaState -> RulesEngine / CpuStrategy
-                       -> ArenaRepository -> PlatformStore
-                       -> optional PrivateRoomGateway boundary
-shared utilities      -> SafeLogger (no-op sink by default)
+Platform host -> shared Compose UI -> ArenaState -> RulesEngine / CpuStrategy
+                                       -> ArenaRepository -> PlatformStore
+                                       -> optional PrivateRoomGateway boundary
+shared utilities                     -> SafeLogger (no-op sink by default)
 ```
+
+Platform hosts are intentionally thin: Android Activity, iOS SwiftUI/Xcode bridge, JVM desktop Window, or Web ComposeViewport.
 
 See [`docs/architecture.md`](docs/architecture.md), [`docs/build-system.md`](docs/build-system.md), and [`docs/adr/`](docs/adr/).
 
 ## Accessibility
 
-RPS Arena uses visible text labels, large gesture targets, text-based outcome/timer feedback, optional timers, light/dark/system themes, and reduced-motion behavior. Manual keyboard/TalkBack/text-scaling review steps are documented in [`docs/accessibility.md`](docs/accessibility.md).
+RPS Arena uses visible text labels, large gesture targets, text-based outcome/timer feedback, optional timers, light/dark/system themes, and reduced-motion behavior. Manual keyboard, TalkBack, VoiceOver, browser keyboard/focus, text-scaling, and contrast review expectations are documented in [`docs/accessibility.md`](docs/accessibility.md) and the platform guides.
 
 ## Privacy and security
 
-RPS Arena is offline-first. Local storage contains preferences, aggregate statistics, and up to 30 recent round summaries. The primary Android app has no internet permission, disables automatic backup, and excludes SharedPreferences from cloud/device-transfer policy. Repository checks fail if those Android privacy invariants regress or recognizable high-confidence credential material is committed. See [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), [`docs/android-platform.md`](docs/android-platform.md), and [`docs/storage-and-backup.md`](docs/storage-and-backup.md).
+RPS Arena is offline-first. Local storage contains preferences, aggregate statistics, and up to 30 recent round summaries. Android uses app-private SharedPreferences, iOS uses NSUserDefaults, desktop uses Java Preferences, and Web uses origin-local `localStorage`. The primary Android app has no internet permission, disables automatic backup, and excludes SharedPreferences from cloud/device-transfer policy. Repository checks fail if those Android privacy invariants regress or recognizable high-confidence credential material is committed. See [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and the platform/storage guides.
 
 ## Release
 
-Version 2.5.8 is configured for Android and desktop. Android uses `versionCode = 20508`; tagged releases can build unsigned/public Android, Linux desktop, and Rust package artifacts with SHA-256 checksums after repeating the fast source/security/privacy/version preflight. Store signing/notarization requires private credentials supplied outside the repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
+Version 2.5.8 is synchronized across Android, desktop, iOS, and shared About metadata. Android and iOS use numeric build `20508`. Tagged release automation can build unsigned/public Android, Linux desktop, JS+Wasm Web compatibility, iOS framework, and Rust artifacts with SHA-256 checksums. Signed Android stores, signed/notarized desktop installers, and App Store/TestFlight artifacts require private credentials supplied outside the public repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Roadmap
 
-See [`ROADMAP.md`](ROADMAP.md). Future networking and signing work must remain optional and credential-safe.
+See [`ROADMAP.md`](ROADMAP.md). Future networking and signed-store distribution work must remain optional and credential-safe.
 
 ## Contributing
 
