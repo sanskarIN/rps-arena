@@ -50,19 +50,21 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.animation)
-            implementation(compose.material3)
-            implementation(compose.ui)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.animation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
             implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
-        desktopTest.dependencies {
-            implementation(compose.uiTest)
-            implementation(compose.desktop.currentOs)
+        val desktopTest by getting {
+            dependencies {
+                implementation(libs.compose.ui.test)
+                implementation(libs.compose.desktop)
+            }
         }
         webMain.dependencies {
             implementation(libs.kotlinx.browser)
