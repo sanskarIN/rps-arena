@@ -1,8 +1,8 @@
 # CI, Security, CodeQL, Dependabot, and Release Automation
 
-RPS Arena uses GitHub Actions for validation/security/release packaging and GitHub configuration files for ownership, dependency updates, issue intake, release-note categorization, and funding links. This guide documents every tracked file under `.github/`, including triggers, permissions, jobs, failure meaning, artifact paths, documentation/privacy/security coverage, and maintenance rules.
+RPS Arena uses GitHub Actions for cross-platform validation, security checks, static analysis, and release packaging. Repository configuration under `.github/` also defines ownership, dependency updates, issue intake, pull-request quality gates, generated release-note categories, and funding metadata.
 
-## `.github/` file inventory
+## `.github/` inventory
 
 ```text
 .github/CODEOWNERS
@@ -19,34 +19,20 @@ RPS Arena uses GitHub Actions for validation/security/release packaging and GitH
 .github/workflows/release.yml
 ```
 
-These files are repository automation/governance source, not generated build output.
+These are tracked source/configuration files. Generated artifacts and runner caches are not committed.
 
-## CODEOWNERS
+## Exact-head rule
 
-File:
+CI, Security checks, and CodeQL use pull-request/push events around `main`. CI and Security checks cancel obsolete runs for the same ref when newer commits arrive.
 
-```text
-.github/CODEOWNERS
-```
+Therefore:
 
-The default ownership rule is:
+- a green older SHA does not validate a newer PR head;
+- `queued` and `in_progress` are not success;
+- a cancelled run is not success;
+- merge/release decisions must use the exact candidate commit.
 
-```text
-* @sanskarIN
-```
-
-Additional explicit entries cover:
-
-- `.github/` automation/governance;
-- `SECURITY.md`;
-- secret/privacy source checkers;
-- shared gameplay/persistence code;
-- the optional Rust engine;
-- Android/Desktop packaging and release entry points.
-
-CODEOWNERS does not itself force approval. Repository rulesets/branch protection must require code-owner review if mandatory ownership approval is desired.
-
-## CI workflow
+## Primary CI workflow
 
 File:
 
@@ -60,43 +46,23 @@ Workflow name:
 CI
 ```
 
-### Triggers
-
-Runs on:
+Triggers:
 
 ```text
 push to main
 pull_request targeting main
 ```
 
-It does not run for every arbitrary branch push unless that branch is part of a qualifying pull request.
-
-### Permissions
+Repository-level permission:
 
 ```yaml
 permissions:
   contents: read
 ```
 
-The CI workflow needs source-read access only. It should not have release/write permissions because tests/builds do not need them.
+CI does not need release/write access.
 
-## CI concurrency
-
-```yaml
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-```
-
-Meaning:
-
-- runs are grouped by workflow + Git ref;
-- when a newer run for the same PR/ref starts, an older in-progress/queued run can be cancelled;
-- this prevents wasting runner time validating obsolete commits.
-
-Consequently, many rapid documentation/code commits can leave earlier runs cancelled/queued. The merge gate must use the **latest exact PR head**, not an older green run.
-
-## CI Kotlin job
+### Kotlin/Android/Desktop/Web job
 
 Runner:
 
@@ -104,184 +70,112 @@ Runner:
 ubuntu-latest
 ```
 
-Steps, in order:
+The job executes, in order:
 
-### 1. Checkout
+1. `actions/checkout@v6`;
+2. repository formatting;
+3. relative Markdown link validation;
+4. exhaustive tracked-file documentation coverage;
+5. committed-secret pattern validation;
+6. Android privacy-contract validation;
+7. cross-platform version validation;
+8. Temurin JDK 17 setup;
+9. Android SDK 36 / Build Tools 36.0.0 setup;
+10. Gradle 9.5.1 setup;
+11. shared Kotlin tests;
+12. Android lint;
+13. Android debug APK assembly;
+14. desktop JVM compilation;
+15. JS+Wasm Web compatibility distribution build.
 
-```yaml
-uses: actions/checkout@v6
-```
-
-Places repository source and Git metadata into the runner workspace. Git metadata is required by the documentation coverage script because it executes `git ls-files`.
-
-### 2. Repository formatting
+Fast source commands:
 
 ```bash
 python3 scripts/check_format.py
-```
-
-Checks UTF-8, final newlines, and trailing whitespace policy.
-
-### 3. Documentation links
-
-```bash
 python3 scripts/check_docs_links.py
-```
-
-Scans Markdown relative links, rejects repository-escaping targets, and fails for missing local targets. External HTTP/mail/data links are not fetched by this offline source check.
-
-### 4. Documentation file coverage
-
-```bash
 python3 scripts/check_docs_coverage.py
-```
-
-This is the repository's enforceable "do not skip files in documentation" gate.
-
-The script:
-
-1. runs `git ls-files -z`;
-2. reads `docs/repository-file-reference.md`;
-3. checks that every tracked path appears exactly in backticks;
-4. prints every missing path and exits non-zero when coverage is incomplete.
-
-This catches newly added source/config/resource/workflow/test/doc files that were not added to the exhaustive reference. It does not judge prose quality; human review still checks whether each explanation is correct and deep enough.
-
-### 5. Committed secret patterns
-
-```bash
 python3 scripts/check_for_secrets.py
-```
-
-Scans source-sized text files for high-confidence private-key and recognizable GitHub/AWS/Google/generic secret-token shapes. The detector skips generated/cache/IDE directories, large/binary files, and itself.
-
-This is defense in depth. It does not replace GitHub secret scanning, credential rotation, or human review.
-
-### 6. Android privacy contract
-
-```bash
 python3 scripts/check_android_privacy.py
-```
-
-Parses the primary Android manifest plus legacy/Android 12+ backup rules and requires:
-
-- `android:allowBackup="false"`;
-- correct `fullBackupContent`/`dataExtractionRules` references;
-- SharedPreferences exclusion from legacy backup;
-- SharedPreferences exclusion from cloud backup and device transfer;
-- no `android.permission.INTERNET` in the offline-first v1 primary manifest.
-
-This makes the local-data/automatic-backup boundary executable rather than documentation-only.
-
-### 7. Version consistency
-
-```bash
 python3 scripts/check_version.py
 ```
 
-Checks Android/Desktop/shared app version agreement and verifies About renders the shared version constant.
-
-### 8. Java setup
-
-```yaml
-uses: actions/setup-java@v5
-```
-
-With:
-
-```text
-distribution: temurin
-java-version: 17
-cache: gradle
-```
-
-Provides JDK 17 and supported Gradle dependency caching integration.
-
-### 9. Android SDK setup
-
-```yaml
-uses: android-actions/setup-android@v4
-```
-
-Packages:
-
-```text
-platform-tools
-platforms;android-36
-build-tools;36.0.0
-```
-
-This makes the hosted Android environment match the project baseline.
-
-### 10. Gradle setup
-
-```yaml
-uses: gradle/actions/setup-gradle@v4
-```
-
-Pinned Gradle:
-
-```text
-9.5.1
-```
-
-This is especially important because the repository currently tracks no Gradle Wrapper.
-
-### 11. Shared tests
+Build/test commands:
 
 ```bash
 gradle :shared:allTests --stacktrace
-```
-
-Validates common business/data/protocol/localization/logging tests and the configured shared/desktop UI test target.
-
-### 12. Android lint
-
-```bash
 gradle :androidApp:lintDebug --stacktrace
-```
-
-Checks Android resources, manifest/configuration/API usage, and other Android correctness rules.
-
-### 13. Android debug assembly
-
-```bash
 gradle :androidApp:assembleDebug --stacktrace
+gradle :desktopApp:classes --stacktrace
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
 ```
 
-Proves Android app/shared Android compilation and APK packaging succeed.
+### Why the Web compatibility distribution is a CI gate
 
-### 14. Desktop classes
+The Web module has Kotlin/Wasm and Kotlin/JS browser executables. Building only one target could allow fallback-specific source/packaging drift. `composeCompatibilityBrowserDistribution` validates the combined output expected for deployment.
+
+See `docs/web-platform.md` for runtime/build details.
+
+## iOS/iPadOS CI job
+
+Runner:
+
+```text
+macos-latest
+```
+
+A macOS runner is required because Kotlin/Native Apple framework linking and Xcode host compilation depend on Apple tooling.
+
+Setup:
+
+- checkout v6;
+- Temurin JDK 17;
+- Gradle 9.5.1.
+
+Kotlin framework gate:
 
 ```bash
-gradle :desktopApp:classes --stacktrace
+gradle :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
 ```
 
-Proves desktop/shared JVM compilation succeeds.
+SwiftUI/Xcode host gate:
 
-## CI Rust job
+```bash
+xcodebuild \
+  -project iosApp/iosApp.xcodeproj \
+  -scheme "RPS Arena" \
+  -sdk iphonesimulator \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
 
-Also uses Ubuntu.
+This validates the shared Kotlin/Native framework plus native SwiftUI bridge without requiring a developer certificate or provisioning secret.
 
-Default working directory:
+It does **not** produce a signed App Store archive.
+
+## Rust CI job
+
+Runner:
+
+```text
+ubuntu-latest
+```
+
+Working directory:
 
 ```text
 rust-engine
 ```
 
-Steps:
-
-1. checkout;
-2. install stable Rust through `dtolnay/rust-toolchain@stable`;
-3. run:
+Commands:
 
 ```bash
 cargo test --all-targets
 ```
 
-This validates the optional Rust rule mirror independently from Kotlin.
+The Rust crate remains optional to the Kotlin application runtime but is still required to stay healthy in repository CI.
 
-## Focused security workflow
+## Focused Security workflow
 
 File:
 
@@ -295,75 +189,34 @@ Workflow name:
 Security checks
 ```
 
-### Triggers and permissions
-
-Runs on pushes to `main` and pull requests targeting `main` with repository-level `contents: read` permission.
-
-Concurrency uses a security-specific workflow/ref group with `cancel-in-progress: true`, so the same exact-head rule applies as CI.
+Triggers on push/PR around `main` and uses read-only source permissions except for the pull-request read permission required by dependency review.
 
 ### Secret/privacy job
 
-Runner:
+Runs:
 
-```text
-ubuntu-latest
+```bash
+python scripts/check_for_secrets.py
+python scripts/check_android_privacy.py
 ```
 
-Timeout:
+The first check looks for several high-confidence committed credential/private-key forms without echoing matched secret values. The second enforces the Android offline/automatic-backup contract.
 
-```text
-10 minutes
-```
+### Dependency review
 
-Steps:
-
-1. checkout v6;
-2. set up Python 3.13 with `actions/setup-python@v6`;
-3. run `scripts/check_for_secrets.py`;
-4. run `scripts/check_android_privacy.py`.
-
-These checks intentionally overlap CI. The separate workflow gives security/privacy failures their own visible status and keeps the controls independently reviewable.
-
-### Dependency review job
-
-Runs only for pull requests.
-
-Permissions:
-
-```yaml
-contents: read
-pull-requests: read
-```
-
-Action:
+Pull requests run:
 
 ```yaml
 uses: actions/dependency-review-action@v4
+with:
+  fail-on-severity: high
 ```
 
-Policy:
+High-severity dependency findings therefore fail the focused security workflow.
 
-```text
-fail-on-severity: high
-```
+This supplements Dependabot and human dependency review; it is not proof that every dependency is vulnerability-free.
 
-The job reviews dependency changes visible to GitHub and fails on high-severity dependency findings. It supplements Dependabot and normal dependency/version review; it is not a guarantee that every transitive risk is known.
-
-## Interpreting CI/security result
-
-A PR is not fully green unless all required jobs/checks for the exact candidate succeed.
-
-Important statuses:
-
-- `queued` — no validation conclusion yet;
-- `in_progress` — still running;
-- `success` — passed;
-- `failure` — at least one required step failed;
-- `cancelled` — run did not complete, often because a newer commit superseded it.
-
-A cancelled run is not equivalent to success. A successful older SHA does not validate a newer PR head.
-
-## CodeQL workflow
+## CodeQL
 
 File:
 
@@ -371,73 +224,15 @@ File:
 .github/workflows/codeql.yml
 ```
 
-Workflow name:
+The workflow analyzes Java/Kotlin on:
 
-```text
-CodeQL
-```
-
-### Triggers
-
-Runs on:
-
-- push to `main`;
-- pull request targeting `main`;
+- pushes to `main`;
+- pull requests targeting `main`;
 - weekly schedule.
 
-Cron:
+Environment includes JDK 17, Android SDK 36, and Gradle 9.5.1. The observed build covers the Android and desktop Kotlin/JVM paths before CodeQL analysis/upload.
 
-```text
-17 3 * * 1
-```
-
-Under GitHub Actions cron scheduling this means 03:17 UTC every Monday.
-
-The scheduled run can detect newly recognized static-analysis findings even when source has not just changed.
-
-## CodeQL permissions
-
-```yaml
-permissions:
-  security-events: write
-  packages: read
-  contents: read
-```
-
-- `security-events: write` uploads code-scanning results;
-- `contents: read` reads source;
-- `packages: read` supports package access where needed by analysis/build tooling.
-
-## CodeQL environment/build
-
-```yaml
-env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=false
-```
-
-Disables the Gradle daemon for the ephemeral workflow process.
-
-The analyze job sets up:
-
-- checkout v6;
-- Temurin JDK 17;
-- Android SDK 36 / Build Tools 36.0.0;
-- CodeQL init v4 for `java-kotlin`;
-- Gradle 9.5.1.
-
-Build observed by CodeQL:
-
-```bash
-gradle :androidApp:assembleDebug :desktopApp:classes
-```
-
-Final analysis/upload:
-
-```yaml
-uses: github/codeql-action/analyze@v4
-```
-
-A green CodeQL job is evidence for the configured analyzer/rules, not proof that no vulnerability exists.
+CodeQL is one security signal; it does not replace tests, dependency review, privacy checks, or manual review of native/Web platform code.
 
 ## Release workflow
 
@@ -447,47 +242,25 @@ File:
 .github/workflows/release.yml
 ```
 
-Workflow name:
-
-```text
-Release
-```
-
-### Triggers
-
-Manual:
+Triggers:
 
 ```text
 workflow_dispatch
+push tags matching v*
 ```
 
-Tag push:
-
-```text
-v*
-```
-
-Examples:
-
-```text
-v1.1.0
-v2.0.0
-```
-
-The `publish` job is further restricted to a `refs/tags/v...` ref, so a manual branch run can exercise build jobs without creating a tag release.
-
-## Release permissions
+Repository permission:
 
 ```yaml
 permissions:
   contents: write
 ```
 
-Write access is needed for GitHub Release creation. Changes to this workflow therefore deserve extra review.
+This write permission exists so a validated tag run can create the GitHub Release. Do not copy it into normal PR build workflows.
 
 ## Release source preflight
 
-The Android release job repeats all fast source gates before Java/Android/Gradle setup:
+The Android release job repeats all fast source gates:
 
 ```bash
 python3 scripts/check_format.py
@@ -498,50 +271,44 @@ python3 scripts/check_android_privacy.py
 python3 scripts/check_version.py
 ```
 
-Because tagged publication depends on the Android job succeeding, incomplete docs, broken links, recognized committed secrets, Android backup/privacy drift, formatting errors, or version drift block publication.
+Publication depends on all platform jobs, so a failure in these source checks or any required platform package/validation job prevents the publish stage from running.
 
-Release policy still requires creating version tags from validated `main`. Repeating the gates in release automation provides defense in depth; it does not replace exact-head PR CI, Security checks, and CodeQL validation.
+Release automation is defense in depth. Tags must still point to a `main` commit whose PR CI, Security checks, and CodeQL passed on that exact source.
 
-## Release Android job
+## Android release job
 
-Runs on Ubuntu and performs:
-
-1. checkout;
-2. formatting check;
-3. docs-link check;
-4. exhaustive documentation coverage check;
-5. committed-secret check;
-6. Android privacy-contract check;
-7. version consistency check;
-8. JDK 17 setup;
-9. Android SDK setup;
-10. Gradle 9.5.1 setup;
-11. shared tests;
-12. `lintRelease`;
-13. `assembleRelease`;
-14. upload APK artifacts.
-
-Artifact name:
+Runner:
 
 ```text
-rps-arena-android
+ubuntu-latest
 ```
 
-Path:
+Key commands:
+
+```bash
+gradle :shared:allTests --stacktrace
+gradle :androidApp:lintRelease --stacktrace
+gradle :androidApp:assembleRelease --stacktrace
+```
+
+Artifact:
 
 ```text
-androidApp/build/outputs/apk/release/*.apk
+name: rps-arena-android
+path: androidApp/build/outputs/apk/release/*.apk
 ```
 
-`if-no-files-found: error` prevents a silent empty artifact upload.
+The public repository contains no private Android signing credentials, so this is a public/unsigned validation artifact unless a separate authorized signing system is used later.
 
-The public repository does not provide private signing credentials, so this is a public/unsigned build validation artifact unless a controlled signing system is later added.
+## Linux desktop release job
 
-## Release Linux desktop job
+Runner:
 
-Runs Ubuntu.
+```text
+ubuntu-latest
+```
 
-Build commands:
+Commands:
 
 ```bash
 gradle :desktopApp:classes --stacktrace
@@ -555,15 +322,87 @@ name: rps-arena-linux
 path: desktopApp/build/compose/binaries/main/deb/*.deb
 ```
 
-Current release automation does not create Windows MSI or macOS DMG jobs.
+Windows MSI and macOS DMG formats are configured in the desktop build but need host-specific packaging/signing workflows for production distribution.
 
-## Release Rust job
+## Web release job
 
-Working directory:
+Runner:
 
 ```text
-rust-engine
+ubuntu-latest
 ```
+
+Build:
+
+```bash
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+```
+
+The generated directory:
+
+```text
+webApp/build/dist/composeWebCompatibility/productionExecutable/
+```
+
+is zipped as:
+
+```text
+rps-arena-web.zip
+```
+
+Artifact name:
+
+```text
+rps-arena-web
+```
+
+The ZIP is suitable for deployment to a static host after browser compatibility/manual checks.
+
+## iOS release job
+
+Runner:
+
+```text
+macos-latest
+```
+
+Builds release frameworks:
+
+```bash
+gradle \
+  :shared:linkReleaseFrameworkIosArm64 \
+  :shared:linkReleaseFrameworkIosSimulatorArm64 \
+  --stacktrace
+```
+
+Validates the Release SwiftUI host without signing:
+
+```bash
+xcodebuild \
+  -project iosApp/iosApp.xcodeproj \
+  -scheme "RPS Arena" \
+  -sdk iphonesimulator \
+  -configuration Release \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+Packages:
+
+```text
+rps-arena-ios-device-framework.zip
+rps-arena-ios-simulator-framework.zip
+```
+
+Artifact name:
+
+```text
+rps-arena-ios
+```
+
+These are framework/integration artifacts, not signed IPA/TestFlight/App Store packages. Apple signing credentials remain outside Git.
+
+## Rust release job
 
 Runs:
 
@@ -572,42 +411,36 @@ cargo test --all-targets
 cargo package
 ```
 
-Uploads:
+Artifact:
 
 ```text
 name: rps-arena-rust-engine
 path: rust-engine/target/package/*.crate
 ```
 
-`cargo package` creates the crate archive; it does not publish to crates.io.
+`cargo package` creates an archive; it does not publish to crates.io.
 
-## Release publish job
+## Publish job
 
-Condition:
-
-```yaml
-if: startsWith(github.ref, 'refs/tags/v')
-```
+Runs only for tag refs matching `refs/tags/v...`.
 
 Dependencies:
 
 ```text
 android
 desktop-linux
+web
+ios
 rust
 ```
 
-The job downloads all successful artifacts into `dist/` with `merge-multiple: true`.
-
-Checksums:
+Artifacts are downloaded into one `dist/` tree and SHA-256 checksums are generated:
 
 ```bash
 sha256sum dist/* > dist/SHA256SUMS.txt
 ```
 
-A checksum detects artifact-byte changes/corruption; it is not a substitute for platform code signing.
-
-Release command:
+Release creation uses the repository-provided GitHub token rather than a committed personal access token:
 
 ```bash
 gh release create "${GITHUB_REF_NAME}" dist/* \
@@ -616,11 +449,9 @@ gh release create "${GITHUB_REF_NAME}" dist/* \
   --title "RPS Arena ${GITHUB_REF_NAME}"
 ```
 
-`GH_TOKEN` is supplied from `${{ github.token }}`, not a committed personal token.
+Checksums detect artifact-byte changes/corruption; they are not equivalent to platform signing/notarization.
 
-`--verify-tag` ensures the tag already exists; `--generate-notes` uses GitHub's release-note generation.
-
-## Release-note categorization
+## Release-note categories
 
 File:
 
@@ -628,20 +459,9 @@ File:
 .github/release.yml
 ```
 
-Excluded labels:
+Generated-note groups cover features, fixes, security/reliability, documentation, and other changes. `skip-changelog` and `dependencies` labels are excluded from generated categories according to the current configuration.
 
-- `skip-changelog`;
-- `dependencies`.
-
-Categories:
-
-- Features -> `enhancement`, `feature`;
-- Fixes -> `bug`, `fix`;
-- Security and reliability -> `security`, `reliability`;
-- Documentation -> `documentation`;
-- Other changes -> wildcard.
-
-This affects generated GitHub release notes and does not replace `CHANGELOG.md`.
+`CHANGELOG.md` remains the curated project changelog.
 
 ## Dependabot
 
@@ -651,32 +471,13 @@ File:
 .github/dependabot.yml
 ```
 
-Schema version 2.
+Weekly update ecosystems:
 
-Weekly ecosystems:
+- Gradle at repository root;
+- Cargo under `/rust-engine`;
+- GitHub Actions at repository root.
 
-### Gradle
-
-```text
-directory: /
-open PR limit: 5
-```
-
-### Cargo
-
-```text
-directory: /rust-engine
-open PR limit: 5
-```
-
-### GitHub Actions
-
-```text
-directory: /
-open PR limit: 5
-```
-
-Dependabot PRs are proposals; compatibility still requires review, dependency review, and CI.
+Dependabot PRs still require normal compatibility/security/CI review.
 
 ## Pull-request template
 
@@ -686,11 +487,11 @@ File:
 .github/pull_request_template.md
 ```
 
-The template requires source/documentation/security checks and asks contributors to ensure every new/renamed tracked file is documented in `docs/repository-file-reference.md`.
+The checklist covers source gates, data/backup compatibility, security/privacy, optional networking, accessibility, platform builds, version consistency, release impact, and the requirement that every new/renamed tracked file be documented in `docs/repository-file-reference.md`.
 
-It also covers version consistency, shared/UI/platform/Rust checks, accessibility, migrations, backup compatibility, security/privacy/networking, and release impact.
+## Issue templates
 
-## Bug report form
+### Bug report
 
 File:
 
@@ -698,11 +499,9 @@ File:
 .github/ISSUE_TEMPLATE/bug_report.yml
 ```
 
-Applies `bug` label and requests platform, observed/expected behavior, reproduction steps, version, and context.
+Requests platform, behavior, reproduction steps, version, and context. Sensitive security findings belong in the private path described by `SECURITY.md`.
 
-Security-sensitive reports must use `SECURITY.md`, not this public form.
-
-## Feature request form
+### Feature request
 
 File:
 
@@ -710,9 +509,9 @@ File:
 .github/ISSUE_TEMPLATE/feature_request.yml
 ```
 
-Applies `enhancement`, requires problem/opportunity and proposed solution, and surfaces offline-first/no-tracking project principles.
+Surfaces the project's offline-first/no-tracking design constraints when proposing new functionality.
 
-## Issue template configuration
+### Configuration
 
 File:
 
@@ -720,12 +519,19 @@ File:
 .github/ISSUE_TEMPLATE/config.yml
 ```
 
-Disables blank issues and routes:
+Disables blank issues and routes security/support requests to the appropriate policy documents.
 
-- security reports -> `SECURITY.md`;
-- support -> `SUPPORT.md`.
+## CODEOWNERS
 
-## Funding configuration
+File:
+
+```text
+.github/CODEOWNERS
+```
+
+Default ownership is `@sanskarIN`, with explicit path coverage for security/automation, shared core, Rust, and platform packaging areas. Repository rulesets must require code-owner approval if review is intended to be mandatory.
+
+## Funding
 
 File:
 
@@ -733,94 +539,18 @@ File:
 .github/FUNDING.yml
 ```
 
-Custom funding URL:
+Contains optional Buy Me a Coffee funding metadata. Funding does not affect MIT licensing, functionality, CI, or access to the project.
 
-```text
-https://buymeacoffee.com/sanskarIN
-```
+## Maintenance rules
 
-Funding remains optional and separate from product access/license.
+When changing CI/release/platform targets:
 
-## Branch/ruleset policy
-
-Some repository settings live on GitHub rather than in files. See `docs/github-settings.md`.
-
-Recommended operational merge rule:
-
-> Require CI + Security checks + CodeQL (and other configured required checks) on the exact current PR head.
-
-If code-owner reviews are required through repository rules, `.github/CODEOWNERS` routes those requests to the maintainer.
-
-Do not merge because a previous commit in the same PR was green.
-
-## Troubleshooting queued runs
-
-While queued:
-
-- no job-step validation has happened yet;
-- no step log may exist;
-- the run must not be reported as passed.
-
-Repeated pushes can cancel prior runs through concurrency. Freeze the intended candidate before waiting for final validation.
-
-## Troubleshooting failed jobs
-
-Identify the first meaningful failing step:
-
-- Formatting -> text policy;
-- Documentation links -> missing/escaping local Markdown target;
-- Documentation file coverage -> new/renamed path missing from file reference;
-- Secret patterns -> recognized credential/private-key material in source;
-- Android privacy -> automatic backup/backup XML/offline manifest invariant drift;
-- Version consistency -> Android/Desktop/shared metadata drift;
-- Shared tests -> business/data/protocol/localization/logging/UI regression;
-- Android lint -> Android quality/config/API issue;
-- Android build -> compile/resource/package issue;
-- Desktop classes -> JVM/shared desktop issue;
-- Rust -> crate/test issue;
-- Dependency review -> high-severity dependency change finding;
-- CodeQL -> analysis/build/security finding;
-- release upload -> expected artifact path produced no file.
-
-Fix the cause in a focused commit; do not simply remove a gate to obtain green status.
-
-## Secrets policy
-
-Normal CI/security checks require no private repository secrets.
-
-The release workflow uses GitHub's scoped token for release creation.
-
-Future signing credentials must live outside Git in an authorized secret-management environment. Never echo secrets into logs or expose them to untrusted fork PRs.
-
-## Workflow change checklist
-
-When editing workflows:
-
-1. minimize permissions;
-2. review action major versions;
-3. keep intended JDK/Gradle/Android/Python environment pins synchronized;
-4. verify artifact/task paths;
-5. protect fork PRs from secrets;
-6. keep required artifact uploads fail-closed;
-7. preserve useful diagnostics without exposing sensitive values;
-8. preserve Android privacy and committed-secret gates unless an explicitly reviewed policy change replaces them;
-9. update `docs/validation.md`, `docs/release.md`, this file, and file reference;
-10. run the workflow through a PR before trusting a release tag;
-11. never commit raw credentials.
-
-## Automation ownership summary
-
-| File | Primary purpose |
-|---|---|
-| `.github/CODEOWNERS` | maintainer review ownership routing |
-| `.github/workflows/ci.yml` | format/docs/security/privacy/version/build/test/lint validation |
-| `.github/workflows/security.yml` | focused secret/privacy checks + PR dependency review |
-| `.github/workflows/codeql.yml` | scheduled/PR/push Kotlin/Java static security analysis |
-| `.github/workflows/release.yml` | source/security/privacy validation plus package/upload/tag release artifacts |
-| `.github/dependabot.yml` | weekly dependency/action update proposals |
-| `.github/release.yml` | generated release-note categories |
-| `.github/pull_request_template.md` | review/compatibility/documentation checklist |
-| `.github/ISSUE_TEMPLATE/bug_report.yml` | structured public defects |
-| `.github/ISSUE_TEMPLATE/feature_request.yml` | structured improvements |
-| `.github/ISSUE_TEMPLATE/config.yml` | disable blank issues + security/support routing |
-| `.github/FUNDING.yml` | optional project funding link |
+1. keep workflow permissions minimal;
+2. preserve exact-head validation semantics;
+3. keep the fast source gates synchronized across CI/release/local docs;
+4. add host-specific jobs only where required (for example macOS for iOS);
+5. never expose signing secrets to untrusted pull requests;
+6. keep artifact paths and `if-no-files-found: error` behavior accurate;
+7. update `docs/release.md`, `docs/validation.md`, platform docs, README, changelog, and file reference;
+8. test compatibility-distribution/package commands before calling a platform supported;
+9. distinguish unsigned validation artifacts from signed production/store releases.
