@@ -12,7 +12,7 @@ kotlin {
 
 dependencies {
     implementation(project(":shared"))
-    implementation(libs.compose.desktop)
+    implementation(compose.desktop.currentOs)
 }
 
 compose.desktop {
