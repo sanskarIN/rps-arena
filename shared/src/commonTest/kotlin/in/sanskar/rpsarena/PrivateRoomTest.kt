@@ -23,6 +23,17 @@ class PrivateRoomTest {
     }
 
     @Test
+    fun independentlyParsedRoomCodesIdentifyTheSameRoom() {
+        val gateway = InMemoryPrivateRoomGateway()
+        gateway.host(RoomCode.require("RPS234"), "Host")
+
+        val guest = gateway.join(RoomCode.require(" rps234 "), "Guest")
+
+        assertNotNull(guest)
+        assertEquals("RPS234", guest.code.value)
+    }
+
+    @Test
     fun hostAndGuestExchangeValidatedEvents() {
         val gateway = InMemoryPrivateRoomGateway()
         val code = RoomCode.require("RPS234")
