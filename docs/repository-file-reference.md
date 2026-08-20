@@ -2,7 +2,7 @@
 
 This is the exhaustive file-by-file reference for RPS Arena. Every Git-tracked file is named here with its purpose, ownership, and change implications. `scripts/check_docs_coverage.py` enforces this list with `git ls-files`: if a future tracked file is not mentioned in backticks here, the documentation-coverage check fails.
 
-Generated directories such as `.gradle/`, module `build/`, and `rust-engine/target/` are intentionally not listed because they are not tracked source files.
+Generated directories such as `.gradle/`, `.kotlin/`, module `build/`, `node_modules/`, Xcode `DerivedData/`, and `rust-engine/target/` are intentionally not listed because they are not tracked source files.
 
 ## Root repository policy and metadata
 
@@ -20,7 +20,7 @@ Edit when introducing file types needing special Git treatment.
 
 ### `.gitignore`
 
-Defines untracked local/generated/sensitive patterns: Gradle outputs/caches, Java classes/logs, IDE files, Android `local.properties`, captures, keystores, desktop installers, Rust target output, and current `Cargo.lock` policy.
+Defines untracked local/generated/sensitive patterns: Gradle/Kotlin caches, Java classes/logs, IDE files, Android `local.properties`, captures, keystores, Kotlin Web `node_modules`/package-store output, Xcode user/DerivedData state, desktop installers, Rust target output, and current `Cargo.lock` policy.
 
 Never rely on this file to protect a secret that was already committed.
 
@@ -30,19 +30,19 @@ Canonical Git contributor identity mapping. Current canonical owner entry is `Sa
 
 ### `README.md`
 
-Public repository landing page: product overview, artwork, features, platform status, stack, quick start, CPU/timer/backup/private-room explanation, quality gates, privacy, release, support, funding, license.
+Public repository landing page: product overview, artwork, features, cross-platform status, stack, quick start, CPU/timer/backup/private-room explanation, quality gates, privacy, release, support, funding, license.
 
 Keep high-level; link deep material under `docs/` rather than duplicating every implementation detail.
 
 ### `CHANGELOG.md`
 
-Version-oriented notable changes. Current v2.5.8 section records timers, seed controls, persisted match setup, profile/trends, backup, localization/responsiveness, private-room architecture/security hardening, tests, CI/release/docs, and synchronized release metadata.
+Version-oriented notable changes. Current v2.5.8 section records timers, seed controls, persisted match setup, profile/trends, backup, localization/responsiveness, private-room architecture/security hardening, cross-platform Android/iOS/Desktop/Web support, tests, CI/release/docs, and synchronized release metadata.
 
 Update for release-visible behavior/security/compatibility changes.
 
 ### `ROADMAP.md`
 
-Canonical project roadmap/checklist for the v1.0 baseline, v2.5.8 completion milestone, and future optional/platform-dependent work. This is the source of truth; `docs/ROADMAP.md` only points here.
+Canonical project roadmap/checklist for the v1.0 baseline, v2.5.8 completion/cross-platform milestone, and future optional/platform-dependent work. This is the source of truth; `docs/ROADMAP.md` only points here.
 
 ### `CONTRIBUTING.md`
 
@@ -70,7 +70,7 @@ MIT license text for the project. Legal license file; do not modify casually as 
 
 ### `what_changed.md`
 
-Detailed project handoff log requested for this repository workflow. Records implementation, migrations, validation status, limitations, key files, representative commits, v2.5.8 release metadata, and release-notes draft.
+Detailed project handoff log requested for this repository workflow. Records implementation, migrations, validation status, limitations, key files, representative commits, v2.5.8 release/cross-platform metadata, and release-notes draft.
 
 ### `build.gradle.kts`
 
@@ -78,7 +78,7 @@ Root Gradle plugin declarations using version-catalog aliases with `apply false`
 
 ### `settings.gradle.kts`
 
-Gradle build composition: plugin repositories, centralized dependency repositories with `FAIL_ON_PROJECT_REPOS`, root project name, included modules `:shared`, `:androidApp`, `:desktopApp`.
+Gradle build composition: plugin repositories, centralized dependency repositories with `FAIL_ON_PROJECT_REPOS`, root project name, included modules `:shared`, `:androidApp`, `:desktopApp`, and `:webApp`.
 
 ### `gradle.properties`
 
@@ -120,7 +120,7 @@ Disables blank issues and redirects sensitive security reporting to `SECURITY.md
 
 ### `.github/workflows/ci.yml`
 
-Primary CI: repository formatting, relative documentation links, exhaustive file-reference coverage, high-confidence committed-secret patterns, Android privacy contract, semantic/version-code consistency, JDK/Android/Gradle setup, shared tests, Android lint/debug APK, desktop classes, and independent Rust tests. Pull requests/pushes to `main`; obsolete runs cancelled via concurrency.
+Primary CI: repository formatting, relative documentation links, exhaustive file-reference coverage, high-confidence committed-secret patterns, Android privacy contract, cross-platform semantic/build-code consistency, JDK/Android/Gradle setup, shared tests, Android lint/debug APK, desktop classes, JS+Wasm Web compatibility distribution, macOS-hosted iOS simulator framework/application build, and independent Rust tests. Pull requests/pushes to `main`; obsolete runs cancelled via concurrency.
 
 ### `.github/workflows/codeql.yml`
 
@@ -132,7 +132,7 @@ Focused security workflow for pushes/PRs to `main`. Rechecks committed-secret an
 
 ### `.github/workflows/release.yml`
 
-Manual/tag release validation and packaging. Repeats formatting, docs-link, exhaustive documentation, secret-pattern, Android privacy, and semantic/version-code source gates before Android release tests/build; also builds Linux DEB and Rust crate artifacts. Tag runs merge artifacts, create SHA-256 sums, and publish GitHub Release.
+Manual/tag release validation and packaging. Repeats formatting, docs-link, exhaustive documentation, secret-pattern, Android privacy, and semantic/build-code source gates before Android release tests/build; also builds Linux DEB, JS+Wasm Web compatibility ZIP, iOS device/simulator framework ZIPs with simulator host validation, and Rust crate artifacts. Tag runs merge artifacts, create SHA-256 sums, and publish GitHub Release.
 
 ## Android application module
 
@@ -176,6 +176,28 @@ Legacy Android full-backup policy. Excludes the entire `sharedpref` domain so th
 
 Android 12+ data-extraction policy. Excludes the entire `sharedpref` domain from both cloud backup and device-to-device transfer, keeping settings/statistics/history/profile data under explicit in-app backup control.
 
+## iOS and iPadOS application
+
+### `iosApp/iosApp.xcodeproj/project.pbxproj`
+
+Native Xcode project definition for the `RPS Arena` iOS target. Defines Swift sources, iPhone/iPad device families, iOS deployment baseline, version/build metadata, framework search/link settings, and the `Compile Kotlin Framework` direct-integration build phase that invokes `gradle :shared:embedAndSignAppleFrameworkForXcode`.
+
+### `iosApp/iosApp.xcodeproj/xcshareddata/xcschemes/RPS Arena.xcscheme`
+
+Shared Xcode scheme used by developers and CI. Makes the iOS application target discoverable to command-line `xcodebuild` and keeps Debug/Release build actions reproducible across checkouts.
+
+### `iosApp/iosApp/iOSApp.swift`
+
+SwiftUI `@main` application entry point. Opens `ContentView` and intentionally keeps native application-shell logic thin.
+
+### `iosApp/iosApp/ContentView.swift`
+
+SwiftUI bridge around the Kotlin `MainViewController()` using `UIViewControllerRepresentable`. Imports the generated `RpsArenaShared` framework and hosts the same shared Compose UI used by other platforms.
+
+### `iosApp/iosApp/Info.plist`
+
+Native app metadata: display/bundle identity, semantic version `2.5.8`, build `20508`, iPhone/iPad orientation support, launch-screen metadata, and `CADisableMinimumFrameDurationOnPhone` for Compose rendering behavior.
+
 ## Root visual assets
 
 ### `assets/logo.svg`
@@ -184,7 +206,7 @@ Editable repository logo source used by README/project presentation. 1024-square
 
 ### `assets/splash.svg`
 
-Editable 1600x900 branding artwork with gestures, title, and credit. Documentation/marketing artwork; not automatically wired as Android native startup splash.
+Editable 1600x900 branding artwork with gestures, title, and credit. Documentation/marketing artwork; not automatically wired as Android/iOS native startup splash.
 
 ## Desktop application module
 
@@ -194,13 +216,27 @@ Desktop Kotlin JVM/Compose build: Java 17 toolchain, dependency on `:shared` and
 
 ### `desktopApp/src/main/kotlin/in/sanskar/rpsarena/desktop/Main.kt`
 
-Desktop entry point: initializes desktop store, opens one Compose Window titled RPS Arena, exits on close, renders shared app.
+Desktop entry point: initializes desktop store, opens one Compose Window titled RPS Arena, exits on close, renders shared app. The same JVM desktop application runs on supported Windows, Linux, and macOS hosts.
+
+## Web application module
+
+### `webApp/build.gradle.kts`
+
+Dedicated browser application module. Declares executable Kotlin/JS and Kotlin/Wasm browser targets, applies the default Web hierarchy, depends on `:shared`, and supports Compose compatibility distribution packaging.
+
+### `webApp/src/webMain/kotlin/in/sanskar/rpsarena/web/Main.kt`
+
+Shared JS/Wasm browser entry point. Initializes Web storage, attaches `ComposeViewport` to the `webApp` HTML container, and renders `RpsArenaApp()`.
+
+### `webApp/src/webMain/resources/index.html`
+
+Browser host page with UTF-8/responsive metadata, full-window CSS, theme/description metadata, `#webApp` viewport container, and a no-JavaScript fallback message.
 
 ## Gradle version catalog
 
 ### `gradle/libs.versions.toml`
 
-Central versions/aliases for Kotlin, Compose, AGP, AndroidX Activity Compose, coroutines, Android compile/target/min SDK, libraries, and Gradle plugins.
+Central versions/aliases for Kotlin, Compose, AGP, AndroidX Activity Compose, coroutines, `kotlinx-browser`, Android compile/target/min SDK, libraries, and Gradle plugins.
 
 ## Optional Rust engine
 
@@ -240,11 +276,11 @@ Parses the Android manifest and both backup-policy XML files. Fails if automatic
 
 ### `scripts/check_version.py`
 
-Checks Android `versionName`, desktop `packageVersion`, shared `APP_VERSION`, verifies About renders the shared version constant, and requires Android `versionCode` to match `major * 10000 + minor * 100 + patch`. Keeps localization and numeric release ordering from drifting away from the semantic app version.
+Checks Android `versionName`/`versionCode`, desktop `packageVersion`, iOS `CFBundleShortVersionString`/`CFBundleVersion`, Xcode `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION`, and shared `APP_VERSION`; verifies About renders the shared version constant; and requires mobile build codes to match `major * 10000 + minor * 100 + patch`.
 
 ### `scripts/verify.sh`
 
-Bash full verification entry point: formatting, docs links/coverage, secret patterns, Android privacy, version, shared tests, Android lint/build, desktop classes, optional Cargo tests.
+Bash full verification entry point: formatting, docs links/coverage, secret patterns, Android privacy, version, shared tests, Android lint/build, desktop classes, optional Cargo tests. Platform-specific iOS/Web build commands are additionally documented and exercised by CI.
 
 ### `scripts/verify.ps1`
 
@@ -254,7 +290,7 @@ PowerShell equivalent of repository verification for Windows environments with t
 
 ### `shared/build.gradle.kts`
 
-Kotlin Multiplatform shared library build. Configures Android target/JVM 17, desktop JVM target/JVM 17, Compose/coroutines common dependencies, Kotlin test, and Compose desktop UI-test dependencies.
+Kotlin Multiplatform shared library build. Configures Android/JVM 17, desktop JVM 17, iOS device/simulator frameworks, Kotlin/JS browser, Kotlin/Wasm browser, default hierarchy with shared `webMain`, Compose/coroutines common dependencies, Kotlin tests, and Compose desktop UI-test dependencies.
 
 ## Shared platform storage adapters
 
@@ -269,6 +305,20 @@ Android `actual PlatformStore` backed by app-private `SharedPreferences` named `
 ### `shared/src/desktopMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.desktop.kt`
 
 Desktop `actual PlatformStore` backed by `java.util.prefs.Preferences` node `in/sanskar/rpsarena`; no context required.
+
+### `shared/src/iosMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.ios.kt`
+
+iOS/iPadOS `actual PlatformStore` backed by `NSUserDefaults.standardUserDefaults`; no platform context is required. Common `ArenaRepository` codecs/validation remain authoritative.
+
+### `shared/src/webMain/kotlin/in/sanskar/rpsarena/data/PlatformStore.web.kt`
+
+Shared Kotlin/JS + Kotlin/Wasm `actual PlatformStore` backed by browser `window.localStorage`; no platform context is required. Browser origin/profile controls physical persistence lifetime.
+
+## Shared iOS bridge
+
+### `shared/src/iosMain/kotlin/in/sanskar/rpsarena/ui/MainViewController.kt`
+
+Kotlin/Native iOS entry bridge. Initializes iOS storage and exposes a `UIViewController` created by `ComposeUIViewController { RpsArenaApp() }` for the SwiftUI host.
 
 ## Shared data layer
 
@@ -408,11 +458,11 @@ Deep JDK/Gradle/Android SDK/IDE/Python/Git/Rust installation/version/upgrade gui
 
 ### `docs/command-reference.md`
 
-Detailed meaning/side effects of repository verification, Gradle, Android, desktop, Rust, Git, tag, and diagnostic commands.
+Detailed meaning/side effects of repository verification, Gradle, Android, desktop, iOS, Web, Rust, Git, tag, and diagnostic commands.
 
 ### `docs/build-system.md`
 
-Root Gradle/settings/properties/version catalog, module graph, shared source sets, app packaging, generated output and no-wrapper architecture.
+Root Gradle/settings/properties/version catalog, module graph, shared source sets/targets, platform app packaging, generated output and no-wrapper architecture.
 
 ### `docs/development.md`
 
@@ -446,9 +496,17 @@ Current room contracts/reference lifecycle plus future LAN authority/fairness/ve
 
 Every Android app/resource/storage file, SDK/manifest/launcher/theme/icon/backup-policy/APK/signing/offline behavior and validation.
 
+### `docs/ios-platform.md`
+
+Complete iPhone/iPad platform guide: Kotlin/Native targets, NSUserDefaults, Compose UIViewController bridge, SwiftUI/Xcode host, versioning, CI, framework packaging, signing/privacy boundaries.
+
 ### `docs/desktop-platform.md`
 
-Every desktop app/storage file, JVM/window/native package formats, UI tests, host-dependent signing/package behavior.
+Every desktop app/storage file, JVM/window/native package formats, UI tests, host-dependent signing/package behavior for Windows/Linux/macOS.
+
+### `docs/web-platform.md`
+
+Complete browser platform guide: Kotlin/JS + Kotlin/Wasm compatibility mode, ComposeViewport entry point, localStorage persistence, development/distribution commands, CI/release artifacts, limitations and testing.
 
 ### `docs/rust-engine.md`
 
@@ -472,7 +530,7 @@ Executable validation contract: CI/CodeQL/security/release gate and local parity
 
 ### `docs/accessibility.md`
 
-Current accessibility baseline and manual keyboard/TalkBack/text-scale/contrast/motion/timer/release checklist.
+Current accessibility baseline and manual keyboard/TalkBack/text-scale/contrast/motion/timer/destructive-action review policy; iOS VoiceOver/browser keyboard review belongs in platform validation when those surfaces change.
 
 ### `docs/performance.md`
 
@@ -484,11 +542,11 @@ JDK/SDK/Gradle/desktop/backup/settings/timer/private-room/CI troubleshooting.
 
 ### `docs/ci-cd.md`
 
-Every `.github` automation/config: triggers, permissions, jobs, artifacts, checksums, Dependabot, issue/PR/funding/release/security behavior.
+Every `.github` automation/config: triggers, permissions, jobs, Android/Desktop/iOS/Web/Rust artifacts, checksums, Dependabot, issue/PR/funding/release/security behavior.
 
 ### `docs/release.md`
 
-Release eligibility, version locations, local verification, GitHub artifacts, signing/notarization boundaries, notes/rollback.
+Release eligibility, Android/Desktop/iOS/shared version locations, Web/iOS artifacts, local verification, signing/notarization boundaries, notes/rollback.
 
 ### `docs/github-settings.md`
 
