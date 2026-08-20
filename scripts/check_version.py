@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that cross-platform package and shared UI versions stay synchronized."""
+"""Verify cross-platform package, native metadata, and shared UI versions."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_FILES = {
     "android": ROOT / "androidApp" / "build.gradle.kts",
     "desktop": ROOT / "desktopApp" / "build.gradle.kts",
+    "ios_plist": ROOT / "iosApp" / "iosApp" / "Info.plist",
+    "ios_project": ROOT / "iosApp" / "iosApp.xcodeproj" / "project.pbxproj",
     "metadata": ROOT
     / "shared"
     / "src"
@@ -41,11 +43,18 @@ def extract(pattern: str, text: str, source: str) -> str:
     return match.group(1)
 
 
-def semantic_version_code(version: str) -> int:
+def extract_all(pattern: str, text: str, source: str) -> set[str]:
+    matches = set(re.findall(pattern, text))
+    if not matches:
+        raise ValueError(f"Could not find version in {source}")
+    return matches
+
+
+def semantic_build_code(version: str) -> int:
     major, minor, patch = (int(part) for part in version.split("."))
     if minor > 99 or patch > 99:
         raise ValueError(
-            "Android semantic versionCode mapping requires minor and patch values <= 99"
+            "Semantic build-code mapping requires minor and patch values <= 99"
         )
     return major * 10_000 + minor * 100 + patch
 
@@ -70,6 +79,36 @@ def main() -> int:
             EXPECTED_FILES["desktop"].read_text(encoding="utf-8"),
             "desktopApp/build.gradle.kts",
         )
+
+        ios_plist_text = EXPECTED_FILES["ios_plist"].read_text(encoding="utf-8")
+        ios = extract(
+            r"<key>CFBundleShortVersionString</key>\s*<string>([0-9]+\.[0-9]+\.[0-9]+)</string>",
+            ios_plist_text,
+            "iosApp/iosApp/Info.plist",
+        )
+        ios_code = int(
+            extract(
+                r"<key>CFBundleVersion</key>\s*<string>([0-9]+)</string>",
+                ios_plist_text,
+                "iosApp/iosApp/Info.plist CFBundleVersion",
+            )
+        )
+
+        ios_project_text = EXPECTED_FILES["ios_project"].read_text(encoding="utf-8")
+        ios_marketing_versions = extract_all(
+            r"MARKETING_VERSION\s*=\s*([0-9]+\.[0-9]+\.[0-9]+);",
+            ios_project_text,
+            "iosApp/iosApp.xcodeproj/project.pbxproj MARKETING_VERSION",
+        )
+        ios_project_codes = {
+            int(value)
+            for value in extract_all(
+                r"CURRENT_PROJECT_VERSION\s*=\s*([0-9]+);",
+                ios_project_text,
+                "iosApp/iosApp.xcodeproj/project.pbxproj CURRENT_PROJECT_VERSION",
+            )
+        }
+
         shared = extract(
             r'APP_VERSION\s*=\s*"([0-9]+\.[0-9]+\.[0-9]+)"',
             EXPECTED_FILES["metadata"].read_text(encoding="utf-8"),
@@ -79,26 +118,45 @@ def main() -> int:
         if 'Text("${strings.version}: $APP_VERSION")' not in app_text:
             raise ValueError("About UI is not rendering the shared APP_VERSION constant")
 
-        expected_android_code = semantic_version_code(android)
-        if android_code != expected_android_code:
+        expected_code = semantic_build_code(android)
+        if android_code != expected_code:
             raise ValueError(
                 "Android versionCode mismatch: "
-                f"versionName={android} requires versionCode={expected_android_code}, "
+                f"versionName={android} requires versionCode={expected_code}, "
                 f"found {android_code}"
+            )
+        if ios_code != expected_code:
+            raise ValueError(
+                "iOS CFBundleVersion mismatch: "
+                f"version={ios} requires build={expected_code}, found {ios_code}"
+            )
+        if ios_marketing_versions != {ios}:
+            raise ValueError(
+                "iOS Xcode MARKETING_VERSION mismatch: "
+                f"plist={ios}, project={sorted(ios_marketing_versions)}"
+            )
+        if ios_project_codes != {ios_code}:
+            raise ValueError(
+                "iOS Xcode CURRENT_PROJECT_VERSION mismatch: "
+                f"plist={ios_code}, project={sorted(ios_project_codes)}"
             )
     except (ValueError, OSError) as error:
         print(error, file=sys.stderr)
         return 1
 
-    versions = {android, desktop, shared}
+    versions = {android, desktop, ios, shared}
     if len(versions) != 1:
         print(
-            f"Version mismatch: android={android}, desktop={desktop}, shared={shared}",
+            "Version mismatch: "
+            f"android={android}, desktop={desktop}, ios={ios}, shared={shared}",
             file=sys.stderr,
         )
         return 1
 
-    print(f"Version check passed: {android} (Android versionCode {android_code})")
+    print(
+        f"Version check passed: {android} "
+        f"(Android versionCode {android_code}, iOS build {ios_code})"
+    )
     return 0
 
 
