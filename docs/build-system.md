@@ -21,11 +21,11 @@ iosApp/       native SwiftUI/Xcode host -> generated RpsArenaShared.framework
 rust-engine/   separate Cargo package; not a Gradle module
 ```
 
-The main game model, rules, CPU logic, repository, state, localization, Compose UI, logging, backup/import behavior, and private-room contracts live in `:shared`.
+The game model, rules, CPU logic, repository, state, localization, Compose UI, logging, backup/import behavior, and private-room contracts live in `:shared`.
 
 ## `settings.gradle.kts`
 
-This file defines repository sources and Gradle modules.
+This file defines plugin sources, dependency sources, Kotlin web-tool distribution sources, and Gradle modules.
 
 ### Plugin repositories
 
@@ -39,19 +39,64 @@ pluginManagement {
 }
 ```
 
-### Dependency repositories
+### Centralized dependency repositories
+
+The build uses `RepositoriesMode.PREFER_SETTINGS` rather than `FAIL_ON_PROJECT_REPOS` because Kotlin/JS and Kotlin/Wasm setup tasks still attempt to register Ivy repositories for Node.js, Yarn, and Binaryen. Strict failure mode rejects those toolchain repositories before the Web build can start.
+
+RPS Arena keeps repository control centralized by declaring the required tool-distribution repositories explicitly in settings and restricting each one to its expected dependency group:
 
 ```kotlin
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()
         mavenCentral()
+
+        exclusiveContent {
+            forRepository {
+                ivy("https://nodejs.org/dist/") {
+                    name = "Node.js distributions"
+                    patternLayout {
+                        artifact("v[revision]/[artifact](-v[revision]-[classifier]).[ext]")
+                    }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeGroup("org.nodejs") }
+        }
+
+        exclusiveContent {
+            forRepository {
+                ivy("https://github.com/yarnpkg/yarn/releases/download") {
+                    name = "Yarn distributions"
+                    patternLayout {
+                        artifact("v[revision]/[artifact](-v[revision]).[ext]")
+                    }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeGroup("com.yarnpkg") }
+        }
+
+        exclusiveContent {
+            forRepository {
+                ivy("https://github.com/WebAssembly/binaryen/releases/download") {
+                    name = "Binaryen distributions"
+                    patternLayout {
+                        artifact("version_[revision]/[module]-version_[revision]-[classifier].[ext]")
+                    }
+                    metadataSources { artifact() }
+                }
+            }
+            filter { includeGroup("com.github.webassembly") }
+        }
     }
 }
 ```
 
-`FAIL_ON_PROJECT_REPOS` prevents subprojects from quietly adding unreviewed repositories.
+`PREFER_SETTINGS` means repositories added by subprojects/plugins do not replace the reviewed settings-level source list. The three `exclusiveContent` blocks prevent those tool-distribution hosts from becoming general-purpose Maven repositories.
+
+Do not add arbitrary repositories to work around dependency-resolution failures. Add a source only when its ownership, artifact group, URL pattern, and necessity are understood and documented.
 
 ### Modules
 
@@ -76,11 +121,12 @@ File:
 gradle/libs.versions.toml
 ```
 
-Current major project baseline entries include:
+Current validated baseline entries include:
 
 ```text
 Kotlin 2.4.10
 Compose Multiplatform 1.11.0
+Compose Material 3 1.11.0-alpha07
 Android Gradle Plugin 9.3.0
 AndroidX Activity Compose 1.13.0
 Kotlin Coroutines 1.10.2
@@ -90,21 +136,15 @@ Android target SDK 36
 Android min SDK 26
 ```
 
-The catalog supplies aliases for Android, Kotlin Multiplatform/JVM, Compose, browser APIs, and related plugins/dependencies.
+Compose Runtime, Foundation, Animation, UI, UI Test, and Material 3 use explicit Maven coordinates in the version catalog. This avoids Compose 1.11 Gradle-plugin dependency aliases that are deprecated at error level.
 
-These are repository baselines, not claims that each number is globally the newest release.
+The desktop runtime is the exception on this pinned Compose 1.11 baseline: `compose.desktop.currentOs` is used by the desktop application and desktop test source set because the later all-platform desktop aggregate artifact is not published for Compose 1.11.0. Revisit that dependency only as part of a tested Compose upgrade.
+
+These are repository compatibility baselines, not claims that every number is globally newest.
 
 ## `gradle.properties`
 
-Current properties control:
-
-- Gradle max JVM heap;
-- UTF-8 file encoding;
-- build cache;
-- configuration cache;
-- parallel execution;
-- official Kotlin code style;
-- incremental Kotlin compilation.
+Current properties control Gradle heap, UTF-8 file encoding, build/configuration caches, parallel execution, Kotlin code style, and incremental compilation.
 
 Cross-platform target additions should be tested with configuration caching enabled because new plugins/tasks can expose incompatibilities.
 
@@ -133,7 +173,16 @@ compile SDK: 36
 minimum SDK: 26
 JVM target: 17
 Android resources: enabled
+host-side tests: enabled
 ```
+
+Host tests are explicitly opted in with:
+
+```kotlin
+withHostTest {}
+```
+
+The Android-KMP plugin disables host/device test components by default, so this opt-in ensures common regression tests are also compiled/executed through the Android host target.
 
 Its platform persistence implementation lives under `androidMain`.
 
@@ -145,9 +194,7 @@ Configured as:
 jvm("desktop")
 ```
 
-with JVM target 17.
-
-This target supplies shared code to the Windows/Linux/macOS JVM desktop application.
+with JVM target 17. It supplies shared code to the Windows/Linux/macOS JVM desktop application.
 
 ### iOS/iPadOS targets
 
@@ -165,21 +212,9 @@ listOf(
 }
 ```
 
-`iosArm64` produces a framework for physical modern iPhone/iPad arm64 devices.
-
-`iosSimulatorArm64` produces a framework for Apple-silicon iOS simulators.
-
-Both frameworks use the same base name:
-
-```text
-RpsArenaShared
-```
-
-The native SwiftUI host imports that framework.
+`iosArm64` targets modern physical iPhone/iPad arm64 devices. `iosSimulatorArm64` targets Apple-silicon iOS simulators. Both frameworks use the base name `RpsArenaShared` and are consumed by the native SwiftUI host.
 
 ### Kotlin/JS browser target
-
-Configured:
 
 ```kotlin
 js {
@@ -191,8 +226,6 @@ In `:shared` this is a library target. The executable browser app lives in `:web
 
 ### Kotlin/Wasm browser target
 
-Configured:
-
 ```kotlin
 wasmJs {
     browser()
@@ -203,38 +236,17 @@ This is also a shared library target.
 
 ### Default hierarchy
 
-`applyDefaultHierarchyTemplate()` is used after defining the targets.
-
-This allows common intermediate source sets such as `webMain` to share browser-specific implementations between Kotlin/JS and Kotlin/Wasm while retaining `commonMain` for code shared by every platform.
+`applyDefaultHierarchyTemplate()` is used after defining the targets. It enables common intermediate source sets such as `webMain` to share browser-specific implementations between Kotlin/JS and Kotlin/Wasm while retaining `commonMain` for code shared by every platform.
 
 ## Shared source-set structure
 
 ### `commonMain`
 
-Contains product code that must compile for all targets.
-
-Dependencies include:
-
-- Compose Runtime;
-- Compose Foundation;
-- Compose Animation;
-- Material 3;
-- Compose UI;
-- Kotlin Coroutines Core.
-
-Examples of common responsibilities:
-
-- models;
-- game rules;
-- CPU strategy;
-- state machine;
-- repository/backup codecs;
-- localization;
-- shared UI;
-- logging abstraction;
-- private-room contracts.
+Contains platform-independent product code. Dependencies include Compose Runtime, Foundation, Animation, Material 3, UI, and Kotlin Coroutines Core.
 
 Do not put Android `Context`, Foundation/UIKit classes, Java-only APIs, or browser DOM APIs directly in `commonMain`.
+
+The private-room `RoomCode` type is intentionally a normal immutable data class rather than a JVM-only inline wrapper, so the same validated code type compiles on JVM, Native, JS, and Wasm.
 
 ### `commonTest`
 
@@ -250,26 +262,19 @@ Contains the JVM desktop `actual PlatformStore` backed by Java Preferences.
 
 ### `iosMain`
 
-Shared by configured iOS targets through the hierarchy.
-
-Contains:
-
-```text
-PlatformStore.ios.kt
-MainViewController.kt
-```
-
-The first adapts NSUserDefaults. The second exposes a `ComposeUIViewController` to Swift.
+Contains `PlatformStore.ios.kt` and `MainViewController.kt`; it is shared by the configured iOS targets through the default hierarchy.
 
 ### `webMain`
 
-Shared by JS and Wasm browser targets.
-
-Contains browser-local persistence through `window.localStorage` and depends on `kotlinx-browser`.
+Shared by JS and Wasm browser targets. It contains browser-local persistence through `window.localStorage` and depends on `kotlinx-browser`.
 
 ### `desktopTest`
 
-Adds Compose desktop UI-test dependencies and contains shared UI smoke tests.
+Adds Compose desktop UI-test dependencies and contains UI smoke tests. Tests use the Compose Multiplatform v2 runner import:
+
+```kotlin
+androidx.compose.ui.test.v2.runComposeUiTest
+```
 
 ## `expect` / `actual` storage architecture
 
@@ -288,23 +293,13 @@ shared/src/iosMain/.../PlatformStore.ios.kt
 shared/src/webMain/.../PlatformStore.web.kt
 ```
 
-This is the intended multiplatform boundary: only the physical string-storage mechanism varies. `ArenaRepository` remains the schema, migration, validation, and backup authority.
+Only the physical string-storage mechanism varies. `ArenaRepository` remains the schema, migration, validation, and backup authority.
 
 ## `:androidApp`
 
-File:
+File: `androidApp/build.gradle.kts`.
 
-```text
-androidApp/build.gradle.kts
-```
-
-The Android application uses:
-
-- Android application plugin;
-- Compose Multiplatform;
-- Compose compiler;
-- dependency on `:shared`;
-- AndroidX Activity Compose.
+The Android application uses the Android application plugin, Compose Multiplatform/compiler, `:shared`, and AndroidX Activity Compose.
 
 Current identity:
 
@@ -324,97 +319,39 @@ major * 10000 + minor * 100 + patch
 
 ## `:desktopApp`
 
-File:
+File: `desktopApp/build.gradle.kts`.
+
+The JVM desktop app depends on `:shared` and `compose.desktop.currentOs` for the pinned Compose 1.11 runtime.
 
 ```text
-desktopApp/build.gradle.kts
-```
-
-The JVM desktop app depends on `:shared` and `compose.desktop.currentOs`.
-
-Main class:
-
-```text
-in.sanskar.rpsarena.desktop.MainKt
-```
-
-Package version:
-
-```text
-2.5.8
-```
-
-Declared native package formats:
-
-```text
-DMG
-MSI
-DEB
+main class: in.sanskar.rpsarena.desktop.MainKt
+package version: 2.5.8
+native formats: DMG, MSI, DEB
 ```
 
 The JVM source is cross-platform across Windows/Linux/macOS, while native installer generation/signing remains host-dependent.
 
 ## `:webApp`
 
-File:
+File: `webApp/build.gradle.kts`.
 
-```text
-webApp/build.gradle.kts
-```
-
-Plugins:
-
-- Kotlin Multiplatform;
-- Compose Multiplatform;
-- Compose compiler.
-
-### Executable JS target
-
-```kotlin
-js {
-    browser()
-    binaries.executable()
-}
-```
-
-### Executable Wasm target
-
-```kotlin
-wasmJs {
-    browser()
-    binaries.executable()
-}
-```
-
-The app applies the default hierarchy and places shared browser startup code under `webMain`.
-
-`commonMain` depends on:
-
-```text
-:shared
-Compose Runtime
-Compose UI
-```
+It declares executable Kotlin/JS and Kotlin/Wasm browser targets and depends on `:shared`, Compose Runtime, and Compose UI.
 
 The app entry point attaches `ComposeViewport` to the HTML host and renders `RpsArenaApp()`.
 
-## Web compatibility distribution
-
-Preferred production Web build:
+Preferred production build:
 
 ```bash
 gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
 ```
 
-Expected generated output:
+Expected output:
 
 ```text
 webApp/build/dist/composeWebCompatibility/productionExecutable/
 ```
 
-This combines Wasm and JS browser outputs through Compose's compatibility packaging path.
-
-Development commands include:
+Development commands:
 
 ```bash
 gradle :webApp:wasmJsBrowserDevelopmentRun --stacktrace
@@ -423,38 +360,15 @@ gradle :webApp:jsBrowserDevelopmentRun --stacktrace
 
 ## Native iOS host
 
-Directory:
+Directory: `iosApp/`.
 
-```text
-iosApp/
-```
-
-This is not included with `include(...)` because it is an Xcode application project.
-
-The native host consists of:
-
-```text
-iosApp.xcodeproj
-iosApp.swift
-ContentView.swift
-Info.plist
-```
-
-The SwiftUI layer imports `RpsArenaShared` and embeds `MainViewController()` exported from Kotlin.
-
-## Direct Kotlin/Xcode integration
-
-The Xcode project has a shell build phase that runs:
+The native SwiftUI layer imports `RpsArenaShared` and embeds `MainViewController()` exported from Kotlin. The Xcode project has a shell build phase that runs:
 
 ```bash
 gradle :shared:embedAndSignAppleFrameworkForXcode
 ```
 
-from repository root.
-
-Because this repository currently does not track a Gradle Wrapper, the build phase intentionally invokes the installed `gradle` executable. If the repository later adopts the official wrapper, update this build phase and every documented command consistently.
-
-## iOS framework tasks
+Because the repository currently does not track a Gradle Wrapper, the build phase invokes the installed `gradle` executable.
 
 Simulator Debug:
 
@@ -474,25 +388,14 @@ Device Release:
 gradle :shared:linkReleaseFrameworkIosArm64 --stacktrace
 ```
 
-Generated frameworks live under module build output and are not tracked.
-
-## iOS version metadata
-
-`Info.plist`:
+Version metadata:
 
 ```text
 CFBundleShortVersionString = 2.5.8
 CFBundleVersion = 20508
-```
-
-Xcode target:
-
-```text
 MARKETING_VERSION = 2.5.8
 CURRENT_PROJECT_VERSION = 20508
 ```
-
-The same numeric build-code convention used by Android is enforced for iOS by `scripts/check_version.py`.
 
 ## Why platform apps remain thin
 
@@ -505,51 +408,7 @@ Desktop Window --------┤
 Web ComposeViewport ---┘
 ```
 
-Avoid duplicating:
-
-- `RulesEngine`;
-- CPU algorithms;
-- persistence codecs;
-- backup schema;
-- match state machine;
-- localization catalogs;
-- achievement logic
-
-inside platform hosts.
-
-## Build task dependency behavior
-
-Android:
-
-```bash
-gradle :androidApp:assembleDebug
-```
-
-automatically builds the required shared Android variant.
-
-Desktop:
-
-```bash
-gradle :desktopApp:classes
-```
-
-builds the shared desktop JVM dependency.
-
-Web:
-
-```bash
-gradle :webApp:composeCompatibilityBrowserDistribution
-```
-
-builds the required shared JS/Wasm outputs.
-
-iOS:
-
-```bash
-gradle :shared:linkDebugFrameworkIosSimulatorArm64
-```
-
-builds the shared native framework. Xcode then embeds/links the framework through the configured direct integration.
+Avoid duplicating rules, CPU algorithms, persistence codecs, backup schema, match state, localization, or achievement logic inside platform hosts.
 
 ## Generated output
 
@@ -568,40 +427,27 @@ DerivedData/
 rust-engine/target/
 ```
 
-Do not treat generated installers/frameworks/npm-style package caches as source files.
-
-## `local.properties`
-
-Android tools commonly use `local.properties` for a machine-specific SDK path. It remains ignored because committing one developer's SDK path would reduce portability.
+`local.properties` remains ignored because Android SDK paths are machine-specific.
 
 ## No Gradle Wrapper currently tracked
 
-The repository currently relies on:
+Local development/Xcode direct integration uses an installed Gradle executable; GitHub Actions provisions Gradle 9.5.1 through `gradle/actions/setup-gradle`.
 
-- an installed Gradle for local development/Xcode direct integration;
-- `gradle/actions/setup-gradle` in GitHub Actions.
-
-All repository commands therefore use:
+Commands therefore use:
 
 ```text
 gradle
 ```
 
-rather than:
-
-```text
-./gradlew
-```
-
-A future wrapper change should be generated through trusted Gradle tooling, integrity-reviewed, and applied consistently across local docs, Xcode scripts, and CI.
+rather than `./gradlew`. A future wrapper adoption must update local docs, Xcode scripts, and CI consistently and review wrapper integrity before commit.
 
 ## Cross-platform CI mapping
 
-Ubuntu job validates:
+Ubuntu Kotlin job validates:
 
 ```text
 source/security/privacy/version gates
-shared tests
+shared tests including Android host tests
 Android lint/build
 desktop JVM compilation
 Web compatibility distribution
@@ -614,30 +460,11 @@ iOS simulator framework
 iOS SwiftUI/Xcode simulator host
 ```
 
-Rust job validates:
-
-```text
-optional Rust crate tests
-```
+Rust job validates the optional crate tests. Focused Security and CodeQL workflows run independently.
 
 ## Configuration changes requiring broad validation
 
-Run the full relevant gate after changing:
-
-- `settings.gradle.kts`;
-- root `build.gradle.kts`;
-- `gradle.properties`;
-- version catalog;
-- any module `build.gradle.kts`;
-- KMP target declarations/hierarchy;
-- Android SDK levels;
-- Kotlin/Compose/AGP versions;
-- JVM target/toolchain;
-- browser target configuration;
-- iOS framework configuration;
-- Xcode framework integration;
-- source-set dependencies;
-- native packaging formats.
+Run the full relevant gate after changing settings, root/version-catalog/module Gradle files, target declarations/hierarchy, SDK levels, Kotlin/Compose/AGP versions, JVM targets, browser configuration, iOS framework integration, source-set dependencies, or native packaging formats.
 
 Portable gate:
 
@@ -656,7 +483,7 @@ gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
 cargo test --manifest-path rust-engine/Cargo.toml --all-targets
 ```
 
-On macOS also validate iOS framework/Xcode host builds.
+On macOS also validate the iOS framework and Xcode simulator host.
 
 ## Build-system ownership principles
 
@@ -665,13 +492,13 @@ Use one obvious source of truth where practical:
 - dependency/plugin/SDK versions -> version catalog;
 - semantic release version -> synchronized Android/Desktop/iOS/shared declarations checked by script;
 - mobile numeric build code -> deterministic semantic mapping checked by script;
-- Gradle module list -> `settings.gradle.kts`;
+- Gradle module/repository policy -> `settings.gradle.kts`;
 - generic Gradle runtime behavior -> `gradle.properties`;
 - Android packaging -> Android module;
 - desktop packaging -> desktop module;
 - browser executables/distribution -> Web module;
 - iOS framework -> shared KMP module;
-- iOS native shell/signing settings -> Xcode project;
+- iOS shell/signing settings -> Xcode project;
 - optional Rust metadata -> `rust-engine/Cargo.toml`.
 
-Clear ownership prevents platform-specific drift while keeping the shared product behavior genuinely multiplatform.
+Clear ownership prevents platform-specific drift while keeping shared product behavior genuinely multiplatform.
