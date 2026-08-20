@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "rps-arena"
-include(":shared", ":androidApp", ":desktopApp")
+include(":shared", ":androidApp", ":desktopApp", ":webApp")
