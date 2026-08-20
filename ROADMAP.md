@@ -10,7 +10,7 @@
 - [x] Optional Rust rules mirror.
 - [x] CI, CodeQL, repository governance, privacy, security, and release documentation.
 
-## v2.5.8 — Product completion and release hardening
+## v2.5.8 — Product completion, cross-platform expansion, and release hardening
 
 - [x] Configurable 5/10/20/30/60-second round timers with an Off option.
 - [x] Explicit timeout outcomes that update score, statistics, trends, and history consistently.
@@ -27,17 +27,22 @@
 - [x] Private-room lifecycle authority, sender identity, positive-round, room-code, participant-limit, and close-event validation.
 - [x] Shared business/persistence/localization/protocol regression coverage.
 - [x] Compose desktop UI smoke tests for onboarding, primary play navigation, Hindi gameplay/achievements, backup controls, and destructive reset confirmation.
-- [x] Repository formatting and Android lint CI gates.
-- [x] Localization-safe version consistency verification across Android, desktop, shared metadata, About UI, and Android semantic `versionCode`.
-- [x] Reproducible tag workflow for unsigned Android/Linux/Rust release artifacts and checksums.
-- [x] Complete setup, development, testing, accessibility, performance, troubleshooting, architecture, ADR, and release guides.
+- [x] Android application target for API 26+.
+- [x] JVM desktop support for Windows, Linux, and macOS.
+- [x] iPhone/iPad support through Kotlin/Native device/simulator frameworks plus a SwiftUI/Xcode host.
+- [x] Web application with Kotlin/Wasm plus Kotlin/JS compatibility distribution and browser localStorage persistence.
+- [x] CI validation for Android, desktop, Web compatibility output, iOS simulator framework/host, and Rust.
+- [x] Localization-safe version consistency verification across Android, desktop, iOS, shared metadata, About UI, and deterministic mobile build codes.
+- [x] Reproducible tag workflow for unsigned Android/Linux/Web/iOS-framework/Rust release artifacts and checksums.
+- [x] Repository formatting, documentation completeness, secret-pattern, Android privacy, and Android lint CI gates.
+- [x] Complete setup, development, testing, accessibility, performance, troubleshooting, architecture, platform, ADR, and release guides.
 
 ## Next optional/platform-dependent work
 
 - [ ] Add a real LAN transport adapter behind `PrivateRoomGateway` only if an explicit networking release is approved. Primary gameplay must remain fully offline and must not acquire mandatory networking.
-- [ ] Add device/emulator-driven Android Compose instrumentation tests and broaden desktop UI journeys when an emulator-backed CI runner is approved for the project.
-- [ ] Add signed Android store and signed/notarized desktop release jobs only after signing credentials are configured in an authorized secret store. Never commit release credentials.
-- [ ] Evaluate optional iOS packaging without weakening Android/desktop quality or the offline-first architecture.
+- [ ] Add device/emulator-driven Android Compose instrumentation tests and broaden platform UI journeys when runner cost/stability is approved for the project.
+- [ ] Add signed Android store, signed/notarized desktop, and signed App Store/TestFlight release jobs only after authorized signing credentials are configured outside Git. Never commit release credentials.
+- [ ] Evaluate additional platform families only when they have a meaningful product use case and can maintain the same privacy, accessibility, testing, and documentation quality bar.
 
 ## Roadmap rules
 
