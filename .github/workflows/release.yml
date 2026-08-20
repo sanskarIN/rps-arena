@@ -30,7 +30,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
       - uses: android-actions/setup-android@v4
         with:
           packages: "platform-tools platforms;android-36 build-tools;36.0.0"
@@ -57,7 +56,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.5.1"
@@ -79,7 +77,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.5.1"
@@ -103,7 +100,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.5.1"
