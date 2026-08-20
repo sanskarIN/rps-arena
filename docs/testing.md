@@ -23,6 +23,8 @@ The focused `Security checks` workflow independently repeats the secret/privacy 
 gradle :shared:allTests --stacktrace
 ```
 
+The Android KMP library target explicitly enables host-side tests with `withHostTest {}`. This prevents common tests from silently skipping Android-host compilation under the Android-KMP plugin, where host and device tests are disabled by default.
+
 Coverage includes:
 
 - every classic rule direction and draw behavior;
@@ -40,14 +42,33 @@ Coverage includes:
 - CPU and local-two-player timeout scoring;
 - backup restore refreshing in-memory state;
 - English/Hindi gesture, difficulty, match-mode, version metadata, and achievement-copy catalogs;
-- private-room code validation, two-participant limits, sender validation, positive-round validation, lifecycle-event authority, event exchange, and idempotent close behavior;
+- private-room code validation, normalized value semantics, independently parsed room-key equality, two-participant limits, sender validation, positive-round validation, lifecycle-event authority, event exchange, and idempotent close behavior;
 - no-op structured logger sensitive-field redaction, output bounds, and event-name validation.
 
 See `docs/test-catalog.md` for a file-by-file description of every automated test.
 
+## Android KMP host tests
+
+Host-side tests are enabled in `shared/build.gradle.kts`:
+
+```kotlin
+android {
+    // ...
+    withHostTest {}
+}
+```
+
+Run the Android host-test target directly with:
+
+```bash
+gradle :shared:testAndroidHostTest --stacktrace
+```
+
+These tests execute on the host JVM; they do not replace emulator/device instrumentation or accessibility review. Their purpose is to ensure shared/common test code continues compiling and behaving correctly through the Android KMP target as well as the desktop/native/web targets.
+
 ## Compose desktop UI smoke tests
 
-The `desktopTest` source set uses Compose Multiplatform's UI test runtime. The current smoke suite verifies:
+The `desktopTest` source set uses Compose Multiplatform's v2 UI-test runner (`androidx.compose.ui.test.v2.runComposeUiTest`). The current smoke suite verifies:
 
 - onboarding reaches the home screen and primary Play journey;
 - Rock/Paper/Scissors controls are rendered on the primary gameplay screen;
@@ -86,7 +107,7 @@ gradle :androidApp:assembleDebug --stacktrace
 
 This verifies Android lint, packaging, shared Android compilation, resources, launcher assets, and the primary entry point.
 
-Android device/emulator instrumentation remains a platform-dependent follow-up; the repository does not pretend that a desktop UI runner is equivalent to TalkBack or device behavior.
+Android device/emulator instrumentation remains a platform-dependent follow-up; the repository does not pretend that host-side or desktop UI tests are equivalent to TalkBack or physical-device behavior.
 
 ## Desktop build verification
 
@@ -99,6 +120,38 @@ For native packaging on a supported host OS:
 ```bash
 gradle :desktopApp:packageDistributionForCurrentOS --stacktrace
 ```
+
+## Web build verification
+
+The CI/release Web gate builds the combined Kotlin/Wasm + Kotlin/JS compatibility distribution:
+
+```bash
+gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+```
+
+This exercises the shared Web source set, Kotlin web toolchain setup, both browser backends, and compatibility packaging. Browser interaction, persistence, keyboard/touch, and accessibility behavior still require the manual checks documented in `docs/web-platform.md`.
+
+## iOS/iPadOS verification
+
+On macOS, build the simulator framework:
+
+```bash
+gradle :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+```
+
+Then validate the unsigned simulator host:
+
+```bash
+xcodebuild \
+  -project iosApp/iosApp.xcodeproj \
+  -scheme "RPS Arena" \
+  -sdk iphonesimulator \
+  -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+This verifies Kotlin/Native compilation, the exported framework, SwiftUI host integration, and simulator linkage without requiring private Apple signing credentials.
 
 ## Rust engine
 
@@ -126,10 +179,14 @@ Before release, verify:
 12. malformed backup text is rejected without overwriting valid local data;
 13. reduced-motion mode removes result transition animation;
 14. Android automatic backup remains disabled and explicit text export remains functional;
-15. keyboard and TalkBack/accessible navigation checks from `docs/accessibility.md` pass.
+15. keyboard and TalkBack/VoiceOver/browser accessibility checks from `docs/accessibility.md` pass;
+16. the Web compatibility build starts in both Wasm-capable and JS-fallback paths;
+17. the iOS simulator host renders the shared application and retains local settings through NSUserDefaults.
 
 ## CI gate
 
-`.github/workflows/ci.yml` runs formatting, relative docs links, tracked-file documentation coverage, secret patterns, Android privacy, version consistency, shared tests (including desktop UI smoke tests), Android lint/debug assembly, desktop classes, and Rust tests. `.github/workflows/security.yml` repeats focused security/privacy checks and dependency review. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
+`.github/workflows/ci.yml` runs formatting, relative docs links, tracked-file documentation coverage, secret patterns, Android privacy, version consistency, shared tests, Android lint/debug assembly, desktop classes, the Web compatibility distribution, the iOS simulator framework/SwiftUI host build, and Rust tests.
+
+`.github/workflows/security.yml` repeats focused security/privacy checks and dependency review. `.github/workflows/codeql.yml` performs Kotlin/Java static security analysis.
 
 A release candidate should not be merged while any required check is failing or still pending on the exact candidate SHA.
