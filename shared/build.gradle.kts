@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -26,6 +27,21 @@ kotlin {
         }
     }
 
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64(),
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "RpsArenaShared"
+            isStatic = true
+        }
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
+
     sourceSets {
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -41,6 +57,9 @@ kotlin {
         desktopTest.dependencies {
             implementation(compose.uiTest)
             implementation(compose.desktop.currentOs)
+        }
+        wasmJsMain.dependencies {
+            implementation(libs.kotlinx.browser)
         }
     }
 }
