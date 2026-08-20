@@ -53,10 +53,10 @@ Input is:
 1. trimmed;
 2. converted to uppercase.
 
-So:
+So an input containing a leading and trailing space, represented here as:
 
 ```text
- abc234 
+␠abc234␠
 ```
 
 normalizes to:
@@ -597,17 +597,19 @@ Before release:
 - lifecycle tests;
 - threat model documented;
 - privacy policy updated;
-- Android/Desktop manual network testing performed.
+- Android/Desktop/manual network testing performed on every platform that ships the transport.
 
 ## Files likely affected by real LAN work
 
 - `PrivateRoom.kt` or a successor protocol package;
 - platform-specific source sets/adapters;
 - Android manifest if permissions are needed;
+- iOS entitlement/info configuration if local-network features require it;
+- Web transport/security policy when browser networking is involved;
 - room state coordinator;
 - UI screens/localization;
 - protocol tests;
-- Android/desktop integration tests;
+- platform integration tests;
 - `PRIVACY.md`;
 - `SECURITY.md`;
 - `docs/architecture.md`;
@@ -617,4 +619,4 @@ Before release:
 
 ## Current release statement
 
-As of the v2.5.8 candidate documented here, private-room support means **testable transport-neutral architecture and an in-memory two-player reference adapter**, not production LAN multiplayer. Primary gameplay remains fully offline and no Android internet permission has been introduced.
+As of the v2.5.8 candidate documented here, private-room support means **testable transport-neutral architecture and an in-memory two-player reference adapter**, not production LAN multiplayer. Primary gameplay remains offline-first and the Android application has not introduced an internet permission.
