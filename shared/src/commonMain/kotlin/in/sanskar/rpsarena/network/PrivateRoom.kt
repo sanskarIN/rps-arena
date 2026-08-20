@@ -2,8 +2,7 @@ package `in`.sanskar.rpsarena.network
 
 import `in`.sanskar.rpsarena.model.Gesture
 
-@JvmInline
-value class RoomCode private constructor(val value: String) {
+data class RoomCode private constructor(val value: String) {
     companion object {
         private val allowed = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toSet()
 
