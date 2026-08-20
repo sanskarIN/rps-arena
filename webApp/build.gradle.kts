@@ -7,14 +7,21 @@ plugins {
 }
 
 kotlin {
+    js {
+        browser()
+        binaries.executable()
+    }
+
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         binaries.executable()
     }
 
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
-        wasmJsMain.dependencies {
+        commonMain.dependencies {
             implementation(project(":shared"))
             implementation(compose.runtime)
             implementation(compose.ui)
