@@ -6,9 +6,11 @@ RPS Arena now has an offline, human-readable backup/restore path for portable lo
 
 ### Milestone
 
-- Roadmap milestone: **1.1 offline portability**.
+- Roadmap milestone: **1.1 offline portability** — completed.
 - Feature branch: `feature/versioned-backups`.
-- Pull request: `#12` — `feat: add versioned offline backup and restore`.
+- Pull request: `#12` — merged.
+- Validated PR head: `10b3f1225df23b4f0d29df8a88ed949576124181`.
+- Merge commit: `e51db81dfec66c9b529ec0d4590a65b834ed73a8`.
 - Backup schema: `RPSARENA_BACKUP|1`.
 
 ### Completed work
@@ -52,7 +54,18 @@ Independent Kotlin/JVM checks were run against the new codec/model logic and sha
 - Kotlin compilation for the codec/model validation harness: **passed**;
 - validation harness result: **`ALL_BACKUP_CHECKS_OK`**.
 
-GitHub PR checks are required before merge. The repository CI covers shared Kotlin tests, Android debug assembly, desktop JVM classes, and Rust tests; CodeQL runs separately for Kotlin/Java security analysis.
+Pull request #12 was merged only after the repository checks completed successfully:
+
+- shared Kotlin tests: **passed**;
+- Android debug assembly: **passed**;
+- desktop JVM classes: **passed**;
+- optional Rust engine tests: **passed**;
+- CodeQL Kotlin/Java Android/Desktop build and analysis: **passed**.
+
+Validated workflow runs:
+
+- CI run `#587`: **success**;
+- CodeQL run `#588`: **success**.
 
 ### Compatibility and migration notes
 
@@ -71,7 +84,7 @@ GitHub PR checks are required before merge. The repository CI covers shared Kotl
 
 ### Next exact tasks
 
-After this milestone is validated and merged, the next roadmap work should prioritize:
+The next roadmap work should prioritize:
 
 1. localized string resources beyond English;
 2. dedicated UI automation coverage for Android and desktop;
@@ -92,6 +105,8 @@ After this milestone is validated and merged, the next roadmap work should prior
 - `8f88e115887e733351ec8080cda1ee3c136f1cfb` — `docs: add backup and restore to project overview`
 - `f795e07cb03cb416b3fa27d3063f1d06c6d128ee` — `docs: clarify privacy behavior for exported backups`
 - `abc0f97dd76b6b4fb133985b1bfcc123b9f8ca19` — `fix: correct match mode UI block structure`
+- `10b3f1225df23b4f0d29df8a88ed949576124181` — `docs: update handoff for backup milestone`
+- `e51db81dfec66c9b529ec0d4590a65b834ed73a8` — merged validated backup/restore milestone into `main`.
 
 ## 2026-08-19 — Complete repository baseline
 
