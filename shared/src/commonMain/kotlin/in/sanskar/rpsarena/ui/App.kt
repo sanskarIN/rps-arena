@@ -113,7 +113,7 @@ private fun PlayScreen(state: ArenaState) {
         }
         ConfigRow("Mode") {
             MatchMode.entries.forEach { m ->
-                ChoiceChip(m.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }, config.matchMode == m) { state.updateConfig(config.copy(matchMode = m)) } }
+                ChoiceChip(m.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }, config.matchMode == m) { state.updateConfig(config.copy(matchMode = m)) }
             }
         }
         ScoreCard(state)
