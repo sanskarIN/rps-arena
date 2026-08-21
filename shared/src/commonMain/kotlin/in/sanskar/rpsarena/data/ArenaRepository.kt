@@ -19,7 +19,26 @@ class ArenaRepository(private val store: PlatformStore = PlatformStore) {
 
     fun addHistory(line: String) {
         val updated = (listOf(line.replace('\n', ' ')) + loadHistory()).take(MAX_HISTORY)
-        store.putString(KEY_HISTORY, updated.joinToString("\n"))
+        saveHistory(updated)
+    }
+
+    fun exportBackup(): String = ArenaBackupCodec.encode(
+        ArenaBackup(
+            settings = loadSettings(),
+            stats = loadStats(),
+            history = loadHistory(),
+        ),
+    )
+
+    fun importBackup(raw: String): ArenaBackupImportResult = when (val result = ArenaBackupCodec.decode(raw)) {
+        is ArenaBackupDecodeResult.Failure -> ArenaBackupImportResult.Failure(result.error)
+        is ArenaBackupDecodeResult.Success -> {
+            val backup = result.backup
+            saveSettings(backup.settings)
+            saveStats(backup.stats)
+            saveHistory(backup.history)
+            ArenaBackupImportResult.Success(backup.history.size)
+        }
     }
 
     internal fun encodeSettings(value: ArenaSettings): String = listOf(
@@ -57,8 +76,18 @@ class ArenaRepository(private val store: PlatformStore = PlatformStore) {
         return ArenaStats(p[0], p[1], p[2], p[3], p[4], p[5])
     }
 
+    private fun saveHistory(lines: List<String>) {
+        val sanitized = lines
+            .asSequence()
+            .map { it.replace('\r', ' ').replace('\n', ' ').trim() }
+            .filter { it.isNotEmpty() }
+            .take(MAX_HISTORY)
+            .toList()
+        store.putString(KEY_HISTORY, sanitized.joinToString("\n"))
+    }
+
     companion object {
-        const val MAX_HISTORY = 30
+        const val MAX_HISTORY = ArenaBackupCodec.MAX_HISTORY_ITEMS
         private const val KEY_SETTINGS = "settings_v1"
         private const val KEY_STATS = "stats_v1"
         private const val KEY_HISTORY = "history_v1"

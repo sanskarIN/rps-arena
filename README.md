@@ -20,6 +20,7 @@
 - Best-of-3, Best-of-5, Endless, Streak, and Tournament modes.
 - Deterministic seeded CPU matches for reproducibility.
 - Offline stats, recent history, achievements, settings, and onboarding.
+- Versioned offline backup and restore for settings, aggregate stats, and recent history.
 - Light/dark/system theme options and reduced-motion preference.
 - Android + desktop from a Kotlin Multiplatform/Compose Multiplatform codebase.
 - Optional standalone Rust rules engine for experimentation.
@@ -42,7 +43,7 @@ desktopApp/   Desktop entry point and native packaging
 shared/       Shared game engine, state, persistence, UI, tests
 rust-engine/  Optional standalone Rust rules mirror
 assets/       Logo and splash artwork
-docs/         Architecture, release, testing and support documentation
+docs/         Architecture, backup, release, testing and support documentation
 ```
 
 ## Build
@@ -62,6 +63,12 @@ gradle :androidApp:assembleDebug
 - **Expert:** after enough history, estimates the player's most frequent gesture and usually counters it, while retaining randomness.
 
 The CPU does not use internet services or hidden machine-learning models.
+
+## Backup and restore
+
+Open **Settings → Backup & restore** to export or import a versioned text backup. Imports are fully validated before saved RPS Arena data is replaced, and the feature does not add networking or new Android permissions.
+
+See [docs/BACKUP.md](docs/BACKUP.md) for the schema, validation rules, compatibility contract, and privacy guidance.
 
 ## Privacy
 

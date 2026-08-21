@@ -10,9 +10,11 @@ All notable changes to RPS Arena are documented here.
 - Classic and Lizard–Spock rules.
 - CPU and same-device two-player modes.
 - Multiple match formats, local stats, recent history, settings, achievements, and onboarding.
+- Versioned schema-v1 offline backup and restore for settings, aggregate stats, and recent history.
+- Backup validation that rejects malformed or unsupported data before repository writes begin.
 - Android adaptive icon assets and project splash artwork.
 - Optional Rust rules engine.
-- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, and testing documentation.
+- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, testing, and backup documentation.
 
 ### Fixed
 - Aligned Android builds and documentation with stable compile/target SDK 36.

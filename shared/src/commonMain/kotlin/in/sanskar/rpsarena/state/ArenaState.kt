@@ -3,6 +3,7 @@ package `in`.sanskar.rpsarena.state
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import `in`.sanskar.rpsarena.data.ArenaBackupImportResult
 import `in`.sanskar.rpsarena.data.ArenaRepository
 import `in`.sanskar.rpsarena.engine.CpuStrategy
 import `in`.sanskar.rpsarena.engine.RulesEngine
@@ -46,6 +47,17 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
     fun updateSettings(value: ArenaSettings) {
         settings = value
         repository.saveSettings(value)
+    }
+
+    fun exportBackup(): String = repository.exportBackup()
+
+    fun importBackup(raw: String): ArenaBackupImportResult {
+        val result = repository.importBackup(raw)
+        if (result is ArenaBackupImportResult.Success) {
+            settings = repository.loadSettings()
+            stats = repository.loadStats()
+        }
+        return result
     }
 
     fun updateConfig(value: MatchConfig) {

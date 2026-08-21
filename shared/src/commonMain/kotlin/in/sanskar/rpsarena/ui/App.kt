@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import `in`.sanskar.rpsarena.data.ArenaBackupError
+import `in`.sanskar.rpsarena.data.ArenaBackupImportResult
 import `in`.sanskar.rpsarena.data.ArenaRepository
 import `in`.sanskar.rpsarena.model.*
 import `in`.sanskar.rpsarena.state.ArenaScreen
@@ -220,6 +222,13 @@ private fun AchievementsScreen(state: ArenaState) {
 @Composable
 private fun SettingsScreen(state: ArenaState) {
     val s = state.settings
+    var showExport by remember { mutableStateOf(false) }
+    var showImport by remember { mutableStateOf(false) }
+    var exportText by remember { mutableStateOf("") }
+    var importText by remember { mutableStateOf("") }
+    var importError by remember { mutableStateOf<String?>(null) }
+    var backupStatus by remember { mutableStateOf<String?>(null) }
+
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
         Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
@@ -229,6 +238,96 @@ private fun SettingsScreen(state: ArenaState) {
         SwitchRow("Sound", s.soundEnabled) { state.updateSettings(s.copy(soundEnabled = it)) }
         SwitchRow("Haptics", s.hapticsEnabled) { state.updateSettings(s.copy(hapticsEnabled = it)) }
         Text("Accessibility: all core actions have text labels and support keyboard/touch navigation.")
+
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Text("Backup & restore", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text("Backups stay offline and contain your settings, aggregate stats, and up to 30 recent history entries.")
+        OutlinedButton(
+            onClick = {
+                exportText = state.exportBackup()
+                backupStatus = null
+                showExport = true
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Export backup") }
+        OutlinedButton(
+            onClick = {
+                importText = ""
+                importError = null
+                backupStatus = null
+                showImport = true
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Import backup") }
+        backupStatus?.let { Text(it, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold) }
+    }
+
+    if (showExport) {
+        AlertDialog(
+            onDismissRequest = { showExport = false },
+            title = { Text("Export backup") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Copy this versioned backup text and keep it somewhere you trust.")
+                    OutlinedTextField(
+                        value = exportText,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("RPS Arena backup") },
+                        minLines = 8,
+                        maxLines = 12,
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showExport = false }) { Text("Done") }
+            },
+        )
+    }
+
+    if (showImport) {
+        AlertDialog(
+            onDismissRequest = { showImport = false },
+            title = { Text("Import backup") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Paste a complete RPS Arena backup. Invalid or unsupported backups are rejected before saved data is changed.")
+                    OutlinedTextField(
+                        value = importText,
+                        onValueChange = {
+                            importText = it
+                            importError = null
+                        },
+                        label = { Text("Backup text") },
+                        minLines = 8,
+                        maxLines = 12,
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                    )
+                    importError?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = importText.isNotBlank(),
+                    onClick = {
+                        when (val result = state.importBackup(importText)) {
+                            is ArenaBackupImportResult.Success -> {
+                                backupStatus = "Backup imported (${result.importedHistoryCount} history entries)."
+                                importError = null
+                                showImport = false
+                            }
+                            is ArenaBackupImportResult.Failure -> {
+                                importError = backupErrorLabel(result.error)
+                            }
+                        }
+                    },
+                ) { Text("Import") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImport = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 
@@ -246,6 +345,15 @@ private fun AboutScreen(state: ArenaState) {
         Text("GitHub: github.com/sanskarIN/rps-arena")
         Text("Support development: buymeacoffee.com/sanskarIN")
     }
+}
+
+private fun backupErrorLabel(error: ArenaBackupError): String = when (error) {
+    ArenaBackupError.EMPTY -> "The backup is empty."
+    ArenaBackupError.INVALID_HEADER -> "This is not a valid RPS Arena backup."
+    ArenaBackupError.UNSUPPORTED_SCHEMA -> "This backup uses an unsupported schema version."
+    ArenaBackupError.MALFORMED_SETTINGS -> "The backup settings section is invalid."
+    ArenaBackupError.MALFORMED_STATS -> "The backup stats section is invalid or inconsistent."
+    ArenaBackupError.MALFORMED_HISTORY -> "The backup history section is invalid."
 }
 
 @Composable private fun BackButton(onClick: () -> Unit) = TextButton(onClick = onClick) { Text("← Back") }
