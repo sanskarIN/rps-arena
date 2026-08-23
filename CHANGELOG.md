@@ -12,9 +12,15 @@ All notable changes to RPS Arena are documented here.
 - Multiple match formats, local stats, recent history, settings, achievements, and onboarding.
 - Versioned schema-v1 offline backup and restore for settings, aggregate stats, and recent history.
 - Backup validation that rejects malformed or unsupported data before repository writes begin.
+- Compose Multiplatform string-resource localization with English fallback and Hindi translations.
+- Localization catalog parity and placeholder validation in local verification scripts and CI.
 - Android adaptive icon assets and project splash artwork.
 - Optional Rust rules engine.
-- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, testing, and backup documentation.
+- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, testing, backup, and localization documentation.
+
+### Changed
+- Moved shared UI copy, dynamic game labels, achievement text, and backup validation messages into localized resources.
+- Made achievement and local-turn state presentation-neutral so the UI owns localized copy.
 
 ### Fixed
 - Aligned Android builds and documentation with stable compile/target SDK 36.
@@ -30,6 +36,7 @@ All notable changes to RPS Arena are documented here.
 - Desktop JVM compilation passes.
 - Rust engine tests pass.
 - CodeQL Kotlin/Java analysis passes.
+- Localization catalogs expose matching keys and formatting placeholders.
 
 ## [1.0.0] - 2026-08-19
 
