@@ -24,18 +24,16 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         private set
     var pendingPlayerOne by mutableStateOf<Gesture?>(null)
         private set
-    var localTurnMessage by mutableStateOf("Player 1: choose secretly")
-        private set
 
     private var cpu = CpuStrategy(config.seed)
 
     val history: List<String> get() = repository.loadHistory()
     val achievements: List<Achievement> get() = listOf(
-        Achievement("first_win", "First Victory", "Win your first round", stats.wins >= 1),
-        Achievement("ten_rounds", "Arena Regular", "Play 10 rounds", stats.roundsPlayed >= 10),
-        Achievement("streak_3", "On Fire", "Reach a 3-round win streak", stats.bestStreak >= 3),
-        Achievement("streak_7", "Unstoppable", "Reach a 7-round win streak", stats.bestStreak >= 7),
-        Achievement("century", "Century", "Play 100 rounds", stats.roundsPlayed >= 100),
+        Achievement("first_win", stats.wins >= 1),
+        Achievement("ten_rounds", stats.roundsPlayed >= 10),
+        Achievement("streak_3", stats.bestStreak >= 3),
+        Achievement("streak_7", stats.bestStreak >= 7),
+        Achievement("century", stats.roundsPlayed >= 100),
     )
 
     fun navigate(to: ArenaScreen) { screen = to }
@@ -69,7 +67,6 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         cpu = CpuStrategy(config.seed)
         match = MatchSnapshot(config)
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
     }
 
     fun play(gesture: Gesture) {
@@ -90,11 +87,9 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         val first = pendingPlayerOne
         if (first == null) {
             pendingPlayerOne = gesture
-            localTurnMessage = "Player 2: choose now — Player 1 move is hidden"
             return
         }
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
         recordRound(first, gesture)
     }
 
