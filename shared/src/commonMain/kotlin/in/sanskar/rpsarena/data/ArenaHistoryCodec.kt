@@ -24,18 +24,7 @@ internal object ArenaHistoryCodec {
             append(MAGIC).append('|').append(CURRENT_SCHEMA_VERSION).append('\n')
             append(COUNT).append('|').append(normalized.size)
             normalized.forEach { entry ->
-                append('\n')
-                when (entry) {
-                    is ArenaHistoryEntry.Round -> {
-                        append(ROUND)
-                            .append('|').append(entry.playerOne.name)
-                            .append('|').append(entry.playerTwo.name)
-                            .append('|').append(entry.outcome.name)
-                    }
-                    is ArenaHistoryEntry.Legacy -> {
-                        append(LEGACY).append('|').append(escape(entry.summary))
-                    }
-                }
+                append('\n').append(encodeEntry(entry) ?: error("History entry was normalized but could not be encoded"))
             }
         }
     }
@@ -62,7 +51,18 @@ internal object ArenaHistoryCodec {
         return lines.drop(2).map { line -> decodeEntry(line) ?: return null }
     }
 
-    private fun decodeEntry(line: String): ArenaHistoryEntry? {
+    internal fun encodeEntry(entry: ArenaHistoryEntry): String? = when (val normalized = sanitize(entry)) {
+        is ArenaHistoryEntry.Round -> buildString {
+            append(ROUND)
+                .append('|').append(normalized.playerOne.name)
+                .append('|').append(normalized.playerTwo.name)
+                .append('|').append(normalized.outcome.name)
+        }
+        is ArenaHistoryEntry.Legacy -> "$LEGACY|${escape(normalized.summary)}"
+        null -> null
+    }
+
+    internal fun decodeEntry(line: String): ArenaHistoryEntry? {
         val parts = line.split('|')
         return when (parts.firstOrNull()) {
             ROUND -> {
