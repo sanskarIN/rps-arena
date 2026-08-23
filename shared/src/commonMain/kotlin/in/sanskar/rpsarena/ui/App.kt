@@ -235,15 +235,30 @@ private fun GestureButton(gesture: Gesture, modifier: Modifier, onClick: () -> U
 
 @Composable
 private fun HistoryScreen(state: ArenaState) {
+    val history = state.historyEntries
     Column(Modifier.fillMaxSize().testTag(ArenaUiTags.HISTORY_SCREEN)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
         Text(stringResource(Res.string.history), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        if (state.history.isEmpty()) Text(stringResource(Res.string.history_empty))
+        if (history.isEmpty()) Text(stringResource(Res.string.history_empty))
         else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.history) { line -> Card(Modifier.fillMaxWidth()) { Text(line, Modifier.padding(14.dp)) } }
+            items(history) { entry ->
+                Card(Modifier.fillMaxWidth()) {
+                    Text(historyEntryLabel(entry), Modifier.padding(14.dp))
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun historyEntryLabel(entry: ArenaHistoryEntry): String = when (entry) {
+    is ArenaHistoryEntry.Round -> {
+        val first = "${entry.playerOne.emoji} ${stringResource(entry.playerOne.resource)}"
+        val second = "${entry.playerTwo.emoji} ${stringResource(entry.playerTwo.resource)}"
+        "${stringResource(Res.string.versus, first, second)} — ${stringResource(entry.outcome.resource)}"
+    }
+    is ArenaHistoryEntry.Legacy -> entry.summary
 }
 
 @Composable
