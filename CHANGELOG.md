@@ -14,13 +14,18 @@ All notable changes to RPS Arena are documented here.
 - Backup validation that rejects malformed or unsupported data before repository writes begin.
 - Compose Multiplatform string-resource localization with English fallback and Hindi translations.
 - Localization catalog parity and placeholder validation in local verification scripts and CI.
+- Shared Compose UI automation covering onboarding, navigation, gameplay, settings persistence, and backup dialogs.
+- Stable semantic UI tags that keep tests independent from translated labels.
+- Android device-test configuration and a dedicated test-host activity.
 - Android adaptive icon assets and project splash artwork.
 - Optional Rust rules engine.
-- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, testing, backup, and localization documentation.
+- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, testing, backup, localization, and UI-testing documentation.
 
 ### Changed
 - Moved shared UI copy, dynamic game labels, achievement text, and backup validation messages into localized resources.
 - Made achievement and local-turn state presentation-neutral so the UI owns localized copy.
+- Added an `ArenaStore` persistence boundary so tests can use isolated in-memory data while production keeps the existing platform store.
+- Expanded local and CI verification with desktop UI-test execution and Android device-test APK assembly.
 
 ### Fixed
 - Aligned Android builds and documentation with stable compile/target SDK 36.
@@ -37,6 +42,8 @@ All notable changes to RPS Arena are documented here.
 - Rust engine tests pass.
 - CodeQL Kotlin/Java analysis passes.
 - Localization catalogs expose matching keys and formatting placeholders.
+- Desktop shared UI tests are included in CI.
+- Android shared UI instrumentation tests compile into a device-test APK in CI.
 
 ## [1.0.0] - 2026-08-19
 
