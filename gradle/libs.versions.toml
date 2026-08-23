@@ -3,12 +3,17 @@ kotlin = "2.4.10"
 compose = "1.11.0"
 agp = "9.3.0"
 activityCompose = "1.13.0"
+androidxComposeUi = "1.11.1"
+androidxTestRunner = "1.7.0"
 androidCompileSdk = "36"
 androidTargetSdk = "36"
 androidMinSdk = "26"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-compose-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "androidxComposeUi" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidxComposeUi" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
