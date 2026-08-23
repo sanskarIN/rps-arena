@@ -6,7 +6,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import `in`.sanskar.rpsarena.data.ArenaRepository
-import `in`.sanskar.rpsarena.data.ArenaStore
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.ui.ArenaUiTags
 import `in`.sanskar.rpsarena.ui.RpsArenaApp
@@ -76,18 +75,8 @@ class RpsArenaUiTest {
     }
 
     private fun testRepository(onboardingComplete: Boolean = true): ArenaRepository {
-        val repository = ArenaRepository(InMemoryArenaStore())
+        val repository = ArenaRepository(TestArenaStore())
         repository.saveSettings(ArenaSettings(onboardingComplete = onboardingComplete))
         return repository
-    }
-}
-
-private class InMemoryArenaStore : ArenaStore {
-    private val values = mutableMapOf<String, String>()
-
-    override fun getString(key: String, defaultValue: String): String = values[key] ?: defaultValue
-
-    override fun putString(key: String, value: String) {
-        values[key] = value
     }
 }
