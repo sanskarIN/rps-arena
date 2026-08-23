@@ -21,6 +21,7 @@
 - Deterministic seeded CPU matches for reproducibility.
 - Offline stats, recent history, achievements, settings, and onboarding.
 - Versioned offline backup and restore for settings, aggregate stats, and recent history.
+- Shared Compose UI localization with English fallback and Hindi translations.
 - Light/dark/system theme options and reduced-motion preference.
 - Android + desktop from a Kotlin Multiplatform/Compose Multiplatform codebase.
 - Optional standalone Rust rules engine for experimentation.
@@ -40,17 +41,18 @@
 ```text
 androidApp/   Android entry point and packaging
 desktopApp/   Desktop entry point and native packaging
-shared/       Shared game engine, state, persistence, UI, tests
+shared/       Shared game engine, state, persistence, UI, resources, tests
 rust-engine/  Optional standalone Rust rules mirror
 assets/       Logo and splash artwork
-docs/         Architecture, backup, release, testing and support documentation
+docs/         Architecture, backup, localization, release, testing and support documentation
 ```
 
 ## Build
 
-Requirements: JDK 17+, Gradle 9.5.1, Android SDK 36 for Android, and a supported desktop OS.
+Requirements: JDK 17+, Gradle 9.5.1, Android SDK 36 for Android, Python 3 for catalog verification, and a supported desktop OS.
 
 ```bash
+python3 scripts/verify_localizations.py
 gradle :shared:allTests
 gradle :desktopApp:run
 gradle :androidApp:assembleDebug
@@ -69,6 +71,12 @@ The CPU does not use internet services or hidden machine-learning models.
 Open **Settings → Backup & restore** to export or import a versioned text backup. Imports are fully validated before saved RPS Arena data is replaced, and the feature does not add networking or new Android permissions.
 
 See [docs/BACKUP.md](docs/BACKUP.md) for the schema, validation rules, compatibility contract, and privacy guidance.
+
+## Localization
+
+The shared Compose UI uses Compose Multiplatform string resources. English is the fallback catalog and Hindi is the first additional locale. Catalog parity and placeholder safety are checked by `scripts/verify_localizations.py` and CI.
+
+See [docs/LOCALIZATION.md](docs/LOCALIZATION.md) for translation rules, supported locale structure, validation, and the current backward-compatibility boundary for persisted history summaries.
 
 ## Privacy
 
