@@ -27,7 +27,6 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
 
     private var cpu = CpuStrategy(config.seed)
 
-    val history: List<String> get() = repository.loadHistory()
     val historyEntries: List<ArenaHistoryEntry> get() = repository.loadHistoryEntries()
     val achievements: List<Achievement> get() = listOf(
         Achievement("first_win", stats.wins >= 1),
@@ -110,7 +109,13 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
             finished = finished,
         )
         updateStats(outcome)
-        repository.addHistory(historyLine(round))
+        repository.addHistoryEntry(
+            ArenaHistoryEntry.Round(
+                playerOne = round.playerOne,
+                playerTwo = round.playerTwo,
+                outcome = round.outcome,
+            ),
+        )
     }
 
     private fun updateStats(outcome: RoundOutcome) {
@@ -127,11 +132,4 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         )
         repository.saveStats(stats)
     }
-
-    private fun historyLine(round: RoundRecord): String =
-        "${round.playerOne.label} vs ${round.playerTwo.label} — ${when (round.outcome) {
-            RoundOutcome.PLAYER_ONE_WIN -> "Player 1 won"
-            RoundOutcome.PLAYER_TWO_WIN -> "Player 2 won"
-            RoundOutcome.DRAW -> "Draw"
-        }}"
 }
