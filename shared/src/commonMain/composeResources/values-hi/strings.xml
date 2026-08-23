@@ -1,0 +1,104 @@
+<resources>
+    <string name="app_name">RPS Arena</string>
+    <string name="settings">सेटिंग्स</string>
+    <string name="back">← वापस</string>
+    <string name="made_by">Sanskar द्वारा निर्मित</string>
+
+    <string name="welcome_title">RPS Arena में आपका स्वागत है</string>
+    <string name="welcome_body">पारदर्शी CPU कठिनाई और वैकल्पिक Lizard–Spock नियमों के साथ तेज़, ऑफ़लाइन-प्रथम मैच।</string>
+    <string name="enter_arena">एरीना में प्रवेश करें</string>
+
+    <string name="home_title">अपना एरीना चुनें</string>
+    <string name="home_subtitle">क्लासिक रणनीति। कोई खाता नहीं। नेटवर्क की आवश्यकता नहीं।</string>
+    <string name="play">खेलें</string>
+    <string name="stats">आँकड़े</string>
+    <string name="history">इतिहास</string>
+    <string name="achievements">उपलब्धियाँ</string>
+    <string name="about">परिचय</string>
+
+    <string name="opponent">प्रतिद्वंद्वी</string>
+    <string name="cpu">CPU</string>
+    <string name="two_player">2 खिलाड़ी</string>
+    <string name="rules">नियम</string>
+    <string name="classic">क्लासिक</string>
+    <string name="lizard_spock">Lizard–Spock</string>
+    <string name="difficulty">कठिनाई</string>
+    <string name="difficulty_easy">आसान</string>
+    <string name="difficulty_normal">सामान्य</string>
+    <string name="difficulty_expert">विशेषज्ञ</string>
+    <string name="mode">मोड</string>
+    <string name="mode_best_of_3">3 में सर्वश्रेष्ठ</string>
+    <string name="mode_best_of_5">5 में सर्वश्रेष्ठ</string>
+    <string name="mode_endless">अंतहीन</string>
+    <string name="mode_streak">स्ट्रीक</string>
+    <string name="mode_tournament">टूर्नामेंट</string>
+    <string name="choose_gesture">चाल चुनें</string>
+    <string name="gesture_rock">पत्थर</string>
+    <string name="gesture_paper">कागज़</string>
+    <string name="gesture_scissors">कैंची</string>
+    <string name="gesture_lizard">छिपकली</string>
+    <string name="gesture_spock">स्पॉक</string>
+    <string name="last_round">पिछला राउंड</string>
+    <string name="versus">%1$s बनाम %2$s</string>
+    <string name="round_player_one_wins">खिलाड़ी 1 ने राउंड जीता</string>
+    <string name="round_player_two_wins">खिलाड़ी 2 ने राउंड जीता</string>
+    <string name="round_draw">ड्रॉ</string>
+    <string name="new_match">नया मैच</string>
+    <string name="player_one_short">खि1</string>
+    <string name="player_two_short">खि2</string>
+    <string name="draws">ड्रॉ</string>
+    <string name="local_turn_player_one">खिलाड़ी 1: अपनी चाल गुप्त रूप से चुनें</string>
+    <string name="local_turn_player_two">खिलाड़ी 2: अब चुनें — खिलाड़ी 1 की चाल छिपी है</string>
+
+    <string name="history_empty">अभी कोई राउंड नहीं। आपके नवीनतम 30 राउंड इसी डिवाइस पर रहते हैं।</string>
+    <string name="rounds">राउंड</string>
+    <string name="wins">जीत</string>
+    <string name="losses">हार</string>
+    <string name="win_rate">जीत दर</string>
+    <string name="best_streak">सर्वश्रेष्ठ स्ट्रीक</string>
+
+    <string name="achievement_first_victory_title">पहली जीत</string>
+    <string name="achievement_first_victory_description">अपना पहला राउंड जीतें</string>
+    <string name="achievement_arena_regular_title">एरीना नियमित</string>
+    <string name="achievement_arena_regular_description">10 राउंड खेलें</string>
+    <string name="achievement_on_fire_title">शानदार लय</string>
+    <string name="achievement_on_fire_description">3 राउंड की जीत स्ट्रीक बनाएँ</string>
+    <string name="achievement_unstoppable_title">अजेय</string>
+    <string name="achievement_unstoppable_description">7 राउंड की जीत स्ट्रीक बनाएँ</string>
+    <string name="achievement_century_title">शतक</string>
+    <string name="achievement_century_description">100 राउंड खेलें</string>
+
+    <string name="follow_system_theme">सिस्टम थीम का अनुसरण करें</string>
+    <string name="dark_theme">डार्क थीम</string>
+    <string name="reduced_motion">कम एनीमेशन</string>
+    <string name="sound">ध्वनि</string>
+    <string name="haptics">हैप्टिक्स</string>
+    <string name="accessibility_note">सुलभता: सभी मुख्य क्रियाओं के टेक्स्ट लेबल हैं और वे कीबोर्ड/टच नेविगेशन का समर्थन करती हैं।</string>
+    <string name="backup_restore">बैकअप और रिस्टोर</string>
+    <string name="backup_restore_description">बैकअप ऑफ़लाइन रहते हैं और इनमें आपकी सेटिंग्स, समेकित आँकड़े और अधिकतम 30 हाल की इतिहास प्रविष्टियाँ होती हैं।</string>
+    <string name="export_backup">बैकअप निर्यात करें</string>
+    <string name="import_backup">बैकअप आयात करें</string>
+    <string name="export_backup_help">इस संस्करणयुक्त बैकअप टेक्स्ट को कॉपी करके किसी भरोसेमंद स्थान पर रखें।</string>
+    <string name="arena_backup_label">RPS Arena बैकअप</string>
+    <string name="done">हो गया</string>
+    <string name="import_backup_help">पूरा RPS Arena बैकअप पेस्ट करें। अमान्य या असमर्थित बैकअप को सहेजा डेटा बदलने से पहले अस्वीकार कर दिया जाता है।</string>
+    <string name="backup_text">बैकअप टेक्स्ट</string>
+    <string name="import_action">आयात करें</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="backup_imported">बैकअप आयात हुआ (%1$d इतिहास प्रविष्टियाँ)।</string>
+    <string name="backup_error_empty">बैकअप खाली है।</string>
+    <string name="backup_error_invalid_header">यह मान्य RPS Arena बैकअप नहीं है।</string>
+    <string name="backup_error_unsupported_schema">यह बैकअप असमर्थित स्कीमा संस्करण का उपयोग करता है।</string>
+    <string name="backup_error_settings">बैकअप का सेटिंग्स अनुभाग अमान्य है।</string>
+    <string name="backup_error_stats">बैकअप का आँकड़ा अनुभाग अमान्य या असंगत है।</string>
+    <string name="backup_error_history">बैकअप का इतिहास अनुभाग अमान्य है।</string>
+
+    <string name="about_title">RPS Arena के बारे में</string>
+    <string name="about_summary">Android और desktop के लिए एक ओपन-सोर्स, ऑफ़लाइन-प्रथम Rock Paper Scissors गेम।</string>
+    <string name="about_extended_rules">वैकल्पिक विस्तृत नियम: Rock–Paper–Scissors–Lizard–Spock.</string>
+    <string name="about_cpu">CPU मोड स्थानीय हैं और seed से deterministic हैं; कोई छिपा ऑनलाइन मॉडल उपयोग नहीं होता।</string>
+    <string name="business_contact">व्यवसाय: sanskarin@outlook.in · sanskarin.business@gmail.com</string>
+    <string name="support_contact">सहायता: supportramsandesh@gmail.com</string>
+    <string name="github_contact">GitHub: github.com/sanskarIN/rps-arena</string>
+    <string name="support_development">विकास का समर्थन करें: buymeacoffee.com/sanskarIN</string>
+</resources>
