@@ -1,5 +1,6 @@
 $ErrorActionPreference = "Stop"
 
+python scripts/verify_localizations.py
 gradle :shared:allTests
 gradle :androidApp:assembleDebug
 gradle :desktopApp:classes
