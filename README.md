@@ -22,6 +22,7 @@
 - Offline stats, recent history, achievements, settings, and onboarding.
 - Versioned offline backup and restore for settings, aggregate stats, and recent history.
 - Shared Compose UI localization with English fallback and Hindi translations.
+- Shared Compose UI automation for desktop and Android device-test targets.
 - Light/dark/system theme options and reduced-motion preference.
 - Android + desktop from a Kotlin Multiplatform/Compose Multiplatform codebase.
 - Optional standalone Rust rules engine for experimentation.
@@ -44,19 +45,23 @@ desktopApp/   Desktop entry point and native packaging
 shared/       Shared game engine, state, persistence, UI, resources, tests
 rust-engine/  Optional standalone Rust rules mirror
 assets/       Logo and splash artwork
-docs/         Architecture, backup, localization, release, testing and support documentation
+docs/         Architecture, backup, localization, UI testing, release and support documentation
 ```
 
-## Build
+## Build and verify
 
 Requirements: JDK 17+, Gradle 9.5.1, Android SDK 36 for Android, Python 3 for catalog verification, and a supported desktop OS.
 
 ```bash
 python3 scripts/verify_localizations.py
 gradle :shared:allTests
+gradle :shared:desktopTest
+gradle :shared:assembleAndroidDeviceTest
 gradle :desktopApp:run
 gradle :androidApp:assembleDebug
 ```
+
+For the repository-wide checks, use `./scripts/verify.sh` on Unix-like systems or `./scripts/verify.ps1` on Windows.
 
 ## CPU difficulty transparency
 
@@ -77,6 +82,12 @@ See [docs/BACKUP.md](docs/BACKUP.md) for the schema, validation rules, compatibi
 The shared Compose UI uses Compose Multiplatform string resources. English is the fallback catalog and Hindi is the first additional locale. Catalog parity and placeholder safety are checked by `scripts/verify_localizations.py` and CI.
 
 See [docs/LOCALIZATION.md](docs/LOCALIZATION.md) for translation rules, supported locale structure, validation, and the current backward-compatibility boundary for persisted history summaries.
+
+## UI automation
+
+Shared UI tests use stable semantic tags rather than visible text, so the same flows stay reliable across localized UI. Desktop tests execute in CI, while the Android device-test APK is assembled in CI and can be run on a connected device or emulator with `gradle :shared:connectedAndroidDeviceTest`.
+
+See [docs/UI_TESTING.md](docs/UI_TESTING.md) for covered flows, test-store isolation, commands, and contribution guidance.
 
 ## Privacy
 
