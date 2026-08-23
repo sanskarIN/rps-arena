@@ -15,8 +15,11 @@ import `in`.sanskar.rpsarena.data.ArenaBackupError
 import `in`.sanskar.rpsarena.data.ArenaBackupImportResult
 import `in`.sanskar.rpsarena.data.ArenaRepository
 import `in`.sanskar.rpsarena.model.*
+import `in`.sanskar.rpsarena.resources.*
 import `in`.sanskar.rpsarena.state.ArenaScreen
 import `in`.sanskar.rpsarena.state.ArenaState
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun RpsArenaApp(repository: ArenaRepository = ArenaRepository()) {
@@ -38,9 +41,11 @@ private fun ArenaScaffold(state: ArenaState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("RPS Arena") },
+                title = { Text(stringResource(Res.string.app_name)) },
                 actions = {
-                    TextButton(onClick = { state.navigate(ArenaScreen.SETTINGS) }) { Text("Settings") }
+                    TextButton(onClick = { state.navigate(ArenaScreen.SETTINGS) }) {
+                        Text(stringResource(Res.string.settings))
+                    }
                 },
             )
         },
@@ -68,26 +73,26 @@ private fun OnboardingScreen(onDone: () -> Unit) {
     ) {
         Text("🪨 📄 ✂️", style = MaterialTheme.typography.displayMedium)
         Spacer(Modifier.height(20.dp))
-        Text("Welcome to RPS Arena", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.welcome_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
-        Text("Fast, offline-first matches with transparent CPU difficulty and an optional Lizard–Spock ruleset.")
+        Text(stringResource(Res.string.welcome_body))
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onDone) { Text("Enter the Arena") }
+        Button(onClick = onDone) { Text(stringResource(Res.string.enter_arena)) }
     }
 }
 
 @Composable
 private fun HomeScreen(state: ArenaState) {
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Choose your arena", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("Classic strategy. No account. No network required.")
-        Button(onClick = { state.navigate(ArenaScreen.PLAY) }, modifier = Modifier.fillMaxWidth()) { Text("Play") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.STATS) }, modifier = Modifier.fillMaxWidth()) { Text("Stats") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text("History") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.ACHIEVEMENTS) }, modifier = Modifier.fillMaxWidth()) { Text("Achievements") }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.ABOUT) }, modifier = Modifier.fillMaxWidth()) { Text("About") }
+        Text(stringResource(Res.string.home_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.home_subtitle))
+        Button(onClick = { state.navigate(ArenaScreen.PLAY) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.play)) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.STATS) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.stats)) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.HISTORY) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.history)) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.ACHIEVEMENTS) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.achievements)) }
+        OutlinedButton(onClick = { state.navigate(ArenaScreen.ABOUT) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.about)) }
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text("Made by the Sanskar", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(Res.string.made_by), style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -97,28 +102,42 @@ private fun PlayScreen(state: ArenaState) {
     val gestures = Gesture.availableFor(config.variant)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Play", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        ConfigRow("Opponent") {
-            ChoiceChip("CPU", config.opponentMode == OpponentMode.CPU) { state.updateConfig(config.copy(opponentMode = OpponentMode.CPU)) }
-            ChoiceChip("2 Player", config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) { state.updateConfig(config.copy(opponentMode = OpponentMode.LOCAL_TWO_PLAYER)) }
+        Text(stringResource(Res.string.play), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        ConfigRow(stringResource(Res.string.opponent)) {
+            ChoiceChip(stringResource(Res.string.cpu), config.opponentMode == OpponentMode.CPU) { state.updateConfig(config.copy(opponentMode = OpponentMode.CPU)) }
+            ChoiceChip(stringResource(Res.string.two_player), config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) { state.updateConfig(config.copy(opponentMode = OpponentMode.LOCAL_TWO_PLAYER)) }
         }
-        ConfigRow("Rules") {
-            ChoiceChip("Classic", config.variant == GameVariant.CLASSIC) { state.updateConfig(config.copy(variant = GameVariant.CLASSIC)) }
-            ChoiceChip("Lizard–Spock", config.variant == GameVariant.LIZARD_SPOCK) { state.updateConfig(config.copy(variant = GameVariant.LIZARD_SPOCK)) }
+        ConfigRow(stringResource(Res.string.rules)) {
+            ChoiceChip(stringResource(Res.string.classic), config.variant == GameVariant.CLASSIC) { state.updateConfig(config.copy(variant = GameVariant.CLASSIC)) }
+            ChoiceChip(stringResource(Res.string.lizard_spock), config.variant == GameVariant.LIZARD_SPOCK) { state.updateConfig(config.copy(variant = GameVariant.LIZARD_SPOCK)) }
         }
         if (config.opponentMode == OpponentMode.CPU) {
-            ConfigRow("Difficulty") {
-                Difficulty.entries.forEach { d -> ChoiceChip(d.name.lowercase().replaceFirstChar { it.uppercase() }, config.difficulty == d) { state.updateConfig(config.copy(difficulty = d)) } }
+            ConfigRow(stringResource(Res.string.difficulty)) {
+                Difficulty.entries.forEach { difficulty ->
+                    ChoiceChip(stringResource(difficulty.resource), config.difficulty == difficulty) {
+                        state.updateConfig(config.copy(difficulty = difficulty))
+                    }
+                }
             }
         }
-        ConfigRow("Mode") {
-            MatchMode.entries.forEach { m ->
-                ChoiceChip(m.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }, config.matchMode == m) { state.updateConfig(config.copy(matchMode = m)) }
+        ConfigRow(stringResource(Res.string.mode)) {
+            MatchMode.entries.forEach { mode ->
+                ChoiceChip(stringResource(mode.resource), config.matchMode == mode) {
+                    state.updateConfig(config.copy(matchMode = mode))
+                }
             }
         }
         ScoreCard(state)
-        if (config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) Text(state.localTurnMessage, fontWeight = FontWeight.SemiBold)
-        Text("Choose a gesture", style = MaterialTheme.typography.titleLarge)
+        if (config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) {
+            Text(
+                stringResource(
+                    if (state.pendingPlayerOne == null) Res.string.local_turn_player_one
+                    else Res.string.local_turn_player_two,
+                ),
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Text(stringResource(Res.string.choose_gesture), style = MaterialTheme.typography.titleLarge)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             gestures.take(3).forEach { gesture -> GestureButton(gesture, Modifier.weight(1f)) { state.play(gesture) } }
         }
@@ -130,18 +149,16 @@ private fun PlayScreen(state: ArenaState) {
         state.match.rounds.lastOrNull()?.let { round ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Last round", fontWeight = FontWeight.Bold)
-                    Text("${round.playerOne.emoji} ${round.playerOne.label} vs ${round.playerTwo.emoji} ${round.playerTwo.label}")
-                    Text(when (round.outcome) {
-                        RoundOutcome.PLAYER_ONE_WIN -> "Player 1 wins the round"
-                        RoundOutcome.PLAYER_TWO_WIN -> "Player 2 wins the round"
-                        RoundOutcome.DRAW -> "Draw"
-                    })
+                    Text(stringResource(Res.string.last_round), fontWeight = FontWeight.Bold)
+                    val first = "${round.playerOne.emoji} ${stringResource(round.playerOne.resource)}"
+                    val second = "${round.playerTwo.emoji} ${stringResource(round.playerTwo.resource)}"
+                    Text(stringResource(Res.string.versus, first, second))
+                    Text(stringResource(round.outcome.resource))
                 }
             }
         }
         if (state.match.finished) {
-            Button(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text("New match") }
+            Button(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.new_match)) }
         }
     }
 }
@@ -150,14 +167,18 @@ private fun PlayScreen(state: ArenaState) {
 private fun ScoreCard(state: ArenaState) {
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Score("P1", state.match.playerOneScore)
-            Score("Draws", state.match.draws)
-            Score(if (state.config.opponentMode == OpponentMode.CPU) "CPU" else "P2", state.match.playerTwoScore)
+            Score(stringResource(Res.string.player_one_short), state.match.playerOneScore)
+            Score(stringResource(Res.string.draws), state.match.draws)
+            Score(
+                if (state.config.opponentMode == OpponentMode.CPU) stringResource(Res.string.cpu) else stringResource(Res.string.player_two_short),
+                state.match.playerTwoScore,
+            )
         }
     }
 }
 
-@Composable private fun Score(label: String, value: Int) = Column(horizontalAlignment = Alignment.CenterHorizontally) {
+@Composable
+private fun Score(label: String, value: Int) = Column(horizontalAlignment = Alignment.CenterHorizontally) {
     Text(value.toString(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
     Text(label)
 }
@@ -167,7 +188,7 @@ private fun GestureButton(gesture: Gesture, modifier: Modifier, onClick: () -> U
     FilledTonalButton(onClick = onClick, modifier = modifier.height(88.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(gesture.emoji, style = MaterialTheme.typography.headlineMedium)
-            Text(gesture.label)
+            Text(stringResource(gesture.resource))
         }
     }
 }
@@ -176,9 +197,9 @@ private fun GestureButton(gesture: Gesture, modifier: Modifier, onClick: () -> U
 private fun HistoryScreen(state: ArenaState) {
     Column(Modifier.fillMaxSize()) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("History", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.history), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        if (state.history.isEmpty()) Text("No rounds yet. Your latest 30 rounds stay on this device.")
+        if (state.history.isEmpty()) Text(stringResource(Res.string.history_empty))
         else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.history) { line -> Card(Modifier.fillMaxWidth()) { Text(line, Modifier.padding(14.dp)) } }
         }
@@ -189,13 +210,13 @@ private fun HistoryScreen(state: ArenaState) {
 private fun StatsScreen(state: ArenaState) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Stats", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        StatLine("Rounds", state.stats.roundsPlayed.toString())
-        StatLine("Wins", state.stats.wins.toString())
-        StatLine("Losses", state.stats.losses.toString())
-        StatLine("Draws", state.stats.draws.toString())
-        StatLine("Win rate", "${state.stats.winRate}%")
-        StatLine("Best streak", state.stats.bestStreak.toString())
+        Text(stringResource(Res.string.stats), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        StatLine(stringResource(Res.string.rounds), state.stats.roundsPlayed.toString())
+        StatLine(stringResource(Res.string.wins), state.stats.wins.toString())
+        StatLine(stringResource(Res.string.losses), state.stats.losses.toString())
+        StatLine(stringResource(Res.string.draws), state.stats.draws.toString())
+        StatLine(stringResource(Res.string.win_rate), "${state.stats.winRate}%")
+        StatLine(stringResource(Res.string.best_streak), state.stats.bestStreak.toString())
     }
 }
 
@@ -203,15 +224,18 @@ private fun StatsScreen(state: ArenaState) {
 private fun AchievementsScreen(state: ArenaState) {
     Column(Modifier.fillMaxSize()) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Achievements", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.achievements), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.achievements) { a ->
+            items(state.achievements) { achievement ->
                 Card(Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (a.unlocked) "🏆" else "🔒", style = MaterialTheme.typography.headlineSmall)
+                        Text(if (achievement.unlocked) "🏆" else "🔒", style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.width(12.dp))
-                        Column { Text(a.title, fontWeight = FontWeight.Bold); Text(a.description) }
+                        Column {
+                            Text(stringResource(achievement.titleResource), fontWeight = FontWeight.Bold)
+                            Text(stringResource(achievement.descriptionResource))
+                        }
                     }
                 }
             }
@@ -221,59 +245,61 @@ private fun AchievementsScreen(state: ArenaState) {
 
 @Composable
 private fun SettingsScreen(state: ArenaState) {
-    val s = state.settings
+    val settings = state.settings
     var showExport by remember { mutableStateOf(false) }
     var showImport by remember { mutableStateOf(false) }
     var exportText by remember { mutableStateOf("") }
     var importText by remember { mutableStateOf("") }
-    var importError by remember { mutableStateOf<String?>(null) }
-    var backupStatus by remember { mutableStateOf<String?>(null) }
+    var importError by remember { mutableStateOf<ArenaBackupError?>(null) }
+    var importedHistoryCount by remember { mutableStateOf<Int?>(null) }
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        SwitchRow("Follow system theme", s.followSystemTheme) { state.updateSettings(s.copy(followSystemTheme = it)) }
-        SwitchRow("Dark theme", s.darkTheme, enabled = !s.followSystemTheme) { state.updateSettings(s.copy(darkTheme = it)) }
-        SwitchRow("Reduced motion", s.reducedMotion) { state.updateSettings(s.copy(reducedMotion = it)) }
-        SwitchRow("Sound", s.soundEnabled) { state.updateSettings(s.copy(soundEnabled = it)) }
-        SwitchRow("Haptics", s.hapticsEnabled) { state.updateSettings(s.copy(hapticsEnabled = it)) }
-        Text("Accessibility: all core actions have text labels and support keyboard/touch navigation.")
+        Text(stringResource(Res.string.settings), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        SwitchRow(stringResource(Res.string.follow_system_theme), settings.followSystemTheme) { state.updateSettings(settings.copy(followSystemTheme = it)) }
+        SwitchRow(stringResource(Res.string.dark_theme), settings.darkTheme, enabled = !settings.followSystemTheme) { state.updateSettings(settings.copy(darkTheme = it)) }
+        SwitchRow(stringResource(Res.string.reduced_motion), settings.reducedMotion) { state.updateSettings(settings.copy(reducedMotion = it)) }
+        SwitchRow(stringResource(Res.string.sound), settings.soundEnabled) { state.updateSettings(settings.copy(soundEnabled = it)) }
+        SwitchRow(stringResource(Res.string.haptics), settings.hapticsEnabled) { state.updateSettings(settings.copy(hapticsEnabled = it)) }
+        Text(stringResource(Res.string.accessibility_note))
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text("Backup & restore", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("Backups stay offline and contain your settings, aggregate stats, and up to 30 recent history entries.")
+        Text(stringResource(Res.string.backup_restore), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.backup_restore_description))
         OutlinedButton(
             onClick = {
                 exportText = state.exportBackup()
-                backupStatus = null
+                importedHistoryCount = null
                 showExport = true
             },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Export backup") }
+        ) { Text(stringResource(Res.string.export_backup)) }
         OutlinedButton(
             onClick = {
                 importText = ""
                 importError = null
-                backupStatus = null
+                importedHistoryCount = null
                 showImport = true
             },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Import backup") }
-        backupStatus?.let { Text(it, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold) }
+        ) { Text(stringResource(Res.string.import_backup)) }
+        importedHistoryCount?.let {
+            Text(stringResource(Res.string.backup_imported, it), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        }
     }
 
     if (showExport) {
         AlertDialog(
             onDismissRequest = { showExport = false },
-            title = { Text("Export backup") },
+            title = { Text(stringResource(Res.string.export_backup)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Copy this versioned backup text and keep it somewhere you trust.")
+                    Text(stringResource(Res.string.export_backup_help))
                     OutlinedTextField(
                         value = exportText,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("RPS Arena backup") },
+                        label = { Text(stringResource(Res.string.arena_backup_label)) },
                         minLines = 8,
                         maxLines = 12,
                         modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
@@ -281,7 +307,7 @@ private fun SettingsScreen(state: ArenaState) {
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showExport = false }) { Text("Done") }
+                TextButton(onClick = { showExport = false }) { Text(stringResource(Res.string.done)) }
             },
         )
     }
@@ -289,22 +315,22 @@ private fun SettingsScreen(state: ArenaState) {
     if (showImport) {
         AlertDialog(
             onDismissRequest = { showImport = false },
-            title = { Text("Import backup") },
+            title = { Text(stringResource(Res.string.import_backup)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Paste a complete RPS Arena backup. Invalid or unsupported backups are rejected before saved data is changed.")
+                    Text(stringResource(Res.string.import_backup_help))
                     OutlinedTextField(
                         value = importText,
                         onValueChange = {
                             importText = it
                             importError = null
                         },
-                        label = { Text("Backup text") },
+                        label = { Text(stringResource(Res.string.backup_text)) },
                         minLines = 8,
                         maxLines = 12,
                         modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
                     )
-                    importError?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    importError?.let { Text(backupErrorLabel(it), style = MaterialTheme.typography.bodySmall) }
                 }
             },
             confirmButton = {
@@ -313,19 +339,19 @@ private fun SettingsScreen(state: ArenaState) {
                     onClick = {
                         when (val result = state.importBackup(importText)) {
                             is ArenaBackupImportResult.Success -> {
-                                backupStatus = "Backup imported (${result.importedHistoryCount} history entries)."
+                                importedHistoryCount = result.importedHistoryCount
                                 importError = null
                                 showImport = false
                             }
                             is ArenaBackupImportResult.Failure -> {
-                                importError = backupErrorLabel(result.error)
+                                importError = result.error
                             }
                         }
                     },
-                ) { Text("Import") }
+                ) { Text(stringResource(Res.string.import_action)) }
             },
             dismissButton = {
-                TextButton(onClick = { showImport = false }) { Text("Cancel") }
+                TextButton(onClick = { showImport = false }) { Text(stringResource(Res.string.cancel)) }
             },
         )
     }
@@ -335,28 +361,84 @@ private fun SettingsScreen(state: ArenaState) {
 private fun AboutScreen(state: ArenaState) {
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BackButton { state.navigate(ArenaScreen.HOME) }
-        Text("About RPS Arena", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("An open-source, offline-first Rock Paper Scissors game for Android and desktop.")
-        Text("Optional extended rules: Rock–Paper–Scissors–Lizard–Spock.")
-        Text("CPU modes are local and deterministic from a seed; no hidden online model is used.")
-        Text("Made by the Sanskar", fontWeight = FontWeight.Bold)
-        Text("Business: sanskarin@outlook.in · sanskarin.business@gmail.com")
-        Text("Support: supportramsandesh@gmail.com")
-        Text("GitHub: github.com/sanskarIN/rps-arena")
-        Text("Support development: buymeacoffee.com/sanskarIN")
+        Text(stringResource(Res.string.about_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.about_summary))
+        Text(stringResource(Res.string.about_extended_rules))
+        Text(stringResource(Res.string.about_cpu))
+        Text(stringResource(Res.string.made_by), fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.business_contact))
+        Text(stringResource(Res.string.support_contact))
+        Text(stringResource(Res.string.github_contact))
+        Text(stringResource(Res.string.support_development))
     }
 }
 
-private fun backupErrorLabel(error: ArenaBackupError): String = when (error) {
-    ArenaBackupError.EMPTY -> "The backup is empty."
-    ArenaBackupError.INVALID_HEADER -> "This is not a valid RPS Arena backup."
-    ArenaBackupError.UNSUPPORTED_SCHEMA -> "This backup uses an unsupported schema version."
-    ArenaBackupError.MALFORMED_SETTINGS -> "The backup settings section is invalid."
-    ArenaBackupError.MALFORMED_STATS -> "The backup stats section is invalid or inconsistent."
-    ArenaBackupError.MALFORMED_HISTORY -> "The backup history section is invalid."
-}
+@Composable
+private fun backupErrorLabel(error: ArenaBackupError): String = stringResource(
+    when (error) {
+        ArenaBackupError.EMPTY -> Res.string.backup_error_empty
+        ArenaBackupError.INVALID_HEADER -> Res.string.backup_error_invalid_header
+        ArenaBackupError.UNSUPPORTED_SCHEMA -> Res.string.backup_error_unsupported_schema
+        ArenaBackupError.MALFORMED_SETTINGS -> Res.string.backup_error_settings
+        ArenaBackupError.MALFORMED_STATS -> Res.string.backup_error_stats
+        ArenaBackupError.MALFORMED_HISTORY -> Res.string.backup_error_history
+    },
+)
 
-@Composable private fun BackButton(onClick: () -> Unit) = TextButton(onClick = onClick) { Text("← Back") }
+private val Gesture.resource: StringResource
+    get() = when (this) {
+        Gesture.ROCK -> Res.string.gesture_rock
+        Gesture.PAPER -> Res.string.gesture_paper
+        Gesture.SCISSORS -> Res.string.gesture_scissors
+        Gesture.LIZARD -> Res.string.gesture_lizard
+        Gesture.SPOCK -> Res.string.gesture_spock
+    }
+
+private val Difficulty.resource: StringResource
+    get() = when (this) {
+        Difficulty.EASY -> Res.string.difficulty_easy
+        Difficulty.NORMAL -> Res.string.difficulty_normal
+        Difficulty.EXPERT -> Res.string.difficulty_expert
+    }
+
+private val MatchMode.resource: StringResource
+    get() = when (this) {
+        MatchMode.BEST_OF_3 -> Res.string.mode_best_of_3
+        MatchMode.BEST_OF_5 -> Res.string.mode_best_of_5
+        MatchMode.ENDLESS -> Res.string.mode_endless
+        MatchMode.STREAK -> Res.string.mode_streak
+        MatchMode.TOURNAMENT -> Res.string.mode_tournament
+    }
+
+private val RoundOutcome.resource: StringResource
+    get() = when (this) {
+        RoundOutcome.PLAYER_ONE_WIN -> Res.string.round_player_one_wins
+        RoundOutcome.PLAYER_TWO_WIN -> Res.string.round_player_two_wins
+        RoundOutcome.DRAW -> Res.string.round_draw
+    }
+
+private val Achievement.titleResource: StringResource
+    get() = when (id) {
+        "first_win" -> Res.string.achievement_first_victory_title
+        "ten_rounds" -> Res.string.achievement_arena_regular_title
+        "streak_3" -> Res.string.achievement_on_fire_title
+        "streak_7" -> Res.string.achievement_unstoppable_title
+        "century" -> Res.string.achievement_century_title
+        else -> Res.string.achievements
+    }
+
+private val Achievement.descriptionResource: StringResource
+    get() = when (id) {
+        "first_win" -> Res.string.achievement_first_victory_description
+        "ten_rounds" -> Res.string.achievement_arena_regular_description
+        "streak_3" -> Res.string.achievement_on_fire_description
+        "streak_7" -> Res.string.achievement_unstoppable_description
+        "century" -> Res.string.achievement_century_description
+        else -> Res.string.achievements
+    }
+
+@Composable
+private fun BackButton(onClick: () -> Unit) = TextButton(onClick = onClick) { Text(stringResource(Res.string.back)) }
 
 @Composable
 private fun ConfigRow(label: String, content: @Composable RowScope.() -> Unit) {
@@ -371,7 +453,12 @@ private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun StatLine(label: String, value: String) {
-    Card(Modifier.fillMaxWidth()) { Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text(label); Text(value, fontWeight = FontWeight.Bold) } }
+    Card(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label)
+            Text(value, fontWeight = FontWeight.Bold)
+        }
+    }
 }
 
 @Composable
