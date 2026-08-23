@@ -24,8 +24,6 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         private set
     var pendingPlayerOne by mutableStateOf<Gesture?>(null)
         private set
-    var localTurnMessage by mutableStateOf("Player 1: choose secretly")
-        private set
 
     private var cpu = CpuStrategy(config.seed)
 
@@ -69,7 +67,6 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         cpu = CpuStrategy(config.seed)
         match = MatchSnapshot(config)
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
     }
 
     fun play(gesture: Gesture) {
@@ -90,11 +87,9 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         val first = pendingPlayerOne
         if (first == null) {
             pendingPlayerOne = gesture
-            localTurnMessage = "Player 2: choose now — Player 1 move is hidden"
             return
         }
         pendingPlayerOne = null
-        localTurnMessage = "Player 1: choose secretly"
         recordRound(first, gesture)
     }
 
