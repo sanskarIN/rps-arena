@@ -28,6 +28,7 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
     private var cpu = CpuStrategy(config.seed)
 
     val history: List<String> get() = repository.loadHistory()
+    val historyEntries: List<ArenaHistoryEntry> get() = repository.loadHistoryEntries()
     val achievements: List<Achievement> get() = listOf(
         Achievement("first_win", stats.wins >= 1),
         Achievement("ten_rounds", stats.roundsPlayed >= 10),
