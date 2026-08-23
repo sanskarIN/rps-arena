@@ -50,18 +50,28 @@ The validator is also part of `scripts/verify.sh`, `scripts/verify.ps1`, and Git
 
 Compose Multiplatform falls back to the default catalog whenever a locale-specific resource cannot be selected.
 
+## Localized history
+
+Newly played rounds are persisted as structured `ArenaHistoryEntry.Round` records containing stable gesture and outcome identifiers rather than presentation text. The History screen resolves those identifiers through the same localized resources used by the live match screen, so a stored round follows the current runtime language.
+
+Existing `history_v1` summaries and history imported from schema-v1 backups are preserved as `ArenaHistoryEntry.Legacy` records. Legacy entries are intentionally displayed exactly as saved because their original semantic structure cannot be reconstructed reliably from arbitrary human-readable text.
+
+The repository prioritizes structured `history_v2` storage and falls back to `history_v1` when no valid structured history exists. The first new structured round carries readable legacy entries forward into the versioned v2 store. Backup schema 2 stores structured rounds directly while continuing to import schema 1. See [BACKUP.md](BACKUP.md).
+
 ## Localization boundaries
 
-The visible shared Compose screens, controls, match labels, gesture labels, achievement copy, backup dialogs, validation errors, onboarding, settings, and About content use resources.
+The visible shared Compose screens, controls, match labels, gesture labels, achievement copy, backup dialogs, validation errors, onboarding, settings, About content, and structured round history use resources.
 
-Recent-history entries are currently persisted as human-readable summaries for backward compatibility with `history_v1` and backup schema `RPSARENA_BACKUP|1`. Existing stored history is therefore displayed exactly as saved. A future persistence migration can introduce structured history records without invalidating existing backups.
+Only legacy history summaries remain display-as-saved for compatibility. This is a deliberate migration boundary rather than a limitation on newly recorded rounds.
 
 ## Review checklist
 
 - Translation keys match the default catalog.
 - Placeholders match the default catalog.
+- Structured history renders through resources instead of persisted English labels.
+- Legacy history remains readable after migration and restore.
 - Android debug assembly succeeds.
 - Desktop classes compile.
-- Shared tests pass.
+- Shared and UI tests pass.
 - No new Android permission or network dependency is introduced.
-- Backup schema compatibility remains unchanged unless a separately documented migration is intentional.
+- Backup schema changes include an explicit backward-compatible decoder path.
