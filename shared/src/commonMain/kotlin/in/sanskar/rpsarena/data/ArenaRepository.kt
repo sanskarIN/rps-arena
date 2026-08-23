@@ -11,19 +11,12 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
     fun loadStats(): ArenaStats = decodeStats(store.getString(KEY_STATS))
     fun saveStats(value: ArenaStats) = store.putString(KEY_STATS, encodeStats(value))
 
-    fun loadHistory(): List<String> = loadLegacyHistory()
-
     fun loadHistoryEntries(): List<ArenaHistoryEntry> {
         val encoded = store.getString(KEY_HISTORY_V2)
         if (encoded.isNotBlank()) {
             ArenaHistoryCodec.decode(encoded)?.let { return it }
         }
         return loadLegacyHistory().map(ArenaHistoryEntry::Legacy)
-    }
-
-    fun addHistory(line: String) {
-        val updated = (listOf(line.replace('\n', ' ')) + loadLegacyHistory()).take(MAX_HISTORY)
-        saveLegacyHistory(updated)
     }
 
     fun addHistoryEntry(entry: ArenaHistoryEntry) {
@@ -35,7 +28,7 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
         ArenaBackup(
             settings = loadSettings(),
             stats = loadStats(),
-            history = loadHistory(),
+            history = loadHistoryEntries(),
         ),
     )
 
@@ -45,7 +38,7 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
             val backup = result.backup
             saveSettings(backup.settings)
             saveStats(backup.stats)
-            saveLegacyHistory(backup.history)
+            saveHistoryEntries(backup.history)
             ArenaBackupImportResult.Success(backup.history.size)
         }
     }
@@ -91,16 +84,6 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
         .filter { it.isNotEmpty() }
         .take(MAX_HISTORY)
         .toList()
-
-    private fun saveLegacyHistory(lines: List<String>) {
-        val sanitized = lines
-            .asSequence()
-            .map { it.replace('\r', ' ').replace('\n', ' ').trim() }
-            .filter { it.isNotEmpty() }
-            .take(MAX_HISTORY)
-            .toList()
-        store.putString(KEY_HISTORY_V1, sanitized.joinToString("\n"))
-    }
 
     private fun saveHistoryEntries(entries: List<ArenaHistoryEntry>) {
         store.putString(KEY_HISTORY_V2, ArenaHistoryCodec.encode(entries))
