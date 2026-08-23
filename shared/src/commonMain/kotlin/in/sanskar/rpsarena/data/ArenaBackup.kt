@@ -1,5 +1,6 @@
 package `in`.sanskar.rpsarena.data
 
+import `in`.sanskar.rpsarena.model.ArenaHistoryEntry
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
 
@@ -7,7 +8,7 @@ data class ArenaBackup(
     val schemaVersion: Int = ArenaBackupCodec.CURRENT_SCHEMA_VERSION,
     val settings: ArenaSettings = ArenaSettings(),
     val stats: ArenaStats = ArenaStats(),
-    val history: List<String> = emptyList(),
+    val history: List<ArenaHistoryEntry> = emptyList(),
 )
 
 enum class ArenaBackupError {
@@ -30,14 +31,15 @@ sealed interface ArenaBackupImportResult {
 }
 
 object ArenaBackupCodec {
-    const val CURRENT_SCHEMA_VERSION = 1
-    const val MAX_HISTORY_ITEMS = 30
+    const val CURRENT_SCHEMA_VERSION = 2
+    const val MAX_HISTORY_ITEMS = ArenaHistoryCodec.MAX_ITEMS
 
     private const val MAGIC = "RPSARENA_BACKUP"
     private const val SETTINGS = "settings"
     private const val STATS = "stats"
     private const val HISTORY = "history"
-    private const val ITEM = "item"
+    private const val LEGACY_ITEM = "item"
+    private const val LEGACY_SCHEMA_VERSION = 1
 
     fun encode(backup: ArenaBackup): String {
         require(backup.schemaVersion == CURRENT_SCHEMA_VERSION) {
@@ -46,8 +48,7 @@ object ArenaBackupCodec {
 
         val history = backup.history
             .asSequence()
-            .map(::sanitizeHistoryItem)
-            .filter { it.isNotEmpty() }
+            .mapNotNull(ArenaHistoryCodec::encodeEntry)
             .take(MAX_HISTORY_ITEMS)
             .toList()
 
@@ -57,7 +58,7 @@ object ArenaBackupCodec {
             append(STATS).append('|').append(encodeStats(backup.stats)).append('\n')
             append(HISTORY).append('|').append(history.size)
             history.forEach { item ->
-                append('\n').append(ITEM).append('|').append(item)
+                append('\n').append(item)
             }
         }
     }
@@ -79,7 +80,7 @@ object ArenaBackupCodec {
         }
         val version = header[1].toIntOrNull()
             ?: return ArenaBackupDecodeResult.Failure(ArenaBackupError.INVALID_HEADER)
-        if (version != CURRENT_SCHEMA_VERSION) {
+        if (version !in setOf(LEGACY_SCHEMA_VERSION, CURRENT_SCHEMA_VERSION)) {
             return ArenaBackupDecodeResult.Failure(ArenaBackupError.UNSUPPORTED_SCHEMA)
         }
 
@@ -87,8 +88,11 @@ object ArenaBackupCodec {
             ?: return ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_SETTINGS)
         val stats = decodeStatsLine(lines[2])
             ?: return ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_STATS)
-        val history = decodeHistory(lines)
-            ?: return ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_HISTORY)
+        val history = when (version) {
+            LEGACY_SCHEMA_VERSION -> decodeLegacyHistory(lines)
+            CURRENT_SCHEMA_VERSION -> decodeStructuredHistory(lines)
+            else -> null
+        } ?: return ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_HISTORY)
 
         return ArenaBackupDecodeResult.Success(
             ArenaBackup(
@@ -152,18 +156,29 @@ object ArenaBackupCodec {
         return stats
     }
 
-    private fun decodeHistory(lines: List<String>): List<String>? {
-        val header = lines[3].split('|')
+    private fun decodeLegacyHistory(lines: List<String>): List<ArenaHistoryEntry>? {
+        val count = decodeHistoryCount(lines) ?: return null
+        return lines.drop(4).map { line ->
+            if (!line.startsWith("$LEGACY_ITEM|")) return null
+            val value = line.removePrefix("$LEGACY_ITEM|").trim()
+            if (value.isBlank() || value.contains('\n') || value.contains('\r')) return null
+            ArenaHistoryEntry.Legacy(value)
+        }.takeIf { it.size == count }
+    }
+
+    private fun decodeStructuredHistory(lines: List<String>): List<ArenaHistoryEntry>? {
+        val count = decodeHistoryCount(lines) ?: return null
+        return lines.drop(4)
+            .map { line -> ArenaHistoryCodec.decodeEntry(line) ?: return null }
+            .takeIf { it.size == count }
+    }
+
+    private fun decodeHistoryCount(lines: List<String>): Int? {
+        val header = lines.getOrNull(3)?.split('|') ?: return null
         if (header.size != 2 || header[0] != HISTORY) return null
         val count = header[1].toIntOrNull() ?: return null
         if (count !in 0..MAX_HISTORY_ITEMS || lines.size != 4 + count) return null
-
-        return lines.drop(4).map { line ->
-            if (!line.startsWith("$ITEM|")) return null
-            val value = line.removePrefix("$ITEM|")
-            if (value.isBlank() || value.contains('\n') || value.contains('\r')) return null
-            value
-        }
+        return count
     }
 
     private fun strictBoolean(value: String): Boolean? = when (value) {
@@ -171,9 +186,4 @@ object ArenaBackupCodec {
         "false" -> false
         else -> null
     }
-
-    private fun sanitizeHistoryItem(value: String): String = value
-        .replace('\r', ' ')
-        .replace('\n', ' ')
-        .trim()
 }
