@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+python3 scripts/verify_localizations.py
 gradle :shared:allTests
 gradle :androidApp:assembleDebug
 gradle :desktopApp:classes
