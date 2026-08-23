@@ -29,6 +29,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.5.1"
+      - name: Localization catalogs
+        run: python3 scripts/verify_localizations.py
       - name: Shared tests
         run: gradle :shared:allTests --stacktrace
       - name: Android debug build
