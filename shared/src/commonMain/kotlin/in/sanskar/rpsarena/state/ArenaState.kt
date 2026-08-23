@@ -29,11 +29,11 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
 
     val history: List<String> get() = repository.loadHistory()
     val achievements: List<Achievement> get() = listOf(
-        Achievement("first_win", "First Victory", "Win your first round", stats.wins >= 1),
-        Achievement("ten_rounds", "Arena Regular", "Play 10 rounds", stats.roundsPlayed >= 10),
-        Achievement("streak_3", "On Fire", "Reach a 3-round win streak", stats.bestStreak >= 3),
-        Achievement("streak_7", "Unstoppable", "Reach a 7-round win streak", stats.bestStreak >= 7),
-        Achievement("century", "Century", "Play 100 rounds", stats.roundsPlayed >= 100),
+        Achievement("first_win", stats.wins >= 1),
+        Achievement("ten_rounds", stats.roundsPlayed >= 10),
+        Achievement("streak_3", stats.bestStreak >= 3),
+        Achievement("streak_7", stats.bestStreak >= 7),
+        Achievement("century", stats.roundsPlayed >= 100),
     )
 
     fun navigate(to: ArenaScreen) { screen = to }
