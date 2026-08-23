@@ -18,6 +18,11 @@ kotlin {
         androidResources {
             enable = true
         }
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
     }
 
     jvm("desktop") {
@@ -36,6 +41,16 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.compose.get()}")
+        }
+        getByName("desktopTest").dependencies {
+            implementation(compose.desktop.currentOs)
+        }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.compose.ui.test.junit4.android)
+            implementation(libs.androidx.compose.ui.test.manifest)
+            implementation(libs.androidx.test.runner)
         }
     }
 }
