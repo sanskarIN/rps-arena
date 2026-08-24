@@ -2,10 +2,18 @@ package `in`.sanskar.rpsarena.data
 
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
+import `in`.sanskar.rpsarena.model.Difficulty
+import `in`.sanskar.rpsarena.model.GameVariant
+import `in`.sanskar.rpsarena.model.MatchConfig
+import `in`.sanskar.rpsarena.model.MatchMode
+import `in`.sanskar.rpsarena.model.OpponentMode
 
 class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
     fun loadSettings(): ArenaSettings = decodeSettings(store.getString(KEY_SETTINGS))
     fun saveSettings(value: ArenaSettings) = store.putString(KEY_SETTINGS, encodeSettings(value))
+
+    fun loadMatchConfig(): MatchConfig = decodeMatchConfig(store.getString(KEY_MATCH_CONFIG))
+    fun saveMatchConfig(value: MatchConfig) = store.putString(KEY_MATCH_CONFIG, encodeMatchConfig(value))
 
     fun loadStats(): ArenaStats = decodeStats(store.getString(KEY_STATS))
     fun saveStats(value: ArenaStats) = store.putString(KEY_STATS, encodeStats(value))
@@ -65,6 +73,31 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
         )
     }
 
+    internal fun encodeMatchConfig(value: MatchConfig): String = listOf(
+        value.variant.name,
+        value.opponentMode.name,
+        value.difficulty.name,
+        value.matchMode.name,
+        value.seed,
+    ).joinToString("|")
+
+    internal fun decodeMatchConfig(raw: String): MatchConfig {
+        val p = raw.split('|')
+        if (p.size != 5) return MatchConfig()
+        val variant = GameVariant.entries.firstOrNull { it.name == p[0] } ?: return MatchConfig()
+        val opponentMode = OpponentMode.entries.firstOrNull { it.name == p[1] } ?: return MatchConfig()
+        val difficulty = Difficulty.entries.firstOrNull { it.name == p[2] } ?: return MatchConfig()
+        val matchMode = MatchMode.entries.firstOrNull { it.name == p[3] } ?: return MatchConfig()
+        val seed = p[4].toIntOrNull() ?: return MatchConfig()
+        return MatchConfig(
+            variant = variant,
+            opponentMode = opponentMode,
+            difficulty = difficulty,
+            matchMode = matchMode,
+            seed = seed,
+        )
+    }
+
     internal fun encodeStats(value: ArenaStats): String = listOf(
         value.roundsPlayed, value.wins, value.losses, value.draws,
         value.bestStreak, value.currentStreak,
@@ -89,6 +122,7 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
     companion object {
         const val MAX_HISTORY = ArenaBackupCodec.MAX_HISTORY_ITEMS
         private const val KEY_SETTINGS = "settings_v1"
+        private const val KEY_MATCH_CONFIG = "match_config_v1"
         private const val KEY_STATS = "stats_v1"
         private const val KEY_HISTORY = "history_v1"
     }
