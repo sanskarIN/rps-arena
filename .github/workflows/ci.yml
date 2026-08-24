@@ -22,17 +22,20 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
       - uses: android-actions/setup-android@v4
         with:
           packages: "platform-tools platforms;android-36 build-tools;36.0.0"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.5.1"
       - name: Localization catalogs
         run: python3 scripts/verify_localizations.py
       - name: Shared tests
         run: gradle :shared:allTests --stacktrace
+      - name: Desktop UI tests
+        run: gradle :shared:desktopTest --stacktrace
+      - name: Android UI test APK
+        run: gradle :shared:assembleAndroidDeviceTest --stacktrace
       - name: Android debug build
         run: gradle :androidApp:assembleDebug --stacktrace
       - name: Desktop classes

@@ -3,7 +3,7 @@ package `in`.sanskar.rpsarena.data
 import `in`.sanskar.rpsarena.model.ArenaSettings
 import `in`.sanskar.rpsarena.model.ArenaStats
 
-class ArenaRepository(private val store: PlatformStore = PlatformStore) {
+class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
     fun loadSettings(): ArenaSettings = decodeSettings(store.getString(KEY_SETTINGS))
     fun saveSettings(value: ArenaSettings) = store.putString(KEY_SETTINGS, encodeSettings(value))
 

@@ -12,11 +12,17 @@ kotlin {
         namespace = "in.sanskar.rpsarena.shared"
         compileSdk = libs.versions.androidCompileSdk.get().toInt()
         minSdk = libs.versions.androidMinSdk.get().toInt()
+        withHostTest {}
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
         androidResources {
             enable = true
+        }
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
     }
 
@@ -36,6 +42,16 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
+        }
+        getByName("desktopTest").dependencies {
+            implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.compose.get()}")
+            implementation(compose.desktop.currentOs)
+        }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.compose.ui.test.junit4.android)
+            implementation(libs.androidx.compose.ui.test.manifest)
+            implementation(libs.androidx.test.runner)
         }
     }
 }
