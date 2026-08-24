@@ -42,9 +42,9 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
-            implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.compose.get()}")
         }
         getByName("desktopTest").dependencies {
+            implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.compose.get()}")
             implementation(compose.desktop.currentOs)
         }
         getByName("androidDeviceTest").dependencies {
