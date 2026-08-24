@@ -26,7 +26,9 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
         .toList()
 
     fun addHistory(line: String) {
-        val updated = (listOf(line.replace('\n', ' ')) + loadHistory()).take(MAX_HISTORY)
+        val sanitized = sanitizeHistoryLine(line)
+        if (sanitized.isEmpty()) return
+        val updated = (listOf(sanitized) + loadHistory()).take(MAX_HISTORY)
         saveHistory(updated)
     }
 
@@ -104,23 +106,40 @@ class ArenaRepository(private val store: ArenaStore = PlatformArenaStore) {
     ).joinToString("|")
 
     internal fun decodeStats(raw: String): ArenaStats {
-        val p = raw.split('|').mapNotNull { it.toIntOrNull() }
-        if (p.size != 6) return ArenaStats()
-        return ArenaStats(p[0], p[1], p[2], p[3], p[4], p[5])
+        val values = raw.split('|').map { it.toIntOrNull() ?: return ArenaStats() }
+        if (values.size != 6 || values.any { it < 0 }) return ArenaStats()
+        val stats = ArenaStats(
+            roundsPlayed = values[0],
+            wins = values[1],
+            losses = values[2],
+            draws = values[3],
+            bestStreak = values[4],
+            currentStreak = values[5],
+        )
+        if (stats.roundsPlayed != stats.wins + stats.losses + stats.draws) return ArenaStats()
+        if (stats.currentStreak > stats.bestStreak || stats.bestStreak > stats.wins) return ArenaStats()
+        return stats
     }
 
     private fun saveHistory(lines: List<String>) {
         val sanitized = lines
             .asSequence()
-            .map { it.replace('\r', ' ').replace('\n', ' ').trim() }
+            .map(::sanitizeHistoryLine)
             .filter { it.isNotEmpty() }
             .take(MAX_HISTORY)
             .toList()
         store.putString(KEY_HISTORY, sanitized.joinToString("\n"))
     }
 
+    private fun sanitizeHistoryLine(value: String): String = value
+        .replace('\r', ' ')
+        .replace('\n', ' ')
+        .trim()
+        .take(MAX_HISTORY_LINE_LENGTH)
+
     companion object {
         const val MAX_HISTORY = ArenaBackupCodec.MAX_HISTORY_ITEMS
+        const val MAX_HISTORY_LINE_LENGTH = 160
         private const val KEY_SETTINGS = "settings_v1"
         private const val KEY_MATCH_CONFIG = "match_config_v1"
         private const val KEY_STATS = "stats_v1"
