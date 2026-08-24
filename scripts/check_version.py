@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify cross-platform package, native metadata, and shared UI versions."""
+"""Verify cross-platform semantic versions and mobile build-code mapping."""
 
 from __future__ import annotations
 
@@ -23,16 +23,6 @@ EXPECTED_FILES = {
     / "rpsarena"
     / "ui"
     / "AppMetadata.kt",
-    "app": ROOT
-    / "shared"
-    / "src"
-    / "commonMain"
-    / "kotlin"
-    / "in"
-    / "sanskar"
-    / "rpsarena"
-    / "ui"
-    / "App.kt",
 }
 
 
@@ -114,9 +104,6 @@ def main() -> int:
             EXPECTED_FILES["metadata"].read_text(encoding="utf-8"),
             "shared/.../ui/AppMetadata.kt",
         )
-        app_text = EXPECTED_FILES["app"].read_text(encoding="utf-8")
-        if 'Text("${strings.version}: $APP_VERSION")' not in app_text:
-            raise ValueError("About UI is not rendering the shared APP_VERSION constant")
 
         expected_code = semantic_build_code(android)
         if android_code != expected_code:

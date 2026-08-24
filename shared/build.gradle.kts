@@ -20,6 +20,11 @@ kotlin {
         androidResources {
             enable = true
         }
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
     }
 
     jvm("desktop") {
@@ -56,6 +61,7 @@ kotlin {
             implementation(libs.compose.animation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
@@ -67,8 +73,18 @@ kotlin {
                 implementation(compose.desktop.currentOs)
             }
         }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.compose.ui.test.junit4.android)
+            implementation(libs.androidx.compose.ui.test.manifest)
+            implementation(libs.androidx.test.runner)
+        }
         webMain.dependencies {
             implementation(libs.kotlinx.browser)
         }
     }
+}
+
+compose.resources {
+    packageOfResClass = "in.sanskar.rpsarena.resources"
 }

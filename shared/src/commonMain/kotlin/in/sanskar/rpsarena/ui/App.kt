@@ -1,6 +1,5 @@
 package `in`.sanskar.rpsarena.ui
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,24 +9,28 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import `in`.sanskar.rpsarena.data.ArenaBackupError
+import `in`.sanskar.rpsarena.data.ArenaBackupImportResult
 import `in`.sanskar.rpsarena.data.ArenaRepository
 import `in`.sanskar.rpsarena.model.*
+import `in`.sanskar.rpsarena.resources.*
 import `in`.sanskar.rpsarena.state.ArenaScreen
 import `in`.sanskar.rpsarena.state.ArenaState
-import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun RpsArenaApp(repository: ArenaRepository = ArenaRepository()) {
     val state = remember { ArenaState(repository) }
-    val strings = stringsFor(state.settings.language)
     ArenaTheme(state.settings) {
         Surface(modifier = Modifier.fillMaxSize()) {
             if (!state.settings.onboardingComplete) {
-                OnboardingScreen(strings = strings, onDone = state::completeOnboarding)
+                OnboardingScreen(onDone = state::completeOnboarding)
             } else {
-                ArenaScaffold(state, strings)
+                ArenaScaffold(state)
             }
         }
     }
@@ -35,287 +38,181 @@ fun RpsArenaApp(repository: ArenaRepository = ArenaRepository()) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ArenaScaffold(state: ArenaState, strings: ArenaStrings) {
+private fun ArenaScaffold(state: ArenaState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(strings.appName) },
+                title = { Text(stringResource(Res.string.app_name)) },
                 actions = {
-                    TextButton(onClick = { state.navigate(ArenaScreen.SETTINGS) }) {
-                        Text(strings.settings)
+                    TextButton(
+                        onClick = { state.navigate(ArenaScreen.SETTINGS) },
+                        modifier = Modifier.testTag(ArenaUiTags.TOP_SETTINGS),
+                    ) {
+                        Text(stringResource(Res.string.settings))
                     }
                 },
             )
         },
     ) { padding ->
-        Box(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentAlignment = Alignment.TopCenter,
-        ) {
-            Box(
-                Modifier
-                    .widthIn(max = ArenaLayoutTokens.ContentMaxWidth)
-                    .fillMaxWidth()
-                    .fillMaxHeight()
-                    .padding(ArenaLayoutTokens.ScreenPadding),
-            ) {
-                when (state.screen) {
-                    ArenaScreen.HOME -> HomeScreen(state, strings)
-                    ArenaScreen.PLAY -> PlayScreen(state, strings)
-                    ArenaScreen.HISTORY -> HistoryScreen(state, strings)
-                    ArenaScreen.STATS -> StatsScreen(state, strings)
-                    ArenaScreen.ACHIEVEMENTS -> AchievementsScreen(state, strings)
-                    ArenaScreen.SETTINGS -> SettingsScreen(state, strings)
-                    ArenaScreen.ABOUT -> AboutScreen(state, strings)
-                }
+        Box(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            when (state.screen) {
+                ArenaScreen.HOME -> HomeScreen(state)
+                ArenaScreen.PLAY -> PlayScreen(state)
+                ArenaScreen.HISTORY -> HistoryScreen(state)
+                ArenaScreen.STATS -> StatsScreen(state)
+                ArenaScreen.ACHIEVEMENTS -> AchievementsScreen(state)
+                ArenaScreen.SETTINGS -> SettingsScreen(state)
+                ArenaScreen.ABOUT -> AboutScreen(state)
             }
         }
     }
 }
 
 @Composable
-private fun OnboardingScreen(strings: ArenaStrings, onDone: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .widthIn(max = ArenaLayoutTokens.ContentMaxWidth)
-                .fillMaxWidth()
-                .padding(28.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text("🪨 📄 ✂️", style = MaterialTheme.typography.displayMedium)
-            Spacer(Modifier.height(20.dp))
-            Text(strings.welcomeTitle, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(10.dp))
-            Text(strings.welcomeBody)
-            Spacer(Modifier.height(24.dp))
-            Button(onClick = onDone) { Text(strings.enterArena) }
-        }
-    }
-}
-
-@Composable
-private fun HomeScreen(state: ArenaState, strings: ArenaStrings) {
+private fun OnboardingScreen(onDone: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.SectionSpacing),
+        modifier = Modifier.fillMaxSize().padding(28.dp).testTag(ArenaUiTags.ONBOARDING_SCREEN),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(strings.chooseArena, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("${state.settings.playerName} · ${strings.offlineTagline}")
-        Button(onClick = { state.navigate(ArenaScreen.PLAY) }, modifier = Modifier.fillMaxWidth()) {
-            Text(strings.play)
+        Text("🪨 📄 ✂️", style = MaterialTheme.typography.displayMedium)
+        Spacer(Modifier.height(20.dp))
+        Text(stringResource(Res.string.welcome_title), style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        Text(stringResource(Res.string.welcome_body))
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onDone, modifier = Modifier.testTag(ArenaUiTags.ENTER_ARENA)) {
+            Text(stringResource(Res.string.enter_arena))
         }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.STATS) }, modifier = Modifier.fillMaxWidth()) {
-            Text(strings.stats)
-        }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.HISTORY) }, modifier = Modifier.fillMaxWidth()) {
-            Text(strings.history)
-        }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.ACHIEVEMENTS) }, modifier = Modifier.fillMaxWidth()) {
-            Text(strings.achievements)
-        }
-        OutlinedButton(onClick = { state.navigate(ArenaScreen.ABOUT) }, modifier = Modifier.fillMaxWidth()) {
-            Text(strings.about)
-        }
-        HorizontalDivider(Modifier.padding(vertical = ArenaLayoutTokens.CompactSpacing))
-        Text(strings.madeBy, style = MaterialTheme.typography.labelLarge)
     }
 }
 
 @Composable
-private fun PlayScreen(state: ArenaState, strings: ArenaStrings) {
+private fun HomeScreen(state: ArenaState) {
+    Column(
+        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag(ArenaUiTags.HOME_SCREEN),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(stringResource(Res.string.home_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.home_subtitle))
+        Button(
+            onClick = { state.navigate(ArenaScreen.PLAY) },
+            modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.HOME_PLAY),
+        ) { Text(stringResource(Res.string.play)) }
+        OutlinedButton(
+            onClick = { state.navigate(ArenaScreen.STATS) },
+            modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.HOME_STATS),
+        ) { Text(stringResource(Res.string.stats)) }
+        OutlinedButton(
+            onClick = { state.navigate(ArenaScreen.HISTORY) },
+            modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.HOME_HISTORY),
+        ) { Text(stringResource(Res.string.history)) }
+        OutlinedButton(
+            onClick = { state.navigate(ArenaScreen.ACHIEVEMENTS) },
+            modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.HOME_ACHIEVEMENTS),
+        ) { Text(stringResource(Res.string.achievements)) }
+        OutlinedButton(
+            onClick = { state.navigate(ArenaScreen.ABOUT) },
+            modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.HOME_ABOUT),
+        ) { Text(stringResource(Res.string.about)) }
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Text(stringResource(Res.string.made_by), style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+private fun PlayScreen(state: ArenaState) {
     val config = state.config
     val gestures = Gesture.availableFor(config.variant)
-    var seedText by remember(config.seed) { mutableStateOf(config.seed.toString()) }
-
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.SectionSpacing),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).testTag(ArenaUiTags.PLAY_SCREEN),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        BackButton(strings) { state.navigate(ArenaScreen.HOME) }
-        Text(strings.play, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-
-        ConfigRow(strings.opponent) {
-            ChoiceChip(strings.cpu, config.opponentMode == OpponentMode.CPU) {
-                state.updateConfig(config.copy(opponentMode = OpponentMode.CPU))
-            }
-            ChoiceChip(strings.twoPlayer, config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) {
-                state.updateConfig(config.copy(opponentMode = OpponentMode.LOCAL_TWO_PLAYER))
-            }
+        BackButton(modifier = Modifier.testTag(ArenaUiTags.PLAY_BACK)) { state.navigate(ArenaScreen.HOME) }
+        Text(stringResource(Res.string.play), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        ConfigRow(stringResource(Res.string.opponent)) {
+            ChoiceChip(stringResource(Res.string.cpu), config.opponentMode == OpponentMode.CPU) { state.updateConfig(config.copy(opponentMode = OpponentMode.CPU)) }
+            ChoiceChip(stringResource(Res.string.two_player), config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) { state.updateConfig(config.copy(opponentMode = OpponentMode.LOCAL_TWO_PLAYER)) }
         }
-
-        ConfigRow(strings.rules) {
-            ChoiceChip(strings.classic, config.variant == GameVariant.CLASSIC) {
-                state.updateConfig(config.copy(variant = GameVariant.CLASSIC))
-            }
-            ChoiceChip(strings.lizardSpock, config.variant == GameVariant.LIZARD_SPOCK) {
-                state.updateConfig(config.copy(variant = GameVariant.LIZARD_SPOCK))
-            }
+        ConfigRow(stringResource(Res.string.rules)) {
+            ChoiceChip(stringResource(Res.string.classic), config.variant == GameVariant.CLASSIC) { state.updateConfig(config.copy(variant = GameVariant.CLASSIC)) }
+            ChoiceChip(stringResource(Res.string.lizard_spock), config.variant == GameVariant.LIZARD_SPOCK) { state.updateConfig(config.copy(variant = GameVariant.LIZARD_SPOCK)) }
         }
-
         if (config.opponentMode == OpponentMode.CPU) {
-            ConfigRow(strings.difficulty) {
+            ConfigRow(stringResource(Res.string.difficulty)) {
                 Difficulty.entries.forEach { difficulty ->
-                    ChoiceChip(
-                        strings.difficultyLabel(difficulty),
-                        config.difficulty == difficulty,
-                    ) {
+                    ChoiceChip(stringResource(difficulty.resource), config.difficulty == difficulty) {
                         state.updateConfig(config.copy(difficulty = difficulty))
                     }
                 }
             }
         }
-
-        ConfigRow(strings.mode) {
+        ConfigRow(stringResource(Res.string.mode)) {
             MatchMode.entries.forEach { mode ->
-                ChoiceChip(strings.modeLabel(mode), config.matchMode == mode) {
+                ChoiceChip(stringResource(mode.resource), config.matchMode == mode) {
                     state.updateConfig(config.copy(matchMode = mode))
                 }
             }
         }
-
-        ConfigRow(strings.timer) {
-            MatchConfig.ALLOWED_TIMER_SECONDS.sorted().forEach { seconds ->
-                ChoiceChip(
-                    if (seconds == 0) strings.timerOff else "${seconds}s",
-                    config.roundTimerSeconds == seconds,
-                ) {
-                    state.updateConfig(config.copy(roundTimerSeconds = seconds))
-                }
-            }
-        }
-
-        if (config.opponentMode == OpponentMode.CPU) {
-            OutlinedTextField(
-                value = seedText,
-                onValueChange = { value -> seedText = value.filter { it == '-' || it.isDigit() }.take(11) },
-                label = { Text(strings.seed) },
-                supportingText = { Text(strings.seedReplayHint) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            val parsedSeed = seedText.toIntOrNull()
-            OutlinedButton(
-                onClick = { parsedSeed?.let { state.updateConfig(config.copy(seed = it)) } },
-                enabled = parsedSeed != null && parsedSeed != config.seed,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(strings.applySeed)
-            }
-        }
-
-        ScoreCard(state, strings)
-        RoundTimer(state, strings)
-
+        ScoreCard(state)
         if (config.opponentMode == OpponentMode.LOCAL_TWO_PLAYER) {
             Text(
-                if (state.pendingPlayerOne == null) strings.localTurnOne else strings.localTurnTwo,
+                stringResource(
+                    if (state.pendingPlayerOne == null) Res.string.local_turn_player_one
+                    else Res.string.local_turn_player_two,
+                ),
                 fontWeight = FontWeight.SemiBold,
             )
         }
-
-        state.lastAnnouncement?.let { announcement ->
-            Text(localizeRoundAnnouncement(announcement, strings), style = MaterialTheme.typography.bodyMedium)
-        }
-
-        Text(strings.chooseGesture, style = MaterialTheme.typography.titleLarge)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
+        Text(stringResource(Res.string.choose_gesture), style = MaterialTheme.typography.titleLarge)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             gestures.take(3).forEach { gesture ->
-                GestureButton(gesture, strings, Modifier.weight(1f)) { state.play(gesture) }
+                GestureButton(
+                    gesture,
+                    Modifier.weight(1f).testTag(ArenaUiTags.gesture(gesture.name)),
+                ) { state.play(gesture) }
             }
         }
         if (gestures.size > 3) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 gestures.drop(3).forEach { gesture ->
-                    GestureButton(gesture, strings, Modifier.weight(1f)) { state.play(gesture) }
+                    GestureButton(
+                        gesture,
+                        Modifier.weight(1f).testTag(ArenaUiTags.gesture(gesture.name)),
+                    ) { state.play(gesture) }
                 }
             }
         }
-
-        val lastRound = state.match.rounds.lastOrNull()
-        if (state.settings.reducedMotion) {
-            lastRound?.let { RoundResultCard(it, strings) }
-        } else {
-            Crossfade(targetState = lastRound, label = "round-result") { round ->
-                round?.let { RoundResultCard(it, strings) }
+        state.match.rounds.lastOrNull()?.let { round ->
+            Card(Modifier.fillMaxWidth().testTag(ArenaUiTags.LAST_ROUND)) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(stringResource(Res.string.last_round), fontWeight = FontWeight.Bold)
+                    val first = "${round.playerOne.emoji} ${stringResource(round.playerOne.resource)}"
+                    val second = "${round.playerTwo.emoji} ${stringResource(round.playerTwo.resource)}"
+                    Text(stringResource(Res.string.versus, first, second))
+                    Text(stringResource(round.outcome.resource))
+                }
             }
         }
-
         if (state.match.finished) {
-            Button(onClick = state::resetMatch, modifier = Modifier.fillMaxWidth()) {
-                Text(strings.newMatch)
-            }
+            Button(
+                onClick = state::resetMatch,
+                modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.NEW_MATCH),
+            ) { Text(stringResource(Res.string.new_match)) }
         }
     }
 }
 
 @Composable
-private fun RoundTimer(state: ArenaState, strings: ArenaStrings) {
-    val seconds = state.config.roundTimerSeconds
-    if (seconds <= 0) return
-
-    var remaining by remember(
-        seconds,
-        state.match.rounds.size,
-        state.pendingPlayerOne,
-        state.match.finished,
-    ) { mutableStateOf(seconds) }
-
-    LaunchedEffect(seconds, state.match.rounds.size, state.pendingPlayerOne, state.match.finished) {
-        remaining = seconds
-        if (state.match.finished) return@LaunchedEffect
-        while (remaining > 0) {
-            delay(1_000)
-            remaining -= 1
-        }
-        state.expireCurrentTurn()
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("${strings.timerRemaining}: ${remaining}s", fontWeight = FontWeight.SemiBold)
-        LinearProgressIndicator(
-            progress = { remaining.toFloat() / seconds.toFloat() },
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
-private fun RoundResultCard(round: RoundRecord, strings: ArenaStrings) {
-    Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(strings.lastRound, fontWeight = FontWeight.Bold)
-            when (round.endReason) {
-                RoundEndReason.PLAYED -> {
-                    val first = requireNotNull(round.playerOne)
-                    val second = requireNotNull(round.playerTwo)
-                    Text("${first.emoji} ${strings.gestureLabel(first)} vs ${second.emoji} ${strings.gestureLabel(second)}")
-                }
-                RoundEndReason.PLAYER_ONE_TIMEOUT -> Text(strings.playerOneTimeout)
-                RoundEndReason.PLAYER_TWO_TIMEOUT -> Text(strings.playerTwoTimeout)
-            }
-            Text(
-                when (round.outcome) {
-                    RoundOutcome.PLAYER_ONE_WIN -> strings.playerOneWinsRound
-                    RoundOutcome.PLAYER_TWO_WIN -> strings.playerTwoWinsRound
-                    RoundOutcome.DRAW -> strings.roundDraw
-                },
-            )
-        }
-    }
-}
-
-@Composable
-private fun ScoreCard(state: ArenaState, strings: ArenaStrings) {
+private fun ScoreCard(state: ArenaState) {
     Card(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Score(state.settings.playerName, state.match.playerOneScore)
-            Score(strings.draws, state.match.draws)
-            Score(if (state.config.opponentMode == OpponentMode.CPU) strings.cpu else "P2", state.match.playerTwoScore)
+            Score(stringResource(Res.string.player_one_short), state.match.playerOneScore)
+            Score(stringResource(Res.string.draws), state.match.draws)
+            Score(
+                if (state.config.opponentMode == OpponentMode.CPU) stringResource(Res.string.cpu) else stringResource(Res.string.player_two_short),
+                state.match.playerTwoScore,
+            )
         }
     }
 }
@@ -327,78 +224,60 @@ private fun Score(label: String, value: Int) = Column(horizontalAlignment = Alig
 }
 
 @Composable
-private fun GestureButton(
-    gesture: Gesture,
-    strings: ArenaStrings,
-    modifier: Modifier,
-    onClick: () -> Unit,
-) {
-    FilledTonalButton(
-        onClick = onClick,
-        modifier = modifier.heightIn(min = ArenaLayoutTokens.GestureMinHeight),
-    ) {
+private fun GestureButton(gesture: Gesture, modifier: Modifier, onClick: () -> Unit) {
+    FilledTonalButton(onClick = onClick, modifier = modifier.height(88.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(gesture.emoji, style = MaterialTheme.typography.headlineMedium)
-            Text(strings.gestureLabel(gesture))
+            Text(stringResource(gesture.resource))
         }
     }
 }
 
 @Composable
-private fun HistoryScreen(state: ArenaState, strings: ArenaStrings) {
-    Column(Modifier.fillMaxSize()) {
-        BackButton(strings) { state.navigate(ArenaScreen.HOME) }
-        Text(strings.history, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(ArenaLayoutTokens.CompactSpacing))
-        if (state.history.isEmpty()) {
-            Text(strings.noHistory)
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
-                items(state.history) { line ->
-                    Card(Modifier.fillMaxWidth()) {
-                        Text(localizeRoundAnnouncement(line, strings), Modifier.padding(14.dp))
-                    }
-                }
-            }
+private fun HistoryScreen(state: ArenaState) {
+    Column(Modifier.fillMaxSize().testTag(ArenaUiTags.HISTORY_SCREEN)) {
+        BackButton { state.navigate(ArenaScreen.HOME) }
+        Text(stringResource(Res.string.history), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        if (state.history.isEmpty()) Text(stringResource(Res.string.history_empty))
+        else LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(state.history) { line -> Card(Modifier.fillMaxWidth()) { Text(line, Modifier.padding(14.dp)) } }
         }
     }
 }
 
 @Composable
-private fun StatsScreen(state: ArenaState, strings: ArenaStrings) {
-    val trend = state.recentTrend
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        BackButton(strings) { state.navigate(ArenaScreen.HOME) }
-        Text(strings.stats, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        StatLine(strings.rounds, state.stats.roundsPlayed.toString())
-        StatLine(strings.wins, state.stats.wins.toString())
-        StatLine(strings.losses, state.stats.losses.toString())
-        StatLine(strings.draws, state.stats.draws.toString())
-        StatLine(strings.winRate, "${state.stats.winRate}%")
-        StatLine(strings.bestStreak, state.stats.bestStreak.toString())
-        StatLine(
-            strings.recentTrend,
-            "${trend.wins} ${strings.wins} · ${trend.losses} ${strings.losses} · ${trend.draws} ${strings.draws}",
-        )
+private fun StatsScreen(state: ArenaState) {
+    Column(
+        Modifier.fillMaxWidth().testTag(ArenaUiTags.STATS_SCREEN),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        BackButton { state.navigate(ArenaScreen.HOME) }
+        Text(stringResource(Res.string.stats), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        StatLine(stringResource(Res.string.rounds), state.stats.roundsPlayed.toString())
+        StatLine(stringResource(Res.string.wins), state.stats.wins.toString())
+        StatLine(stringResource(Res.string.losses), state.stats.losses.toString())
+        StatLine(stringResource(Res.string.draws), state.stats.draws.toString())
+        StatLine(stringResource(Res.string.win_rate), "${state.stats.winRate}%")
+        StatLine(stringResource(Res.string.best_streak), state.stats.bestStreak.toString())
     }
 }
 
 @Composable
-private fun AchievementsScreen(state: ArenaState, strings: ArenaStrings) {
-    Column(Modifier.fillMaxSize()) {
-        BackButton(strings) { state.navigate(ArenaScreen.HOME) }
-        Text(strings.achievements, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(ArenaLayoutTokens.CompactSpacing))
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
+private fun AchievementsScreen(state: ArenaState) {
+    Column(Modifier.fillMaxSize().testTag(ArenaUiTags.ACHIEVEMENTS_SCREEN)) {
+        BackButton { state.navigate(ArenaScreen.HOME) }
+        Text(stringResource(Res.string.achievements), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.achievements) { achievement ->
-                val copy = achievementCopy(achievement.id, state.settings.language)
                 Card(Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(if (achievement.unlocked) "🏆" else "🔒", style = MaterialTheme.typography.headlineSmall)
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text(copy.title, fontWeight = FontWeight.Bold)
-                            Text(copy.description)
+                            Text(stringResource(achievement.titleResource), fontWeight = FontWeight.Bold)
+                            Text(stringResource(achievement.descriptionResource))
                         }
                     }
                 }
@@ -408,195 +287,219 @@ private fun AchievementsScreen(state: ArenaState, strings: ArenaStrings) {
 }
 
 @Composable
-private fun SettingsScreen(state: ArenaState, strings: ArenaStrings) {
+private fun SettingsScreen(state: ArenaState) {
     val settings = state.settings
-    var playerName by remember(settings.playerName) { mutableStateOf(settings.playerName) }
-    var confirmReset by remember { mutableStateOf(false) }
+    var showExport by remember { mutableStateOf(false) }
+    var showImport by remember { mutableStateOf(false) }
+    var exportText by remember { mutableStateOf("") }
+    var importText by remember { mutableStateOf("") }
+    var importError by remember { mutableStateOf<ArenaBackupError?>(null) }
+    var importedHistoryCount by remember { mutableStateOf<Int?>(null) }
 
     Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.SectionSpacing),
+        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag(ArenaUiTags.SETTINGS_SCREEN),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        BackButton(strings) { state.navigate(ArenaScreen.HOME) }
-        Text(strings.settings, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        BackButton { state.navigate(ArenaScreen.HOME) }
+        Text(stringResource(Res.string.settings), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        SwitchRow(stringResource(Res.string.follow_system_theme), settings.followSystemTheme) { state.updateSettings(settings.copy(followSystemTheme = it)) }
+        SwitchRow(stringResource(Res.string.dark_theme), settings.darkTheme, enabled = !settings.followSystemTheme) { state.updateSettings(settings.copy(darkTheme = it)) }
+        SwitchRow(
+            stringResource(Res.string.reduced_motion),
+            settings.reducedMotion,
+            modifier = Modifier.testTag(ArenaUiTags.SETTINGS_REDUCED_MOTION),
+        ) { state.updateSettings(settings.copy(reducedMotion = it)) }
+        SwitchRow(stringResource(Res.string.sound), settings.soundEnabled) { state.updateSettings(settings.copy(soundEnabled = it)) }
+        SwitchRow(stringResource(Res.string.haptics), settings.hapticsEnabled) { state.updateSettings(settings.copy(hapticsEnabled = it)) }
+        Text(stringResource(Res.string.accessibility_note))
 
-        SectionTitle(strings.appearance)
-        SwitchRow(strings.followSystemTheme, settings.followSystemTheme) {
-            state.updateSettings(settings.copy(followSystemTheme = it))
-        }
-        SwitchRow(strings.darkTheme, settings.darkTheme, enabled = !settings.followSystemTheme) {
-            state.updateSettings(settings.copy(darkTheme = it))
-        }
-
-        SectionTitle(strings.accessibility)
-        SwitchRow(strings.reducedMotion, settings.reducedMotion) {
-            state.updateSettings(settings.copy(reducedMotion = it))
-        }
-        SwitchRow(strings.sound, settings.soundEnabled) {
-            state.updateSettings(settings.copy(soundEnabled = it))
-        }
-        SwitchRow(strings.haptics, settings.hapticsEnabled) {
-            state.updateSettings(settings.copy(hapticsEnabled = it))
-        }
-        Text(strings.accessibilityNote)
-
-        SectionTitle(strings.playerName)
-        OutlinedTextField(
-            value = playerName,
-            onValueChange = { playerName = it.take(ArenaRepository.MAX_PLAYER_NAME_LENGTH) },
-            label = { Text(strings.playerName) },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Text(stringResource(Res.string.backup_restore), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.backup_restore_description))
         OutlinedButton(
-            onClick = { state.updateSettings(settings.copy(playerName = playerName)) },
-            enabled = playerName.trim().isNotEmpty() && playerName.trim() != settings.playerName,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(strings.savePlayerName)
+            onClick = {
+                exportText = state.exportBackup()
+                importedHistoryCount = null
+                showExport = true
+            },
+            modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.SETTINGS_EXPORT_BACKUP),
+        ) { Text(stringResource(Res.string.export_backup)) }
+        OutlinedButton(
+            onClick = {
+                importText = ""
+                importError = null
+                importedHistoryCount = null
+                showImport = true
+            },
+            modifier = Modifier.fillMaxWidth().testTag(ArenaUiTags.SETTINGS_IMPORT_BACKUP),
+        ) { Text(stringResource(Res.string.import_backup)) }
+        importedHistoryCount?.let {
+            Text(stringResource(Res.string.backup_imported, it), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
         }
+    }
 
-        SectionTitle(strings.language)
-        Row(horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
-            ChoiceChip(strings.english, settings.language == AppLanguage.ENGLISH) {
-                state.updateSettings(settings.copy(language = AppLanguage.ENGLISH))
-            }
-            ChoiceChip(strings.hindi, settings.language == AppLanguage.HINDI) {
-                state.updateSettings(settings.copy(language = AppLanguage.HINDI))
-            }
-        }
-
-        SectionTitle(strings.dataPrivacy)
-        Text(strings.backupHint)
-        OutlinedTextField(
-            value = state.backupText,
-            onValueChange = state::updateBackupText,
-            label = { Text("RPS_ARENA_BACKUP|1") },
-            minLines = 4,
-            maxLines = 10,
-            modifier = Modifier.fillMaxWidth(),
+    if (showExport) {
+        AlertDialog(
+            onDismissRequest = { showExport = false },
+            modifier = Modifier.testTag(ArenaUiTags.EXPORT_DIALOG),
+            title = { Text(stringResource(Res.string.export_backup)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(Res.string.export_backup_help))
+                    OutlinedTextField(
+                        value = exportText,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(Res.string.arena_backup_label)) },
+                        minLines = 8,
+                        maxLines = 12,
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showExport = false }) { Text(stringResource(Res.string.done)) }
+            },
         )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
-            OutlinedButton(onClick = state::prepareBackup, modifier = Modifier.weight(1f)) {
-                Text(strings.exportBackup)
-            }
-            Button(
-                onClick = state::importBackup,
-                enabled = state.backupText.isNotBlank(),
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(strings.importBackup)
-            }
-        }
-        state.dataMessage?.let { Text(localizeDataMessage(it, strings), style = MaterialTheme.typography.bodyMedium) }
+    }
 
-        if (!confirmReset) {
-            OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(strings.resetLocalData)
-            }
-        } else {
-            Text(strings.resetWarning)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing)) {
-                OutlinedButton(onClick = { confirmReset = false }, modifier = Modifier.weight(1f)) {
-                    Text(strings.cancel)
+    if (showImport) {
+        AlertDialog(
+            onDismissRequest = { showImport = false },
+            modifier = Modifier.testTag(ArenaUiTags.IMPORT_DIALOG),
+            title = { Text(stringResource(Res.string.import_backup)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(Res.string.import_backup_help))
+                    OutlinedTextField(
+                        value = importText,
+                        onValueChange = {
+                            importText = it
+                            importError = null
+                        },
+                        label = { Text(stringResource(Res.string.backup_text)) },
+                        minLines = 8,
+                        maxLines = 12,
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                    )
+                    importError?.let { Text(backupErrorLabel(it), style = MaterialTheme.typography.bodySmall) }
                 }
-                Button(
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = importText.isNotBlank(),
                     onClick = {
-                        state.clearUserData()
-                        confirmReset = false
+                        when (val result = state.importBackup(importText)) {
+                            is ArenaBackupImportResult.Success -> {
+                                importedHistoryCount = result.importedHistoryCount
+                                importError = null
+                                showImport = false
+                            }
+                            is ArenaBackupImportResult.Failure -> {
+                                importError = result.error
+                            }
+                        }
                     },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(strings.confirmReset)
-                }
-            }
-        }
+                ) { Text(stringResource(Res.string.import_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImport = false }) { Text(stringResource(Res.string.cancel)) }
+            },
+        )
     }
 }
 
 @Composable
-private fun AboutScreen(state: ArenaState, strings: ArenaStrings) {
+private fun AboutScreen(state: ArenaState) {
     Column(
-        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing),
+        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).testTag(ArenaUiTags.ABOUT_SCREEN),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        BackButton(strings) { state.navigate(ArenaScreen.HOME) }
-        Text("${strings.about} ${strings.appName}", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text(strings.aboutBody)
-        Text(strings.extendedRules)
-        Text(strings.cpuTransparency)
-        Text("${strings.version}: $APP_VERSION")
-        Text("${strings.license}: $APP_LICENSE")
-        Text(strings.madeBy, fontWeight = FontWeight.Bold)
-        Text("Business: sanskarin@outlook.in · sanskarin.business@gmail.com")
-        Text("Support: supportramsandesh@gmail.com")
-        Text("GitHub: github.com/sanskarIN/rps-arena")
-        Text("Support development: buymeacoffee.com/sanskarIN")
+        BackButton { state.navigate(ArenaScreen.HOME) }
+        Text(stringResource(Res.string.about_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.about_summary))
+        Text(stringResource(Res.string.about_extended_rules))
+        Text(stringResource(Res.string.about_cpu))
+        Text(stringResource(Res.string.made_by), fontWeight = FontWeight.Bold)
+        Text(stringResource(Res.string.business_contact))
+        Text(stringResource(Res.string.support_contact))
+        Text(stringResource(Res.string.github_contact))
+        Text(stringResource(Res.string.support_development))
     }
-}
-
-private fun localizeRoundAnnouncement(raw: String, strings: ArenaStrings): String {
-    if (raw == "Player 1 timed out — Player 2 won") {
-        return "${strings.playerOneTimeout} — ${strings.playerTwoWinsRound}"
-    }
-    if (raw == "Player 2 timed out — Player 1 won") {
-        return "${strings.playerTwoTimeout} — ${strings.playerOneWinsRound}"
-    }
-
-    val delimiter = " — "
-    val parts = raw.split(delimiter, limit = 2)
-    if (parts.size != 2) return raw
-    val gestureParts = parts[0].split(" vs ", limit = 2)
-    if (gestureParts.size != 2) return raw
-
-    val first = Gesture.entries.firstOrNull { it.label == gestureParts[0] }
-    val second = Gesture.entries.firstOrNull { it.label == gestureParts[1] }
-    if (first == null || second == null) return raw
-
-    val outcome = when (parts[1]) {
-        "Player 1 won" -> strings.playerOneWinsRound
-        "Player 2 won" -> strings.playerTwoWinsRound
-        "Draw" -> strings.roundDraw
-        else -> parts[1]
-    }
-    return "${strings.gestureLabel(first)} vs ${strings.gestureLabel(second)}$delimiter$outcome"
-}
-
-private fun localizeDataMessage(raw: String, strings: ArenaStrings): String = when {
-    raw == "Backup text is ready to copy and save securely." -> strings.backupReady
-    raw == "Local statistics, history, and preferences were reset." -> strings.localDataReset
-    raw == "Unsupported or missing backup header" -> strings.invalidBackupHeader
-    raw == "Backup is too large" -> strings.backupTooLarge
-    raw == "Backup contains too many records" -> strings.backupTooManyRecords
-    raw == "Malformed backup record" -> strings.malformedBackupRecord
-    raw == "Invalid settings record" -> strings.invalidSettingsRecord
-    raw == "Invalid stats record" -> strings.invalidStatsRecord
-    raw == "Backup has no settings record" -> strings.backupMissingSettings
-    raw == "Backup has no stats record" -> strings.backupMissingStats
-    raw == "Duplicate settings record" -> strings.duplicateSettingsRecord
-    raw == "Duplicate stats record" -> strings.duplicateStatsRecord
-    raw.startsWith("Unknown backup record:") -> "${strings.unknownBackupRecord}:${raw.substringAfter(':')}"
-    raw.startsWith("Imported settings, statistics, and ") -> {
-        val count = raw.removePrefix("Imported settings, statistics, and ").substringBefore(' ')
-        "${strings.backupImportedPrefix} $count ${strings.historyRecords}"
-    }
-    else -> raw
 }
 
 @Composable
-private fun BackButton(strings: ArenaStrings, onClick: () -> Unit) =
-    TextButton(onClick = onClick) { Text(strings.back) }
+private fun backupErrorLabel(error: ArenaBackupError): String = stringResource(
+    when (error) {
+        ArenaBackupError.EMPTY -> Res.string.backup_error_empty
+        ArenaBackupError.INVALID_HEADER -> Res.string.backup_error_invalid_header
+        ArenaBackupError.UNSUPPORTED_SCHEMA -> Res.string.backup_error_unsupported_schema
+        ArenaBackupError.MALFORMED_SETTINGS -> Res.string.backup_error_settings
+        ArenaBackupError.MALFORMED_STATS -> Res.string.backup_error_stats
+        ArenaBackupError.MALFORMED_HISTORY -> Res.string.backup_error_history
+    },
+)
 
-@OptIn(ExperimentalLayoutApi::class)
+private val Gesture.resource: StringResource
+    get() = when (this) {
+        Gesture.ROCK -> Res.string.gesture_rock
+        Gesture.PAPER -> Res.string.gesture_paper
+        Gesture.SCISSORS -> Res.string.gesture_scissors
+        Gesture.LIZARD -> Res.string.gesture_lizard
+        Gesture.SPOCK -> Res.string.gesture_spock
+    }
+
+private val Difficulty.resource: StringResource
+    get() = when (this) {
+        Difficulty.EASY -> Res.string.difficulty_easy
+        Difficulty.NORMAL -> Res.string.difficulty_normal
+        Difficulty.EXPERT -> Res.string.difficulty_expert
+    }
+
+private val MatchMode.resource: StringResource
+    get() = when (this) {
+        MatchMode.BEST_OF_3 -> Res.string.mode_best_of_3
+        MatchMode.BEST_OF_5 -> Res.string.mode_best_of_5
+        MatchMode.ENDLESS -> Res.string.mode_endless
+        MatchMode.STREAK -> Res.string.mode_streak
+        MatchMode.TOURNAMENT -> Res.string.mode_tournament
+    }
+
+private val RoundOutcome.resource: StringResource
+    get() = when (this) {
+        RoundOutcome.PLAYER_ONE_WIN -> Res.string.round_player_one_wins
+        RoundOutcome.PLAYER_TWO_WIN -> Res.string.round_player_two_wins
+        RoundOutcome.DRAW -> Res.string.round_draw
+    }
+
+private val Achievement.titleResource: StringResource
+    get() = when (id) {
+        "first_win" -> Res.string.achievement_first_victory_title
+        "ten_rounds" -> Res.string.achievement_arena_regular_title
+        "streak_3" -> Res.string.achievement_on_fire_title
+        "streak_7" -> Res.string.achievement_unstoppable_title
+        "century" -> Res.string.achievement_century_title
+        else -> Res.string.achievements
+    }
+
+private val Achievement.descriptionResource: StringResource
+    get() = when (id) {
+        "first_win" -> Res.string.achievement_first_victory_description
+        "ten_rounds" -> Res.string.achievement_arena_regular_description
+        "streak_3" -> Res.string.achievement_on_fire_description
+        "streak_7" -> Res.string.achievement_unstoppable_description
+        "century" -> Res.string.achievement_century_description
+        else -> Res.string.achievements
+    }
+
 @Composable
-private fun ConfigRow(label: String, content: @Composable FlowRowScope.() -> Unit) {
+private fun BackButton(modifier: Modifier = Modifier, onClick: () -> Unit) =
+    TextButton(onClick = onClick, modifier = modifier) { Text(stringResource(Res.string.back)) }
+
+@Composable
+private fun ConfigRow(label: String, content: @Composable RowScope.() -> Unit) {
     Text(label, style = MaterialTheme.typography.labelLarge)
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing),
-        verticalArrangement = Arrangement.spacedBy(ArenaLayoutTokens.CompactSpacing),
-        content = content,
-    )
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), content = content)
 }
 
 @Composable
@@ -607,10 +510,7 @@ private fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun StatLine(label: String, value: String) {
     Card(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth().padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
+        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label)
             Text(value, fontWeight = FontWeight.Bold)
         }
@@ -618,23 +518,15 @@ private fun StatLine(label: String, value: String) {
 }
 
 @Composable
-private fun SectionTitle(label: String) {
-    Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-}
-
-@Composable
 private fun SwitchRow(
     label: String,
     checked: Boolean,
     enabled: Boolean = true,
+    modifier: Modifier = Modifier,
     onChecked: (Boolean) -> Unit,
 ) {
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label)
-        Switch(checked = checked, onCheckedChange = onChecked, enabled = enabled)
+        Switch(checked = checked, onCheckedChange = onChecked, enabled = enabled, modifier = modifier)
     }
 }
