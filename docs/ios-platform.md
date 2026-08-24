@@ -5,8 +5,9 @@ RPS Arena now exposes the same shared Compose Multiplatform application on iPhon
 ## Platform status
 
 - iPhone and iPad are supported through the Kotlin/Native `iosArm64` device target and `iosSimulatorArm64` Apple-silicon simulator target.
+- The Xcode host explicitly excludes the `x86_64` simulator architecture because the repository does not configure a Kotlin/Native `iosX64` framework target.
 - Building/running the iOS application requires macOS and Xcode.
-- Public CI validates a simulator build without private signing credentials.
+- Public CI validates an Apple-silicon simulator build without private signing credentials.
 - App Store/TestFlight signing remains an external credential-bearing release step.
 
 ## Files
@@ -37,6 +38,8 @@ RpsArenaShared
 ```
 
 The framework contains the shared Compose UI and shared application logic.
+
+The Xcode project sets `EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64` for the application target. This keeps Xcode's requested simulator architecture aligned with the configured `iosSimulatorArm64` Kotlin target instead of asking Gradle to build an unavailable `iosX64` framework.
 
 ## Kotlin entry point
 
@@ -118,7 +121,7 @@ The repository currently does not track a Gradle Wrapper, so the Xcode phase int
 
 ## Build the Kotlin simulator framework
 
-From the repository root on macOS:
+From the repository root on an Apple-silicon macOS host:
 
 ```bash
 gradle :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
@@ -152,11 +155,11 @@ xcodebuild \
   build
 ```
 
-This is the same style of host build exercised by CI.
+The project's simulator architecture exclusion keeps this command on `arm64`. This is the same style of host build exercised by CI.
 
 ## Run from Xcode
 
-1. Open `iosApp/iosApp.xcodeproj` on macOS.
+1. Open `iosApp/iosApp.xcodeproj` on an Apple-silicon Mac.
 2. Select the `RPS Arena` scheme.
 3. Select an iPhone or iPad simulator/device.
 4. Ensure JDK 17 and the validated Gradle baseline are available to the Xcode build phase.
@@ -164,9 +167,11 @@ This is the same style of host build exercised by CI.
 
 A physical device build may require an Apple development team/profile depending on local Xcode signing configuration.
 
+An Intel-only iOS simulator build is not part of the current source-support claim because `iosX64` is not configured.
+
 ## CI
 
-The `ios` job in `.github/workflows/ci.yml` runs on a macOS runner and:
+The `ios` job in `.github/workflows/ci.yml` runs on an Apple-silicon macOS runner and:
 
 1. installs JDK 17;
 2. installs the repository's Gradle baseline;
