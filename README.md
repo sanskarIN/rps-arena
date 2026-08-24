@@ -85,9 +85,9 @@ See [docs/LOCALIZATION.md](docs/LOCALIZATION.md) for translation rules, supporte
 
 ## UI automation
 
-Shared UI tests use stable semantic tags rather than visible text, so the same flows stay reliable across localized UI. Desktop tests execute in CI, while the Android device-test APK is assembled in CI and can be run on a connected device or emulator with `gradle :shared:connectedAndroidDeviceTest`.
+Platform-specific Compose UI tests share stable semantic tags and isolated repository test data rather than relying on visible text. Desktop rendering tests execute in CI, Android host tests exercise non-rendering shared logic, and the Android instrumentation APK is assembled in CI for connected-device/emulator execution with `gradle :shared:connectedAndroidDeviceTest`.
 
-See [docs/UI_TESTING.md](docs/UI_TESTING.md) for covered flows, test-store isolation, commands, and contribution guidance.
+See [docs/UI_TESTING.md](docs/UI_TESTING.md) for covered flows, platform harnesses, test-store isolation, commands, and contribution guidance.
 
 ## Privacy
 
