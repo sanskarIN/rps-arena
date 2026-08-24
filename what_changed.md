@@ -1,5 +1,89 @@
 # What Changed
 
+## 2026-08-24 — UI automation architecture and CI hardening
+
+RPS Arena now has validated, platform-appropriate Compose UI automation instead of relying on one rendering harness across incompatible JVM environments. The work keeps production persistence, privacy, permissions, and offline-first behavior unchanged.
+
+### Milestone
+
+- Roadmap milestone: **1.3 UI automation foundation** — implementation complete.
+- Feature branch: `feature/ui-automation`.
+- Pull request: `#14`.
+- Validated functional head: `51dde54311d070a65e16a70b4cf55151dc235b5d`.
+- Validated CI run: `#604` — success.
+- Validated CodeQL run: `#605` — success.
+
+### Completed work
+
+- Added an injectable `ArenaStore` boundary so UI tests can use isolated in-memory persistence while production continues through `PlatformArenaStore`.
+- Added localization-independent `ArenaUiTags` across onboarding, home, play, settings, backup dialogs, and major screens.
+- Added a desktop Compose UI suite under `shared/src/desktopTest` covering onboarding, navigation, gameplay, reduced-motion persistence, and backup export.
+- Added Android instrumentation smoke tests under `shared/src/androidDeviceTest` covering onboarding and gameplay.
+- Enabled Android KMP host tests with `withHostTest {}` so platform-neutral common tests are also exercised by the Android host-test task.
+- Kept rendering tests out of `commonTest` after validation proved that the desktop Compose UI harness cannot run correctly inside the Android host JVM.
+- Scoped the Compose Multiplatform UI-test dependency to `desktopTest` and retained Android-specific instrumentation dependencies in `androidDeviceTest`.
+- Kept Android device-test execution available through `connectedAndroidDeviceTest` while normal hosted CI compiles the instrumentation APK without requiring an emulator.
+- Removed invalid top-level `assertExists` imports while preserving node-interaction assertions.
+- Upgraded normal CI and CodeQL Gradle setup to `gradle/actions/setup-gradle@v6` and kept Gradle cache ownership centralized there.
+- Updated README, UI-testing documentation, roadmap, and changelog so the documented test architecture matches the implementation.
+
+### Validation
+
+The functional head passed the complete PR gate before documentation-only cleanup:
+
+- localization catalog verification: **passed**;
+- shared/common tests including Android host tests: **passed**;
+- desktop Compose UI tests: **passed**;
+- Android instrumentation test APK assembly: **passed**;
+- Android debug assembly: **passed**;
+- desktop JVM compilation: **passed**;
+- Rust tests: **passed**;
+- CodeQL Kotlin/Java build and analysis: **passed**.
+
+The validation sequence also exposed and corrected two important test-architecture defects instead of hiding them:
+
+1. the first UI-test compile failed because `assertExists` was imported as a top-level symbol even though the current API exposes it through node interaction;
+2. enabling Android host tests then exposed desktop Compose rendering tests being incorrectly inherited from `commonTest`, producing Android host-JVM failures. The rendering suites were separated by platform and then revalidated successfully.
+
+### Test architecture
+
+```text
+commonTest
+  -> platform-neutral non-rendering rules/state/repository/localization tests
+  -> exercised by supported target test compilations, including Android host tests
+
+desktopTest
+  -> Compose Multiplatform runComposeUiTest rendering flows
+
+androidDeviceTest
+  -> AndroidJUnitRunner + createAndroidComposeRule instrumentation flows
+```
+
+### Current next work
+
+1. merge pull request #14 only after the documentation/workflow-only final head is green;
+2. synchronize the v2.5.8 cross-platform branch in pull request #11 with the updated `main` history;
+3. re-run and repair every v2.5.8 release gate, including the iOS host and documentation checks already hardened on that branch;
+4. reconcile genuinely unique older draft work separately, especially multi-profile support, backup preview-before-import, and undoable history clearing;
+5. evaluate remaining patch dependency pull requests against the final baseline;
+6. tag and publish v2.5.8 only after the exact final `main` release gates pass.
+
+### Focused commits from this milestone
+
+- `1fe86ab2a8217047a8b4088df1d98537652685ca` — `test: fix Compose UI assertion import`
+- `5280dbd647aac6d2fe5323ef70724f6123d7bfb3` — `build: enable Android KMP host tests`
+- `99f6a2cf2be72775d8fe10820ab9ca148fd56d2f` — `ci: upgrade Gradle setup action to v6`
+- `e1116426915bb891abbffed11bd1cd9fd526ffd7` — `test: add desktop-only Compose UI suite`
+- `b4403cb20d24a5d461c472f1c781878565656a88` — `test: keep Compose UI suite off Android host tests`
+- `407e3495aa1aa0b3a8a99001bad0e0be8ee7ae63` — `build: scope Compose UI test dependency to desktop`
+- `87879417f6a5b4ad77b2ac5c18de7608f6a59f94` — `test: add Android instrumentation UI smoke tests`
+- `0d6f66eeed0b7f89c4701946a231f90835454799` — `test: use node assertion API without invalid import`
+- `c9e0fc1cd6bc9fc9a9ea635149b2462577e5e948` — `docs: clarify platform-specific UI test harnesses`
+- `51dde54311d070a65e16a70b4cf55151dc235b5d` — `docs: align README with platform UI test split`
+- `b0dafd91e6519f54c30c91e15252a86d9f2c75f0` — `ci: align CodeQL Gradle setup with v6`
+- `9350caa985091a6760c86e6eb2ebe123e96245d5` — `docs: correct UI automation roadmap architecture`
+- `fe24ead282f6fef3fd5d7a0c806575cbb3c0dedc` — `docs: record validated UI automation split`
+
 ## 2026-08-21 — Offline portability: versioned backup and restore
 
 RPS Arena now has an offline, human-readable backup/restore path for portable local progress without adding accounts, networking, analytics, advertising, or new Android permissions.
