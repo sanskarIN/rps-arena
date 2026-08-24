@@ -30,13 +30,15 @@ Shared UI localization remains offline and follows the runtime locale. Existing 
 ## 1.3 UI automation foundation
 
 - [x] Stable localization-independent UI test tags
-- [x] Shared Compose UI flow tests
+- [x] Desktop Compose UI flow tests
+- [x] Android instrumentation UI smoke tests
+- [x] Android KMP host tests for non-rendering shared logic
 - [x] In-memory repository storage boundary for deterministic tests
 - [x] Desktop UI execution in CI
 - [x] Android device-test APK compilation in CI
 - [x] Connected Android device/emulator test configuration
 
-The common suite covers onboarding, navigation, gameplay, settings persistence, and backup dialog behavior. See [UI_TESTING.md](UI_TESTING.md).
+The desktop suite covers onboarding, navigation, gameplay, settings persistence, and backup dialog behavior. Android instrumentation provides onboarding and gameplay smoke coverage, while Android host tests exercise platform-neutral shared logic. See [UI_TESTING.md](UI_TESTING.md).
 
 ## Future-compatible enhancements
 
