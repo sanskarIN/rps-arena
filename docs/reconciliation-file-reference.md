@@ -12,6 +12,18 @@ Temporary self-documenting bridge for current-main files that were not present w
 
 Post-v2.5.8 planning document for v2.5.9. It defines release entry criteria, the planned version/build-code transition, scoped candidate work, deferred items, validation requirements, and the rule that package metadata remains at v2.5.8 until the current release is actually merged and tagged.
 
+### `docs/BACKUP.md`
+
+Authoritative current backup-schema guide imported from the validated backup milestone. It documents `RPSARENA_BACKUP|1`, included data, validation, privacy, and forward-compatibility rules.
+
+### `docs/LOCALIZATION.md`
+
+Authoritative Compose Multiplatform resource-localization guide imported from the validated localization milestone. It documents English/Hindi resource layout and catalog validation.
+
+### `docs/UI_TESTING.md`
+
+Authoritative UI-automation guide imported from the validated UI-testing milestone. It documents the common/desktop/Android device-test split, stable tags, isolated persistence, local execution, and CI behavior.
+
 ### `scripts/verify_localizations.py`
 
 Validates the Compose Multiplatform English and Hindi resource catalogs, including key parity and placeholder compatibility.
