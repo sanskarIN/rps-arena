@@ -8,6 +8,10 @@ This temporary companion to `repository-file-reference.md` documents files intro
 
 Temporary self-documenting bridge for current-main files that were not present when the original v2.5.8 repository reference was written.
 
+### `docs/NEXT_VERSION.md`
+
+Post-v2.5.8 planning document for v2.5.9. It defines release entry criteria, the planned version/build-code transition, scoped candidate work, deferred items, validation requirements, and the rule that package metadata remains at v2.5.8 until the current release is actually merged and tagged.
+
 ### `scripts/verify_localizations.py`
 
 Validates the Compose Multiplatform English and Hindi resource catalogs, including key parity and placeholder compatibility.
