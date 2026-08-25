@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -32,26 +33,54 @@ kotlin {
         }
     }
 
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64(),
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "RpsArenaShared"
+            isStatic = true
+        }
+    }
+
+    js {
+        browser()
+    }
+
+    @OptIn(ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
+
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.animation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
             implementation(compose.components.resources)
+            implementation(libs.kotlinx.coroutines.core)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
-        getByName("desktopTest").dependencies {
-            implementation("org.jetbrains.compose.ui:ui-test:${libs.versions.compose.get()}")
-            implementation(compose.desktop.currentOs)
+        val desktopTest by getting {
+            dependencies {
+                implementation(libs.compose.ui.test)
+                implementation(compose.desktop.currentOs)
+            }
         }
         getByName("androidDeviceTest").dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.compose.ui.test.junit4.android)
             implementation(libs.androidx.compose.ui.test.manifest)
             implementation(libs.androidx.test.runner)
+        }
+        webMain.dependencies {
+            implementation(libs.kotlinx.browser)
         }
     }
 }

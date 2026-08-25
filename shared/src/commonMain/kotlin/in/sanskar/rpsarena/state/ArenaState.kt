@@ -7,18 +7,22 @@ import `in`.sanskar.rpsarena.data.ArenaBackupImportResult
 import `in`.sanskar.rpsarena.data.ArenaRepository
 import `in`.sanskar.rpsarena.engine.CpuStrategy
 import `in`.sanskar.rpsarena.engine.RulesEngine
+import `in`.sanskar.rpsarena.logging.SafeLogger
 import `in`.sanskar.rpsarena.model.*
 
 enum class ArenaScreen { HOME, PLAY, HISTORY, STATS, ACHIEVEMENTS, SETTINGS, ABOUT }
 
-class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
+class ArenaState(
+    private val repository: ArenaRepository = ArenaRepository(),
+    private val logger: SafeLogger = SafeLogger(),
+) {
     var screen by mutableStateOf(ArenaScreen.HOME)
         private set
     var settings by mutableStateOf(repository.loadSettings())
         private set
     var stats by mutableStateOf(repository.loadStats())
         private set
-    var config by mutableStateOf(MatchConfig())
+    var config by mutableStateOf(repository.loadMatchConfig())
         private set
     var match by mutableStateOf(MatchSnapshot(config))
         private set
@@ -40,26 +44,52 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
 
     fun completeOnboarding() {
         updateSettings(settings.copy(onboardingComplete = true))
+        logger.info("onboarding_completed")
     }
 
     fun updateSettings(value: ArenaSettings) {
         settings = value
         repository.saveSettings(value)
+        logger.debug(
+            "settings_updated",
+            mapOf(
+                "follow_system_theme" to value.followSystemTheme,
+                "dark_theme" to value.darkTheme,
+                "reduced_motion" to value.reducedMotion,
+            ),
+        )
     }
 
-    fun exportBackup(): String = repository.exportBackup()
+    fun exportBackup(): String {
+        logger.info("backup_exported", mapOf("history_entries" to history.size))
+        return repository.exportBackup()
+    }
 
     fun importBackup(raw: String): ArenaBackupImportResult {
         val result = repository.importBackup(raw)
         if (result is ArenaBackupImportResult.Success) {
             settings = repository.loadSettings()
             stats = repository.loadStats()
+            logger.info("backup_import_accepted", mapOf("history_entries" to result.importedHistoryCount))
+        } else {
+            logger.warn("backup_import_rejected")
         }
         return result
     }
 
     fun updateConfig(value: MatchConfig) {
         config = value
+        repository.saveMatchConfig(value)
+        logger.info(
+            "match_config_updated",
+            mapOf(
+                "variant" to value.variant.name,
+                "opponent" to value.opponentMode.name,
+                "difficulty" to value.difficulty.name,
+                "mode" to value.matchMode.name,
+                "seed" to value.seed,
+            ),
+        )
         resetMatch()
     }
 
@@ -67,9 +97,17 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         cpu = CpuStrategy(config.seed)
         match = MatchSnapshot(config)
         pendingPlayerOne = null
+        logger.debug("match_reset")
     }
 
     fun play(gesture: Gesture) {
+        if (gesture !in Gesture.availableFor(config.variant)) {
+            logger.warn(
+                "invalid_gesture_rejected",
+                mapOf("gesture" to gesture.name, "variant" to config.variant.name),
+            )
+            return
+        }
         if (match.finished && config.matchMode !in setOf(MatchMode.ENDLESS, MatchMode.STREAK)) return
         when (config.opponentMode) {
             OpponentMode.CPU -> playAgainstCpu(gesture)
@@ -110,6 +148,14 @@ class ArenaState(private val repository: ArenaRepository = ArenaRepository()) {
         )
         updateStats(outcome)
         repository.addHistory(historyLine(round))
+        logger.debug(
+            "round_completed",
+            mapOf(
+                "round" to match.rounds.size,
+                "outcome" to outcome.name,
+                "match_finished" to finished,
+            ),
+        )
     }
 
     private fun updateStats(outcome: RoundOutcome) {

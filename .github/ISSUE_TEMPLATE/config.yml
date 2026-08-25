@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security reports
+    url: https://github.com/sanskarIN/rps-arena/blob/main/SECURITY.md
+    about: Report security-sensitive problems privately using the security policy.
+  - name: Support guide
+    url: https://github.com/sanskarIN/rps-arena/blob/main/SUPPORT.md
+    about: Check setup, troubleshooting, support contacts, and safe reporting guidance.

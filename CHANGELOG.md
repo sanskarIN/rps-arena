@@ -4,53 +4,110 @@ All notable changes to RPS Arena are documented here.
 
 ## [Unreleased]
 
+### v2.5.8 release candidate
+
+v2.5.8 is being reconciled against the current validated `main` architecture. The package/runtime version remains `2.5.8` with mobile build code `20508`; this section becomes a dated release entry only after the exact final head is validated, merged, tagged, and its release artifacts are verified.
+
+#### Added
+
+- iPhone/iPad Kotlin/Native `iosArm64` and Apple-silicon `iosSimulatorArm64` framework targets.
+- SwiftUI/Xcode iOS host embedding the shared Compose UI through `ComposeUIViewController`.
+- iOS `NSUserDefaults` persistence adapter behind the shared `PlatformStore` contract.
+- First-class Kotlin/Wasm + Kotlin/JS Web application with shared `webMain`, Compose compatibility distribution, and browser `localStorage` persistence.
+- Transport-neutral `PrivateRoomGateway` / `PrivateRoomSession` contracts with a deterministic in-memory no-network two-player reference adapter.
+- No-op-by-default structured `SafeLogger` with sensitive-field redaction and bounded non-sensitive values.
+- Persisted `match_config_v1` for ruleset, opponent, difficulty, match mode, and deterministic CPU seed.
+- Safe fallback to default match configuration when stored data is malformed.
+- Stricter statistics invariant validation and bounded/newline-safe history persistence.
+- Compose Multiplatform English/Hindi resources plus automated key/placeholder parity validation.
+- Stable localization-independent `ArenaUiTags`.
+- Desktop Compose UI automation and Android KMP instrumentation smoke tests.
+- Android device-test APK assembly in local/hosted verification.
+- Expanded state tests for deterministic replay, persisted match setup, invalid-gesture rejection, and privacy-safe logging.
+- Cross-platform version verification for Android, desktop, iOS plist/Xcode metadata, shared metadata, and deterministic numeric mobile build-code mapping.
+- Source gates for formatting, relative Markdown links, exhaustive tracked-file documentation, committed-secret patterns, Android privacy invariants, and localization catalogs.
+- Focused Security workflow with dependency review plus CodeQL Kotlin/Java analysis.
+- Tagged/manual packaging workflows for public Android, Linux desktop, Web compatibility ZIP, iOS framework ZIPs, Rust crate output, and SHA-256 checksums.
+- `docs/NEXT_VERSION.md`, which prepares v2.5.9 without changing live v2.5.8 package metadata.
+
+#### Changed
+
+- Reconciled the long-running phase-7 branch with current `main` through two-parent commit `70d8b6c1c01cda5d81ebf7ab4c5bade9accc79cc` instead of squashing/rebasing away its granular history.
+- Preserved the untouched pre-reconciliation state on `archive/phase-7-pre-main-sync-20260824`.
+- Adopted current `main` as authoritative for `ArenaStore`, `RPSARENA_BACKUP|1`, Compose-resource localization, `ArenaUiTags`, desktop UI tests, Android instrumentation tests, and current shared UI/state/repository structure.
+- Reintroduced overlapping v2.5.8 product behavior as focused commits rather than copying the older parallel UI/localization/backup implementation.
+- CI now combines repository source gates, localization validation, shared tests, desktop UI tests, Android instrumentation packaging, Android lint/debug, desktop compilation, Web compatibility distribution, iOS simulator framework/host validation, and Rust tests.
+- Gradle Actions setup is aligned on v6 where used by the reconciled workflows.
+- Documentation-link validation ignores fenced/inline code before scanning relative Markdown links, preventing Ivy artifact-pattern false positives.
+- The Xcode simulator host excludes unsupported `x86_64`, accurately matching the configured Apple-silicon simulator target instead of claiming `iosX64` support.
+- README, roadmap, PR description, and `what_changed.md` now distinguish implemented behavior from features that exist only in older branch history.
+
+#### Security and reliability
+
+- Android primary gameplay remains offline-first with no `android.permission.INTERNET` in the main manifest.
+- Android automatic backup remains disabled and SharedPreferences remain excluded from platform cloud/device-transfer policy.
+- Backup schema 1 remains `RPSARENA_BACKUP|1` and validates complete input before applying settings/statistics/history.
+- Backup contents remain settings, aggregate statistics, and up to 30 history entries; `match_config_v1` is not silently added to schema 1 during reconciliation.
+- Persisted statistics reject negative or inconsistent counters and impossible streak relationships.
+- History writes strip CR/LF, trim blanks, ignore empty records, and bound entries to 160 characters.
+- Invalid gestures for the active ruleset are rejected rather than recorded.
+- Safe logging has no production sink by default and never logs raw backup payloads from `ArenaState`.
+- Public repository/CI contains no Android keystores, Apple signing identities, store credentials, Windows certificates, or macOS notarization secrets.
+- Real LAN/private-room network transport is still not shipped.
+
+#### Not currently claimed as v2.5.8 runtime behavior
+
+The pre-reconciliation branch history contains implementations for the following, but they are not treated as current features unless ported onto the reconciled architecture with focused tests:
+
+- configurable round timers and typed timeout outcomes;
+- user-visible editable seed controls (the seed itself is currently persisted/deterministic);
+- local player-name/profile UI and recent trend summaries;
+- destructive reset flow and associated confirmation UX;
+- the older manual `ArenaStrings` / `AppLanguage` localization implementation.
+
+These items may be restored before the final v2.5.8 head only if they can be integrated without destabilizing the validated architecture; otherwise they are candidates for v2.5.9.
+
+#### Release gates remaining
+
+- CI green on the exact final head.
+- Security checks green on the exact final head.
+- CodeQL green on the exact final head.
+- Final documentation/reference consolidation.
+- Final v2.5.8 package/artifact/checksum audit.
+- Merge to `main`, tag `v2.5.8`, validate the tagged release, and confirm post-merge `main` is green.
+
+### v2.5.9 preparation
+
+The next patch is planned but not yet version-bumped. The eventual semantic/mobile values are `2.5.9` and `20509` only after v2.5.8 is released. Candidate scope is maintained in [`docs/NEXT_VERSION.md`](docs/NEXT_VERSION.md) and includes backup preview, reversible history clearing, reset confirmation, carefully ported profile support, visible seed controls, timer restoration with migration tests, broader UI/accessibility automation, and iOS/Web robustness.
+
+## [1.0.0] - 2026-08-19
+
 ### Added
+
 - Kotlin Multiplatform architecture with separate Android and desktop entry-point modules.
 - Shared Compose UI and game state.
 - Classic and Lizard–Spock rules.
 - CPU and same-device two-player modes.
-- Multiple match formats, local stats, recent history, settings, achievements, and onboarding.
-- Versioned schema-v1 offline backup and restore for settings, aggregate stats, and recent history.
-- Backup validation that rejects malformed or unsupported data before repository writes begin.
-- Compose Multiplatform string-resource localization with English fallback and Hindi translations.
-- Localization catalog parity and placeholder validation in local verification scripts and CI.
-- Desktop Compose UI automation covering onboarding, navigation, gameplay, settings persistence, and backup dialogs.
-- Android instrumentation UI smoke tests covering onboarding and gameplay.
-- Android KMP host-test coverage for platform-neutral shared tests.
-- Stable semantic UI tags that keep tests independent from translated labels.
-- Android device-test configuration and a dedicated `ComponentActivity` test host.
+- Best-of-3, Best-of-5, Endless, Streak, and Tournament formats.
+- Deterministic seeded CPU logic with Easy, Normal, and Expert presets.
+- Offline statistics, recent history, settings, achievements, and onboarding.
 - Android adaptive icon assets and project splash artwork.
 - Optional Rust rules engine.
-- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, testing, backup, localization, and UI-testing documentation.
+- CI, CodeQL, dependency updates, contribution, privacy, security, validation, release, and testing documentation.
 
-### Changed
-- Moved shared UI copy, dynamic game labels, achievement text, and backup validation messages into localized resources.
-- Made achievement and local-turn state presentation-neutral so the UI owns localized copy.
-- Added an `ArenaStore` persistence boundary so tests can use isolated in-memory data while production keeps the existing platform store.
-- Separated rendering tests by platform: desktop uses Compose Multiplatform `runComposeUiTest`, Android uses instrumentation `createAndroidComposeRule`, and common tests remain non-rendering.
-- Expanded local and CI verification with Android host tests, desktop UI-test execution, and Android device-test APK assembly.
-- Aligned CI and CodeQL Gradle setup on `gradle/actions/setup-gradle@v6`.
+### Fixed during validation
 
-### Fixed
 - Aligned Android builds and documentation with stable compile/target SDK 36.
 - Updated the Android Kotlin Multiplatform DSL for Android Gradle Plugin 9.
 - Removed obsolete Compose tooling accessors from the Android application module.
 - Corrected Kotlin source, test, and entry-point packages whose leading `in` segment must be escaped in Kotlin syntax.
 - Added the Material 3 opt-in required by the top app bar.
 - Modernized Android SDK setup and current GitHub Actions/CodeQL workflow versions.
-- Corrected UI-test source-set placement so desktop Compose rendering tests are not executed inside Android host-JVM tests.
-- Removed invalid top-level `assertExists` imports while preserving node interaction assertions.
 
 ### Verified
-- Shared Kotlin tests pass, including Android KMP host tests.
-- Desktop Compose UI tests pass in CI.
-- Android instrumentation tests compile into a device-test APK in CI.
-- Android debug assembly passes.
-- Desktop JVM compilation passes.
-- Rust engine tests pass.
-- CodeQL Kotlin/Java analysis passes.
-- Localization catalogs expose matching keys and formatting placeholders.
 
-## [1.0.0] - 2026-08-19
-
-Initial production-ready repository baseline.
+- Shared Kotlin tests passed.
+- Android debug assembly passed.
+- Desktop JVM compilation passed.
+- Rust engine tests passed.
+- CodeQL Kotlin/Java analysis passed.

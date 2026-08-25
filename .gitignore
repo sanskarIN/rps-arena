@@ -1,5 +1,6 @@
 # Gradle
 .gradle/
+.kotlin/
 build/
 **/build/
 
@@ -7,6 +8,10 @@ build/
 *.class
 *.log
 out/
+
+# Kotlin Web
+node_modules/
+kotlin-js-store/
 
 # IDE
 .idea/
@@ -19,6 +24,11 @@ local.properties
 captures/
 *.jks
 *.keystore
+
+# Apple/Xcode
+DerivedData/
+xcuserdata/
+*.xcuserstate
 
 # Desktop packaging
 *.dmg

@@ -12,8 +12,8 @@ android {
         applicationId = "in.sanskar.rpsarena"
         minSdk = libs.versions.androidMinSdk.get().toInt()
         targetSdk = libs.versions.androidTargetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 20508
+        versionName = "2.5.8"
     }
 
     buildFeatures {

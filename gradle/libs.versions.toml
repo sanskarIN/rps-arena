@@ -1,10 +1,13 @@
 [versions]
 kotlin = "2.4.10"
 compose = "1.11.0"
+composeMaterial3 = "1.11.0-alpha07"
 agp = "9.3.0"
 activityCompose = "1.13.0"
 androidxComposeUi = "1.11.1"
 androidxTestRunner = "1.7.0"
+coroutines = "1.10.2"
+kotlinxBrowser = "0.3"
 androidCompileSdk = "36"
 androidTargetSdk = "36"
 androidMinSdk = "26"
@@ -14,6 +17,14 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 androidx-compose-ui-test-junit4-android = { module = "androidx.compose.ui:ui-test-junit4-android", version.ref = "androidxComposeUi" }
 androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidxComposeUi" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTestRunner" }
+compose-animation = { module = "org.jetbrains.compose.animation:animation", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-browser = { module = "org.jetbrains.kotlinx:kotlinx-browser", version.ref = "kotlinxBrowser" }
 
 [plugins]
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

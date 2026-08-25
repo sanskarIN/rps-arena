@@ -18,6 +18,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Repository formatting
+        run: python3 scripts/check_format.py
+      - name: Documentation links
+        run: python3 scripts/check_docs_links.py
+      - name: Documentation file coverage
+        run: python3 scripts/check_docs_coverage.py
+      - name: Committed secret patterns
+        run: python3 scripts/check_for_secrets.py
+      - name: Android privacy contract
+        run: python3 scripts/check_android_privacy.py
+      - name: Version consistency
+        run: python3 scripts/check_version.py
+      - name: Localization catalogs
+        run: python3 scripts/verify_localizations.py
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -28,18 +42,43 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "9.5.1"
-      - name: Localization catalogs
-        run: python3 scripts/verify_localizations.py
       - name: Shared tests
         run: gradle :shared:allTests --stacktrace
       - name: Desktop UI tests
         run: gradle :shared:desktopTest --stacktrace
       - name: Android UI test APK
         run: gradle :shared:assembleAndroidDeviceTest --stacktrace
+      - name: Android lint
+        run: gradle :androidApp:lintDebug --stacktrace
       - name: Android debug build
         run: gradle :androidApp:assembleDebug --stacktrace
       - name: Desktop classes
         run: gradle :desktopApp:classes --stacktrace
+      - name: Web compatibility distribution
+        run: gradle :webApp:composeCompatibilityBrowserDistribution --stacktrace
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "9.5.1"
+      - name: Compile iOS simulator framework
+        run: gradle :shared:linkDebugFrameworkIosSimulatorArm64 --stacktrace
+      - name: Build iOS simulator application
+        run: >-
+          xcodebuild
+          -project iosApp/iosApp.xcodeproj
+          -scheme "RPS Arena"
+          -sdk iphonesimulator
+          -configuration Debug
+          CODE_SIGNING_ALLOWED=NO
+          build
 
   rust:
     runs-on: ubuntu-latest
