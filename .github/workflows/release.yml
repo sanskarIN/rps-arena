@@ -42,7 +42,7 @@ jobs:
         run: gradle :androidApp:lintRelease --stacktrace
       - name: Build unsigned Android release
         run: gradle :androidApp:assembleRelease --stacktrace
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rps-arena-android
           path: androidApp/build/outputs/apk/release/*.apk
@@ -63,7 +63,7 @@ jobs:
         run: gradle :desktopApp:classes --stacktrace
       - name: Package Debian distribution
         run: gradle :desktopApp:packageDeb --stacktrace
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rps-arena-linux
           path: desktopApp/build/compose/binaries/main/deb/*.deb
@@ -86,7 +86,7 @@ jobs:
         run: >-
           cd webApp/build/dist/composeWebCompatibility/productionExecutable &&
           zip -r "$GITHUB_WORKSPACE/rps-arena-web.zip" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rps-arena-web
           path: rps-arena-web.zip
@@ -126,7 +126,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent \
             shared/build/bin/iosSimulatorArm64/releaseFramework/RpsArenaShared.framework \
             rps-arena-ios-simulator-framework.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rps-arena-ios
           path: |
@@ -146,7 +146,7 @@ jobs:
         run: cargo test --all-targets
       - name: Package Rust rules engine
         run: cargo package
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rps-arena-rust-engine
           path: rust-engine/target/package/*.crate
