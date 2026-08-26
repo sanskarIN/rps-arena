@@ -22,6 +22,24 @@ A release candidate is eligible only when:
 - changelog, roadmap, platform docs, privacy notes, and `what_changed.md` match the shipped behavior;
 - no signing key, store credential, token, certificate, provisioning secret, or private user data is committed.
 
+## v2.5.8 exact-head validation
+
+The merged v2.5.8 release revision is:
+
+```text
+4136aff448e9489a3e8252ceea7c1e9e79d17c19
+```
+
+The following exact-head gates are green on that revision:
+
+- CI push run `32853891608` — successful;
+- Security checks push run `32853891297` — successful;
+- CodeQL push run `32853891464` — successful;
+- version/build-code consistency — `2.5.8` / `20508`;
+- cross-platform shared/UI/Android/desktop/Web/iOS/Rust validation — successful through the CI workflow.
+
+This evidence is source validation, not proof that the tag-triggered release packaging has completed. The `v2.5.8` tag must point to the audited final release revision and the generated artifacts/checksums must be verified before publishing the release.
+
 ## Version locations
 
 For v2.5.8 the public version is declared in:
@@ -103,7 +121,20 @@ Recommended release tag:
 v2.5.8
 ```
 
-Tag only the audited `main` commit. The tag workflow is an additional release gate and does not replace green pull-request CI, Security checks, and CodeQL evidence on that exact source.
+Tag only the audited final `main` commit. The tag workflow is an additional release gate and does not replace green pull-request CI, Security checks, and CodeQL evidence on that exact source.
+
+## Release finalization checklist
+
+1. Merge the release-finalization documentation/reference cleanup branch after its exact-head CI is green.
+2. Confirm `main` still resolves to the intended v2.5.8 release revision.
+3. Create `v2.5.8` from that exact revision.
+4. Wait for the tag-triggered Release workflow to finish.
+5. Inspect every configured Android, desktop, Web, iOS, and Rust artifact.
+6. Verify every generated SHA-256 checksum against the corresponding artifact.
+7. Publish/finalize the GitHub release notes only after all artifact checks pass.
+8. Confirm post-release `main` CI remains green.
+
+Do not start the v2.5.9 runtime/package version transition until this sequence is complete.
 
 ## Android signing
 
