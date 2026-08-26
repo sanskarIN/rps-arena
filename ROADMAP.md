@@ -29,7 +29,6 @@
 - [x] Reduced-motion preference and documented accessibility review expectations.
 - [x] No-op-by-default privacy-safe structured logger with sensitive-field redaction.
 - [x] Transport-neutral private-room contracts with a deterministic two-player no-network reference adapter.
-- [x] Private-room sender/lifecycle/round/participant/room-code validation.
 - [x] Android API 26+ source/build target.
 - [x] JVM desktop support for Windows, Linux, and macOS.
 - [x] iPhone/iPad Kotlin/Native device + Apple-silicon simulator frameworks and SwiftUI/Xcode host.
@@ -42,20 +41,27 @@
 - [x] Fix documentation-link validation so fenced/inline code examples are not misclassified as Markdown links.
 - [x] Prepare a gated v2.5.9 plan without prematurely changing v2.5.8 runtime/package metadata.
 
-### Remaining before v2.5.8 merge/tag
+### Exact release revision validation
 
-- [ ] Obtain green CI on the exact final PR head.
-- [ ] Obtain green Security checks on the exact final PR head.
-- [ ] Obtain green CodeQL on the exact final PR head.
-- [ ] Fix any exact-head cross-platform failure without bypassing release gates.
-- [ ] Consolidate the temporary reconciliation file reference into the canonical repository file reference when the file set is final.
-- [ ] Audit README/changelog/platform docs for any remaining pre-reconciliation timer/profile/reset claims.
-- [ ] Decide whether visible seed editing is required for v2.5.8 or belongs in v2.5.9; persisted deterministic seed support already exists.
-- [ ] Keep round timers/timeouts out of v2.5.8 claims unless they are ported onto the current model/state/resource architecture with migration and regression tests.
-- [ ] Keep player profiles/trends/reset flows out of v2.5.8 claims unless their newer-compatible implementations are ported and tested.
-- [ ] Verify final package outputs, v2.5.8 metadata, and SHA-256 release checksums.
-- [ ] Merge PR #11 with meaningful commit history preserved.
-- [ ] Tag `v2.5.8`, verify the GitHub release workflow/artifacts, and confirm post-merge `main` remains green.
+- [x] PR #11 merged to `main` as `4136aff448e9489a3e8252ceea7c1e9e79d17c19`.
+- [x] CI push run `32853891608` completed successfully on the exact merged revision.
+- [x] Security checks push run `32853891297` completed successfully on the exact merged revision.
+- [x] CodeQL push run `32853891464` completed successfully on the exact merged revision.
+- [x] Cross-platform version/build-code consistency is green at `2.5.8` / `20508`.
+- [x] README/changelog/release-state documentation has been audited to avoid claiming superseded timer/profile/reset behavior as shipped v2.5.8 runtime.
+- [x] Visible seed editing is classified as v2.5.9 work; persisted deterministic seed support remains part of v2.5.8.
+- [x] Round timers/timeouts remain deferred until they are ported with migration and regression tests.
+- [x] Player profiles/trends/reset flows remain deferred until compatible implementations are ported and tested.
+
+### Remaining before v2.5.8 release
+
+- [ ] Merge the release-finalization documentation/reference cleanup branch into `main` after CI validates it.
+- [ ] Create tag `v2.5.8` from the exact final release revision.
+- [ ] Confirm the tag-triggered Release workflow completes successfully.
+- [ ] Verify final Android, desktop, Web, iOS, and Rust package outputs where configured.
+- [ ] Verify final SHA-256 release checksums against published artifacts.
+- [ ] Publish/finalize the GitHub release notes only after artifacts and checksums are verified.
+- [ ] Confirm post-release `main` remains green.
 
 ## v2.5.9 — Planned next patch
 
