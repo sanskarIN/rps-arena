@@ -2,7 +2,7 @@
 kotlin = "2.4.10"
 compose = "1.11.0"
 composeMaterial3 = "1.11.0-alpha07"
-agp = "9.3.0"
+agp = "9.3.2"
 activityCompose = "1.13.0"
 androidxComposeUi = "1.11.1"
 androidxTestRunner = "1.7.0"
