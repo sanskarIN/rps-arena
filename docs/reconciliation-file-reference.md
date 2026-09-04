@@ -24,6 +24,18 @@ Authoritative Compose Multiplatform resource-localization guide imported from th
 
 Authoritative UI-automation guide imported from the validated UI-testing milestone. It documents the common/desktop/Android device-test split, stable tags, isolated persistence, local execution, and CI behavior.
 
+### `docs/V0.1.3_PLAN.md`
+
+Public v0.1.3 release plan defining the focused patch scope, release gates, compatibility boundaries, and meaningful-commit policy for the reliability hardening cycle.
+
+### `docs/V0.1.3_RELEASE_CHECKLIST.md`
+
+Public v0.1.3 release checklist covering source validation, cross-platform builds/tests, security/privacy checks, documentation consistency, release metadata, and post-release verification.
+
+### `docs/V0.1.3_RELEASE_NOTES.md`
+
+Evidence-based v0.1.3 release notes documenting only the backup and deterministic CPU regression coverage delivered by the release candidate, together with verification and compatibility boundaries.
+
 ### `scripts/verify_localizations.py`
 
 Validates the Compose Multiplatform English and Hindi resource catalogs, including key parity and placeholder compatibility.
@@ -48,10 +60,6 @@ Hindi Compose resource catalog kept in key/placeholder parity with the canonical
 
 Versioned bounded offline backup model, decoder/encoder, validation errors, and import result contracts used by the current shared repository implementation.
 
-### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/data/ArenaStore.kt`
-
-Injectable minimal key-value persistence boundary. Production delegates to `PlatformStore`; tests provide isolated in-memory storage without changing platform persistence behavior.
-
 ### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/ArenaUiTags.kt`
 
 Stable semantic UI-test tags kept independent of visible English/Hindi strings so automation remains localization-safe.
@@ -59,3 +67,7 @@ Stable semantic UI-test tags kept independent of visible English/Hindi strings s
 ### `shared/src/commonTest/kotlin/in/sanskar/rpsarena/ArenaBackupCodecTest.kt`
 
 Shared regression coverage for backup schema round trips, malformed input, history limits/sanitization, unsupported versions, and statistics invariants.
+
+### `shared/src/commonTest/kotlin/in/sanskar/rpsarena/CpuStrategyTest.kt`
+
+Shared deterministic CPU regression coverage across supported difficulties and classic/extended variants, including seeded sequence stability and gesture-boundary checks.
