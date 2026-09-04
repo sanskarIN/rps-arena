@@ -17,10 +17,30 @@ class CpuStrategyTest {
         assertEquals(seqA, seqB)
     }
 
+    @Test fun sameSeedRemainsDeterministicAcrossDifficultiesAndVariants() {
+        Difficulty.entries.forEach { difficulty ->
+            GameVariant.entries.forEach { variant ->
+                val a = CpuStrategy(2026)
+                val b = CpuStrategy(2026)
+                val history = List(8) { Gesture.ROCK }
+                val seqA = List(40) { a.choose(difficulty, variant, history) }
+                val seqB = List(40) { b.choose(difficulty, variant, history) }
+                assertEquals(seqA, seqB, "$difficulty/$variant")
+            }
+        }
+    }
+
     @Test fun classicNeverReturnsExtendedGestures() {
         val cpu = CpuStrategy(9)
         repeat(100) {
             assertTrue(cpu.choose(Difficulty.EXPERT, GameVariant.CLASSIC, List(8) { Gesture.ROCK }) in Gesture.availableFor(GameVariant.CLASSIC))
+        }
+    }
+
+    @Test fun extendedVariantOnlyReturnsSupportedGestures() {
+        val cpu = CpuStrategy(17)
+        repeat(100) {
+            assertTrue(cpu.choose(Difficulty.NORMAL, GameVariant.EXTENDED, emptyList()) in Gesture.availableFor(GameVariant.EXTENDED))
         }
     }
 }
