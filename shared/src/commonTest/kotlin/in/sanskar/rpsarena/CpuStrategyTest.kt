@@ -33,14 +33,20 @@ class CpuStrategyTest {
     @Test fun classicNeverReturnsExtendedGestures() {
         val cpu = CpuStrategy(9)
         repeat(100) {
-            assertTrue(cpu.choose(Difficulty.EXPERT, GameVariant.CLASSIC, List(8) { Gesture.ROCK }) in Gesture.availableFor(GameVariant.CLASSIC))
+            assertTrue(
+                cpu.choose(Difficulty.EXPERT, GameVariant.CLASSIC, List(8) { Gesture.ROCK }) in
+                    Gesture.availableFor(GameVariant.CLASSIC),
+            )
         }
     }
 
-    @Test fun extendedVariantOnlyReturnsSupportedGestures() {
+    @Test fun lizardSpockVariantOnlyReturnsSupportedGestures() {
         val cpu = CpuStrategy(17)
         repeat(100) {
-            assertTrue(cpu.choose(Difficulty.NORMAL, GameVariant.EXTENDED, emptyList()) in Gesture.availableFor(GameVariant.EXTENDED))
+            assertTrue(
+                cpu.choose(Difficulty.NORMAL, GameVariant.LIZARD_SPOCK, emptyList()) in
+                    Gesture.availableFor(GameVariant.LIZARD_SPOCK),
+            )
         }
     }
 }
