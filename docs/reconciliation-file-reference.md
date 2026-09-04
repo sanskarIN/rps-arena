@@ -24,6 +24,14 @@ Authoritative Compose Multiplatform resource-localization guide imported from th
 
 Authoritative UI-automation guide imported from the validated UI-testing milestone. It documents the common/desktop/Android device-test split, stable tags, isolated persistence, local execution, and CI behavior.
 
+### `docs/V0.1.1_PLAN.md`
+
+Public v0.1.1 release plan covering data safety, gameplay reliability, accessibility/localization, platform robustness, documentation, and release verification scope.
+
+### `docs/V0.1.1_RELEASE_CHECKLIST.md`
+
+Public v0.1.1 release checklist covering source validation, shared/platform builds and tests, security/privacy gates, documentation checks, and release metadata verification.
+
 ### `docs/V0.1.3_PLAN.md`
 
 Public v0.1.3 release plan defining the focused patch scope, release gates, compatibility boundaries, and meaningful-commit policy for the reliability hardening cycle.
@@ -59,6 +67,10 @@ Hindi Compose resource catalog kept in key/placeholder parity with the canonical
 ### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/data/ArenaBackup.kt`
 
 Versioned bounded offline backup model, decoder/encoder, validation errors, and import result contracts used by the current shared repository implementation.
+
+### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/data/ArenaStore.kt`
+
+Injectable minimal key-value persistence boundary. Production delegates to `PlatformStore`; tests provide isolated in-memory storage without changing platform persistence behavior.
 
 ### `shared/src/commonMain/kotlin/in/sanskar/rpsarena/ui/ArenaUiTags.kt`
 
