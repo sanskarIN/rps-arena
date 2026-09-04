@@ -86,6 +86,51 @@ class ArenaBackupCodecTest {
     }
 
     @Test
+    fun rejectsNegativeStats() {
+        val raw = """
+            RPSARENA_BACKUP|1
+            settings|false|true|false|true|true|false|false
+            stats|1|-1|2|0|0|0
+            history|0
+        """.trimIndent()
+
+        assertEquals(
+            ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_STATS),
+            ArenaBackupCodec.decode(raw),
+        )
+    }
+
+    @Test
+    fun rejectsInconsistentStatsTotals() {
+        val raw = """
+            RPSARENA_BACKUP|1
+            settings|false|true|false|true|true|false|false
+            stats|10|4|2|1|3|1
+            history|0
+        """.trimIndent()
+
+        assertEquals(
+            ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_STATS),
+            ArenaBackupCodec.decode(raw),
+        )
+    }
+
+    @Test
+    fun rejectsImpossibleStreakValues() {
+        val raw = """
+            RPSARENA_BACKUP|1
+            settings|false|true|false|true|true|false|false
+            stats|3|2|1|0|1|2
+            history|0
+        """.trimIndent()
+
+        assertEquals(
+            ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_STATS),
+            ArenaBackupCodec.decode(raw),
+        )
+    }
+
+    @Test
     fun rejectsHistoryCountMismatch() {
         val raw = """
             RPSARENA_BACKUP|1
@@ -93,6 +138,22 @@ class ArenaBackupCodecTest {
             stats|1|1|0|0|1|1
             history|2
             item|Rock vs Scissors — Player 1 won
+        """.trimIndent()
+
+        assertEquals(
+            ArenaBackupDecodeResult.Failure(ArenaBackupError.MALFORMED_HISTORY),
+            ArenaBackupCodec.decode(raw),
+        )
+    }
+
+    @Test
+    fun rejectsHistoryItemsWithMissingPayload() {
+        val raw = """
+            RPSARENA_BACKUP|1
+            settings|false|true|false|true|true|false|false
+            stats|0|0|0|0|0|0
+            history|1
+            item|
         """.trimIndent()
 
         assertEquals(
