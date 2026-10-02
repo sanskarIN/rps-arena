@@ -1,6 +1,16 @@
 # Next Version Plan — v2.5.9
 
-RPS Arena remains on **v2.5.8** while the current cross-platform release branch is being validated and prepared for release. This document prepares the next patch release without changing package/runtime metadata early.
+RPS Arena remains on **v2.5.8** while the validated cross-platform release is finalized. This document prepares the next patch release without changing package/runtime metadata early.
+
+## Current release boundary
+
+The exact merged v2.5.8 source revision is:
+
+```text
+4136aff448e9489a3e8252ceea7c1e9e79d17c19
+```
+
+CI, focused Security checks, CodeQL, and cross-platform version/build-code validation are green on that revision. The remaining v2.5.8 release work is tag creation plus tagged artifact/checksum verification. Do not begin the v2.5.9 version bump until those release steps are complete.
 
 ## Version transition
 
@@ -27,6 +37,8 @@ Development for v2.5.9 should begin from the released v2.5.8 `main` state only a
 3. v2.5.8 package metadata is consistent across Android, desktop, iOS/Xcode, and shared metadata;
 4. tagged release packaging completes and SHA-256 checksums are available;
 5. superseded branches/PRs are classified so no old implementation is accidentally reintroduced.
+
+The first four source-validation conditions are already satisfied for the merged v2.5.8 revision; the tagged packaging/checksum condition remains the release boundary.
 
 ## Planned v2.5.9 scope
 

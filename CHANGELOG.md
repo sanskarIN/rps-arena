@@ -6,7 +6,7 @@ All notable changes to RPS Arena are documented here.
 
 ### v2.5.8 release candidate
 
-v2.5.8 is being reconciled against the current validated `main` architecture. The package/runtime version remains `2.5.8` with mobile build code `20508`; this section becomes a dated release entry only after the exact final head is validated, merged, tagged, and its release artifacts are verified.
+v2.5.8 is reconciled against the current validated `main` architecture. The package/runtime version remains `2.5.8` with mobile build code `20508`; this section becomes a dated release entry only after the exact release revision is tagged and its release artifacts/checksums are verified.
 
 #### Added
 
@@ -41,6 +41,7 @@ v2.5.8 is being reconciled against the current validated `main` architecture. Th
 - Documentation-link validation ignores fenced/inline code before scanning relative Markdown links, preventing Ivy artifact-pattern false positives.
 - The Xcode simulator host excludes unsupported `x86_64`, accurately matching the configured Apple-silicon simulator target instead of claiming `iosX64` support.
 - README, roadmap, PR description, and `what_changed.md` now distinguish implemented behavior from features that exist only in older branch history.
+- The exact merged `main` release revision is `4136aff448e9489a3e8252ceea7c1e9e79d17c19`.
 
 #### Security and reliability
 
@@ -55,6 +56,13 @@ v2.5.8 is being reconciled against the current validated `main` architecture. Th
 - Public repository/CI contains no Android keystores, Apple signing identities, store credentials, Windows certificates, or macOS notarization secrets.
 - Real LAN/private-room network transport is still not shipped.
 
+#### Exact-head validation evidence
+
+- CI push run `32853891608` completed successfully on `4136aff448e9489a3e8252ceea7c1e9e79d17c19`.
+- Security checks push run `32853891297` completed successfully on the same revision.
+- CodeQL push run `32853891464` completed successfully on the same revision.
+- Cross-platform version consistency remains `2.5.8` / `20508`.
+
 #### Not currently claimed as v2.5.8 runtime behavior
 
 The pre-reconciliation branch history contains implementations for the following, but they are not treated as current features unless ported onto the reconciled architecture with focused tests:
@@ -65,16 +73,16 @@ The pre-reconciliation branch history contains implementations for the following
 - destructive reset flow and associated confirmation UX;
 - the older manual `ArenaStrings` / `AppLanguage` localization implementation.
 
-These items may be restored before the final v2.5.8 head only if they can be integrated without destabilizing the validated architecture; otherwise they are candidates for v2.5.9.
+These items are candidates for v2.5.9 and are not described as shipped v2.5.8 behavior.
 
-#### Release gates remaining
+#### Release steps remaining
 
-- CI green on the exact final head.
-- Security checks green on the exact final head.
-- CodeQL green on the exact final head.
-- Final documentation/reference consolidation.
-- Final v2.5.8 package/artifact/checksum audit.
-- Merge to `main`, tag `v2.5.8`, validate the tagged release, and confirm post-merge `main` is green.
+- Create the `v2.5.8` tag from the exact validated release revision.
+- Confirm the tag-triggered Release workflow completes successfully.
+- Verify generated Android, desktop, Web, iOS, and Rust artifacts where configured.
+- Verify generated SHA-256 checksums against the published artifacts.
+- Publish/finalize the GitHub release notes only after artifact and checksum verification.
+- Confirm post-release `main` remains green.
 
 ### v2.5.9 preparation
 

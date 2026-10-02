@@ -1,13 +1,31 @@
 # What Changed
 
-## 2026-08-24 — v2.5.8 reconciliation and release hardening
+## 2026-08-26 — v2.5.8 release finalization checkpoint
 
 Repository: `sanskarIN/rps-arena`  
-Working pull request: `#11` (`feature/phase-7-completion` -> `main`)  
-Current release line: **v2.5.8**  
+Release line: **v2.5.8**  
+Exact merged `main` revision: `4136aff448e9489a3e8252ceea7c1e9e79d17c19`  
+Release-finalization PR: `#17` (`maintenance/v2.5.8-release-finalization` -> `main`)  
 Planned next version: **v2.5.9**  
 License: MIT  
 Product posture: offline-first; no mandatory account, analytics SDK, ads SDK, cloud model, or gameplay backend.
+
+### Exact-head validation
+
+- CI push run `32853891608` is successful on the merged v2.5.8 revision.
+- Security checks push run `32853891297` are successful on the same revision.
+- CodeQL push run `32853891464` is successful on the same revision.
+- Cross-platform version/build-code validation remains green at `2.5.8` / `20508`.
+- v2.5.8 source validation is therefore complete for the merged revision; tagged release packaging and checksum verification remain outstanding.
+
+### Release-finalization work prepared in PR #17
+
+- README now reports the exact v2.5.8 release revision and distinguishes source validation from tag/artifact completion.
+- CHANGELOG records exact-head CI/Security/CodeQL evidence and separates shipped behavior from deferred timer/profile/reset work.
+- ROADMAP marks the exact-head gates complete and leaves only documentation-branch merge, tag, artifact/checksum, release publication, and post-release verification as release blockers.
+- `docs/release.md` records exact-head evidence and a concrete release-finalization sequence.
+- `docs/NEXT_VERSION.md` records the current v2.5.9 entry boundary without bumping package metadata.
+- The temporary reconciliation file reference remains intentionally present until a dedicated canonical file-reference consolidation removes the coverage dependency safely.
 
 This file is the current repository handoff. It replaces the pre-reconciliation description that mixed an older parallel UI/localization implementation with the newer milestones already merged to `main`.
 
@@ -22,6 +40,7 @@ The cross-platform v2.5.8 branch had diverged from `main` while backup/restore, 
 - Current `main` parent used for reconciliation: `73591feddbda870dd0bcb82015b740397fb5e81a`.
 - Two-parent reconciliation commit: `70d8b6c1c01cda5d81ebf7ab4c5bade9accc79cc`.
 - The reconciliation preserved the complete granular phase-7 history and made PR #11 mergeable against current `main`.
+- PR #11 was subsequently merged to `main`; the exact merged release revision is recorded above.
 
 The validated `main` implementations are authoritative for:
 
@@ -289,17 +308,13 @@ Public automation intentionally does not contain Android keystores, Apple signin
 
 ## Remaining v2.5.8 work
 
-Before PR #11 can merge/tag, the exact final branch head still needs:
+PR #11 is already merged. Before v2.5.8 can be released, the exact final branch head still needs:
 
-1. CI, Security checks, and CodeQL green on that exact revision;
-2. any reconciliation failures fixed without bypassing quality gates;
-3. PR #11 description synchronized with the actual reconciled feature set;
-4. final documentation/reference consolidation;
-5. decision on whether user-visible seed controls and round timers are release-blocking or should move to v2.5.9;
-6. final release artifact/checksum/version audit;
-7. merge to `main` with granular history preserved;
-8. `v2.5.8` tag and release workflow verification;
-9. post-merge `main` green check.
+1. merge of the release-finalization documentation update after its own CI is green;
+2. final documentation/reference consolidation;
+3. final release artifact/checksum/version audit;
+4. `v2.5.8` tag and release workflow verification;
+5. post-release `main` green check.
 
 The older branch had implementations for timer/timeouts, player-name/trend UI, reset flows, and other enhancements, but those are not considered present merely because they exist in history. They must be ported onto the reconciled architecture with tests before being claimed as current v2.5.8 behavior.
 
@@ -341,6 +356,6 @@ After the canonical v2.5.8 branch is merged, remaining repository cleanup includ
 
 ## Validation rule
 
-No older successful workflow run is enough after a new commit. PR #11 is merge-ready only when CI, Security checks, and CodeQL are green on the **exact final head** containing all release code and documentation.
+No older successful workflow run is enough after a new commit. A release-finalization PR is merge-ready only when CI, Security checks, and CodeQL are green on the **exact final head** containing all release documentation changes.
 
 **Made by the Sanskar.**

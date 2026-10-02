@@ -175,10 +175,9 @@ Start with [`docs/documentation-index.md`](docs/documentation-index.md). Deep re
 - [`docs/ci-cd.md`](docs/ci-cd.md) — GitHub automation and release gates;
 - [`docs/maintenance.md`](docs/maintenance.md) — long-term maintenance/release workflow;
 - [`docs/repository-file-reference.md`](docs/repository-file-reference.md) — canonical exhaustive tracked-file reference;
-- [`docs/reconciliation-file-reference.md`](docs/reconciliation-file-reference.md) — temporary companion while v2.5.8 documentation is consolidated;
 - [`docs/NEXT_VERSION.md`](docs/NEXT_VERSION.md) — gated v2.5.9 plan.
 
-`python3 scripts/check_docs_coverage.py` uses `git ls-files` and fails if any tracked path is absent from the approved exhaustive references.
+`python3 scripts/check_docs_coverage.py` uses `git ls-files` and fails if any tracked path is absent from the canonical exhaustive reference.
 
 ## CPU difficulty transparency
 
@@ -269,13 +268,13 @@ See [`PRIVACY.md`](PRIVACY.md) and [`SECURITY.md`](SECURITY.md).
 
 ## Release
 
-Version **2.5.8** remains synchronized across Android, desktop, iOS/Xcode, and shared metadata. Android/iOS numeric build code is **20508**. Tagged release automation is designed to validate/package public Android, Linux desktop, Web compatibility, iOS framework, and Rust artifacts and generate SHA-256 checksums.
+Version **2.5.8** remains synchronized across Android, desktop, iOS/Xcode, and shared metadata. Android/iOS numeric build code is **20508**. The exact merged `main` revision `4136aff448e9489a3e8252ceea7c1e9e79d17c19` has green CI, Security checks, and CodeQL validation. Tagged release automation is ready to validate/package public Android, Linux desktop, Web compatibility, iOS framework, and Rust artifacts and generate SHA-256 checksums; the `v2.5.8` tag and artifact verification remain the final release steps.
 
 Signed store/notarized artifacts require private credentials outside the public repository. See [`docs/release.md`](docs/release.md) and [`docs/ci-cd.md`](docs/ci-cd.md).
 
 ## Next version
 
-v2.5.9 is planned, but package metadata will not change until v2.5.8 is merged, tagged, and its release artifacts/checksums are verified. The planned eventual mobile build code is **20509**.
+v2.5.9 is planned, but package metadata will not change until v2.5.8 is tagged and its release artifacts/checksums are verified. The planned eventual mobile build code is **20509**.
 
 See [`docs/NEXT_VERSION.md`](docs/NEXT_VERSION.md) for candidate work such as backup preview, reversible history clearing, reset confirmation, carefully ported multi-profile support, visible seed controls, timer restoration with migration tests, broader UI/accessibility coverage, and iOS/Web robustness.
 
@@ -292,7 +291,7 @@ Read [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUC
 - Repository: <https://github.com/sanskarIN/rps-arena>
 - **Buy Me a Coffee:** <https://buymeacoffee.com/sanskarIN>
 
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-sanskarIN-FFDD00?logo=buy-me-a-coffee&logoColor=000000)](https://buymeacoffee.com/sanskarIN)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-sanskarIN-FFDD00?logo=buymeacoffee&logoColor=000000)](https://buymeacoffee.com/sanskarIN)
 
 ## License
 
