@@ -22,6 +22,26 @@ Authoritative Compose Multiplatform localization guide. It documents the English
 
 Authoritative UI-automation guide. It documents the common/desktop/Android device-test split, stable semantic tags, isolated persistence, local execution, and CI behavior.
 
+### `docs/V0.1.1_PLAN.md`
+
+Public v0.1.1 release plan covering data safety, gameplay reliability, accessibility/localization, platform robustness, documentation, and release verification scope.
+
+### `docs/V0.1.1_RELEASE_CHECKLIST.md`
+
+Public v0.1.1 release checklist covering source validation, shared/platform builds and tests, security/privacy gates, documentation checks, and release metadata verification.
+
+### `docs/V0.1.3_PLAN.md`
+
+Public v0.1.3 release plan defining the focused patch scope, release gates, compatibility boundaries, and meaningful-commit policy for the reliability hardening cycle.
+
+### `docs/V0.1.3_RELEASE_CHECKLIST.md`
+
+Public v0.1.3 release checklist covering source validation, cross-platform builds/tests, security/privacy checks, documentation consistency, release metadata, and post-release verification.
+
+### `docs/V0.1.3_RELEASE_NOTES.md`
+
+Evidence-based v0.1.3 release notes documenting only the backup and deterministic CPU regression coverage delivered by the release candidate, together with verification and compatibility boundaries.
+
 ### `scripts/verify_localizations.py`
 
 Validates the Compose Multiplatform English and Hindi resource catalogs, including key parity and placeholder compatibility.
@@ -66,3 +86,6 @@ Once v2.5.8 is tagged and its release artifacts/checksums are verified:
 2. verify `python3 scripts/check_docs_coverage.py` with only the canonical reference;
 3. remove this addendum in the same cleanup commit;
 4. confirm documentation-link validation and the full CI gate remain green.
+### `shared/src/commonTest/kotlin/in/sanskar/rpsarena/CpuStrategyTest.kt`
+
+Shared deterministic CPU regression coverage across supported difficulties and classic/extended variants, including seeded sequence stability and gesture-boundary checks.
